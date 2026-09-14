@@ -49,6 +49,8 @@ type AdminPageData struct {
 	Subtitles       []model.SubtitleOption
 	DownloadPath      string
 	ShowTorrentPublic bool
+	// TypeContext membedakan konteks halaman: "anime", "drama_pendek", atau "" (semua film)
+	TypeContext       string
 }
 
 // HandleAdminLogin displays and processes the login form
@@ -146,6 +148,7 @@ func (s *Server) HandleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 
 	stats := make(map[string]int64)
 	var totalMovies, freeMovies, totalDownloads, activeDownloads, totalStreams, totalComments, totalUsers, totalSources, activeSources int64
+	var totalAnime, totalDramaPendek int64
 
 	s.db.Model(&model.Movie{}).Count(&totalMovies)
 	s.db.Model(&model.Movie{}).Where("is_free = ?", true).Count(&freeMovies)
@@ -156,6 +159,8 @@ func (s *Server) HandleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 	s.db.Model(&model.User{}).Count(&totalUsers)
 	s.db.Model(&model.ScrapeSource{}).Count(&totalSources)
 	s.db.Model(&model.ScrapeSource{}).Where("is_active = ?", true).Count(&activeSources)
+	s.db.Model(&model.Movie{}).Where("type = ?", "anime").Count(&totalAnime)
+	s.db.Model(&model.Movie{}).Where("type = ?", "drama_pendek").Count(&totalDramaPendek)
 
 	stats["total_movies"] = totalMovies
 	stats["free_movies"] = freeMovies
@@ -166,6 +171,8 @@ func (s *Server) HandleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 	stats["total_users"] = totalUsers
 	stats["total_sources"] = totalSources
 	stats["active_sources"] = activeSources
+	stats["total_anime"] = totalAnime
+	stats["total_drama_pendek"] = totalDramaPendek
 
 	var recentMovies []model.Movie
 	s.db.Preload("Genres").Order("id desc").Limit(6).Find(&recentMovies)
@@ -183,6 +190,198 @@ func (s *Server) HandleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.RenderHTML(w, "admin_dashboard.html", "admin_layout.html", data)
+}
+
+// HandleAdminAnime menampilkan daftar konten bertipe 'anime' di CMS
+func (s *Server) HandleAdminAnime(w http.ResponseWriter, r *http.Request) {
+	user := s.GetLoggedInUser(r)
+	queryStr := strings.TrimSpace(r.URL.Query().Get("q"))
+	filterStr := strings.TrimSpace(r.URL.Query().Get("filter"))
+	yearStr := strings.TrimSpace(r.URL.Query().Get("year"))
+	pageStr := r.URL.Query().Get("p")
+
+	page := 1
+	if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+		page = p
+	}
+	pageSize := 20
+	offset := (page - 1) * pageSize
+
+	// Filter hanya konten bertipe anime
+	query := s.db.Model(&model.Movie{}).Preload("Genres").Preload("DownloadLinks").Preload("StreamLinks").
+		Where("type = ?", "anime")
+
+	if queryStr != "" {
+		query = query.Where("title LIKE ? OR original_title LIKE ? OR slug LIKE ?",
+			"%"+queryStr+"%", "%"+queryStr+"%", "%"+queryStr+"%")
+	}
+
+	currentYear := 0
+	if yearStr != "" {
+		if y, err := strconv.Atoi(yearStr); err == nil && y > 0 {
+			query = query.Where("year = ?", y)
+			currentYear = y
+		}
+	}
+
+	// Status Filters
+	switch filterStr {
+	case "no_download":
+		query = query.Where("NOT EXISTS (SELECT 1 FROM download_links WHERE download_links.movie_id = movies.id AND download_links.deleted_at IS NULL)")
+	case "has_download":
+		query = query.Where("EXISTS (SELECT 1 FROM download_links WHERE download_links.movie_id = movies.id AND download_links.deleted_at IS NULL)")
+	case "no_synopsis":
+		query = query.Where("synopsis IS NULL OR synopsis = '' OR TRIM(synopsis) = ''")
+	case "has_synopsis":
+		query = query.Where("synopsis IS NOT NULL AND synopsis <> ''")
+	case "no_stream":
+		query = query.Where("NOT EXISTS (SELECT 1 FROM stream_links WHERE stream_links.movie_id = movies.id AND stream_links.deleted_at IS NULL)")
+	case "manual_edit":
+		query = query.Where("is_manual_edit = ?", true)
+	}
+
+	var totalCount int64
+	query.Count(&totalCount)
+
+	var movies []model.Movie
+	query.Order("id desc").Offset(offset).Limit(pageSize).Find(&movies)
+
+	totalPages := int((totalCount + int64(pageSize) - 1) / int64(pageSize))
+	if totalPages == 0 {
+		totalPages = 1
+	}
+
+	// Filter Stats (scope ke type=anime)
+	filterStats := make(map[string]int64)
+	var countAll, countNoDL, countNoSyn, countNoStream, countManual int64
+	s.db.Model(&model.Movie{}).Where("type = ?", "anime").Count(&countAll)
+	s.db.Model(&model.Movie{}).Where("type = ? AND NOT EXISTS (SELECT 1 FROM download_links WHERE download_links.movie_id = movies.id AND download_links.deleted_at IS NULL)", "anime").Count(&countNoDL)
+	s.db.Model(&model.Movie{}).Where("type = ? AND (synopsis IS NULL OR synopsis = '' OR TRIM(synopsis) = '')", "anime").Count(&countNoSyn)
+	s.db.Model(&model.Movie{}).Where("type = ? AND NOT EXISTS (SELECT 1 FROM stream_links WHERE stream_links.movie_id = movies.id AND stream_links.deleted_at IS NULL)", "anime").Count(&countNoStream)
+	s.db.Model(&model.Movie{}).Where("type = ? AND is_manual_edit = ?", "anime", true).Count(&countManual)
+	filterStats["all"] = countAll
+	filterStats["no_download"] = countNoDL
+	filterStats["no_synopsis"] = countNoSyn
+	filterStats["no_stream"] = countNoStream
+	filterStats["manual_edit"] = countManual
+
+	var years []int
+	s.db.Model(&model.Movie{}).Where("type = ?", "anime").Distinct().Order("year desc").Pluck("year", &years)
+
+	data := AdminPageData{
+		Title:         "Kelola Anime - CMS CINEMBROT",
+		ActiveMenu:    "anime",
+		User:          user,
+		Movies:        movies,
+		SearchQuery:   queryStr,
+		CurrentFilter: filterStr,
+		CurrentYear:   currentYear,
+		FilterStats:   filterStats,
+		Years:         years,
+		CurrentPage:   page,
+		TotalPages:    totalPages,
+		TotalCount:    totalCount,
+		SuccessMsg:    r.URL.Query().Get("success"),
+		TypeContext:   "anime",
+	}
+
+	s.RenderHTML(w, "admin_movies.html", "admin_layout.html", data)
+}
+
+// HandleAdminDramaPendek menampilkan daftar konten bertipe 'drama_pendek' di CMS
+func (s *Server) HandleAdminDramaPendek(w http.ResponseWriter, r *http.Request) {
+	user := s.GetLoggedInUser(r)
+	queryStr := strings.TrimSpace(r.URL.Query().Get("q"))
+	filterStr := strings.TrimSpace(r.URL.Query().Get("filter"))
+	yearStr := strings.TrimSpace(r.URL.Query().Get("year"))
+	pageStr := r.URL.Query().Get("p")
+
+	page := 1
+	if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+		page = p
+	}
+	pageSize := 20
+	offset := (page - 1) * pageSize
+
+	// Filter hanya konten bertipe drama_pendek
+	query := s.db.Model(&model.Movie{}).Preload("Genres").Preload("DownloadLinks").Preload("StreamLinks").
+		Where("type = ?", "drama_pendek")
+
+	if queryStr != "" {
+		query = query.Where("title LIKE ? OR original_title LIKE ? OR slug LIKE ?",
+			"%"+queryStr+"%", "%"+queryStr+"%", "%"+queryStr+"%")
+	}
+
+	currentYear := 0
+	if yearStr != "" {
+		if y, err := strconv.Atoi(yearStr); err == nil && y > 0 {
+			query = query.Where("year = ?", y)
+			currentYear = y
+		}
+	}
+
+	// Status Filters
+	switch filterStr {
+	case "no_download":
+		query = query.Where("NOT EXISTS (SELECT 1 FROM download_links WHERE download_links.movie_id = movies.id AND download_links.deleted_at IS NULL)")
+	case "has_download":
+		query = query.Where("EXISTS (SELECT 1 FROM download_links WHERE download_links.movie_id = movies.id AND download_links.deleted_at IS NULL)")
+	case "no_synopsis":
+		query = query.Where("synopsis IS NULL OR synopsis = '' OR TRIM(synopsis) = ''")
+	case "has_synopsis":
+		query = query.Where("synopsis IS NOT NULL AND synopsis <> ''")
+	case "no_stream":
+		query = query.Where("NOT EXISTS (SELECT 1 FROM stream_links WHERE stream_links.movie_id = movies.id AND stream_links.deleted_at IS NULL)")
+	case "manual_edit":
+		query = query.Where("is_manual_edit = ?", true)
+	}
+
+	var totalCount int64
+	query.Count(&totalCount)
+
+	var movies []model.Movie
+	query.Order("id desc").Offset(offset).Limit(pageSize).Find(&movies)
+
+	totalPages := int((totalCount + int64(pageSize) - 1) / int64(pageSize))
+	if totalPages == 0 {
+		totalPages = 1
+	}
+
+	// Filter Stats (scope ke type=drama_pendek)
+	filterStats := make(map[string]int64)
+	var countAll, countNoDL, countNoSyn, countNoStream, countManual int64
+	s.db.Model(&model.Movie{}).Where("type = ?", "drama_pendek").Count(&countAll)
+	s.db.Model(&model.Movie{}).Where("type = ? AND NOT EXISTS (SELECT 1 FROM download_links WHERE download_links.movie_id = movies.id AND download_links.deleted_at IS NULL)", "drama_pendek").Count(&countNoDL)
+	s.db.Model(&model.Movie{}).Where("type = ? AND (synopsis IS NULL OR synopsis = '' OR TRIM(synopsis) = '')", "drama_pendek").Count(&countNoSyn)
+	s.db.Model(&model.Movie{}).Where("type = ? AND NOT EXISTS (SELECT 1 FROM stream_links WHERE stream_links.movie_id = movies.id AND stream_links.deleted_at IS NULL)", "drama_pendek").Count(&countNoStream)
+	s.db.Model(&model.Movie{}).Where("type = ? AND is_manual_edit = ?", "drama_pendek", true).Count(&countManual)
+	filterStats["all"] = countAll
+	filterStats["no_download"] = countNoDL
+	filterStats["no_synopsis"] = countNoSyn
+	filterStats["no_stream"] = countNoStream
+	filterStats["manual_edit"] = countManual
+
+	var years []int
+	s.db.Model(&model.Movie{}).Where("type = ?", "drama_pendek").Distinct().Order("year desc").Pluck("year", &years)
+
+	data := AdminPageData{
+		Title:         "Kelola Drama Pendek - CMS CINEMBROT",
+		ActiveMenu:    "drama_pendek",
+		User:          user,
+		Movies:        movies,
+		SearchQuery:   queryStr,
+		CurrentFilter: filterStr,
+		CurrentYear:   currentYear,
+		FilterStats:   filterStats,
+		Years:         years,
+		CurrentPage:   page,
+		TotalPages:    totalPages,
+		TotalCount:    totalCount,
+		SuccessMsg:    r.URL.Query().Get("success"),
+		TypeContext:   "drama_pendek",
+	}
+
+	s.RenderHTML(w, "admin_movies.html", "admin_layout.html", data)
 }
 
 // HandleAdminMovies renders the movies data table with search, status filters, and pagination
@@ -326,12 +525,27 @@ func (s *Server) HandleAdminMovieNew(w http.ResponseWriter, r *http.Request) {
 		var genres []model.Genre
 		s.db.Find(&genres)
 
+		// Mendukung pre-select tipe dari query URL: /admin/movies/new?type=anime
+		typeCtx := r.URL.Query().Get("type")
+		if typeCtx == "" {
+			typeCtx = "movie"
+		}
+
+		// Tentukan ActiveMenu berdasarkan tipe
+		activeMenu := "movies"
+		if typeCtx == "anime" {
+			activeMenu = "anime"
+		} else if typeCtx == "drama_pendek" {
+			activeMenu = "drama_pendek"
+		}
+
 		data := AdminPageData{
-			Title:      "Tambah Film Baru - CMS CINEMBROT",
-			ActiveMenu: "movies",
+			Title:      "Tambah Konten Baru - CMS CINEMBROT",
+			ActiveMenu: activeMenu,
 			User:       user,
-			Movie:      &model.Movie{Year: time.Now().Year(), Rating: 7.5, IsLegal: true, LicenseType: "Public Domain"},
+			Movie:      &model.Movie{Year: time.Now().Year(), Rating: 7.5, IsLegal: true, LicenseType: "Public Domain", Type: typeCtx},
 			Genres:     genres,
+			TypeContext: typeCtx,
 		}
 		s.RenderHTML(w, "admin_movie_form.html", "admin_layout.html", data)
 		return
@@ -358,6 +572,12 @@ func (s *Server) HandleAdminMovieNew(w http.ResponseWriter, r *http.Request) {
 
 	synopsis := scraper.CleanHTMLToPlainText(r.FormValue("synopsis"))
 
+	// Baca tipe konten dari form (default: movie)
+	movieType := strings.TrimSpace(r.FormValue("type"))
+	if movieType == "" {
+		movieType = "movie"
+	}
+
 	movie := model.Movie{
 		Title:           title,
 		OriginalTitle:   r.FormValue("original_title"),
@@ -375,6 +595,7 @@ func (s *Server) HandleAdminMovieNew(w http.ResponseWriter, r *http.Request) {
 		IsFree:          isFree,
 		IsLegal:         isLegal,
 		LicenseType:     r.FormValue("license_type"),
+		Type:            movieType,
 		IsManualEdit:    true,
 		SourceURL:       "admin-manual-" + strconv.FormatInt(time.Now().UnixNano(), 10),
 	}
@@ -390,7 +611,15 @@ func (s *Server) HandleAdminMovieNew(w http.ResponseWriter, r *http.Request) {
 	// Process stream links
 	s.saveMovieStreamLinks(movie.ID, r)
 
-	http.Redirect(w, r, "/admin/movies?success=Film+berhasil+ditambahkan", http.StatusSeeOther)
+	// Redirect ke halaman list yang sesuai tipe
+	switch movieType {
+	case "anime":
+		http.Redirect(w, r, "/admin/anime?success=Anime+berhasil+ditambahkan", http.StatusSeeOther)
+	case "drama_pendek":
+		http.Redirect(w, r, "/admin/drama-pendek?success=Drama+Pendek+berhasil+ditambahkan", http.StatusSeeOther)
+	default:
+		http.Redirect(w, r, "/admin/movies?success=Film+berhasil+ditambahkan", http.StatusSeeOther)
+	}
 }
 
 // HandleAdminMovieEdit handles editing an existing movie
@@ -455,6 +684,10 @@ func (s *Server) HandleAdminMovieEdit(w http.ResponseWriter, r *http.Request) {
 	movie.IsLegal = r.FormValue("is_legal") == "1" || r.FormValue("is_legal") == "true"
 	movie.LicenseType = r.FormValue("license_type")
 	movie.IsManualEdit = true // 🔒 Kunci dari scraper otomatis
+	// Simpan tipe konten (movie / anime / drama_pendek / series)
+	if t := strings.TrimSpace(r.FormValue("type")); t != "" {
+		movie.Type = t
+	}
 
 	_ = s.db.Save(&movie)
 

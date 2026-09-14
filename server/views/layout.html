@@ -56,9 +56,12 @@
         </a>
         <div class="hidden md:flex items-center gap-5 text-sm font-semibold">
           <a href="/" class="hover:text-brand-500 transition {{if eq .ActiveMenu "home"}}text-brand-500{{else}}text-slate-600 dark:text-slate-300{{end}}">Home</a>
-          <!-- <a href="/free" class="hover:text-green-600 dark:hover:text-green-400 transition {{if eq .ActiveMenu "free"}}text-green-600 dark:text-green-400 font-bold{{else}}text-slate-600 dark:text-slate-300{{end}}">
-            <i class="fa-solid fa-circle-check text-green-500"></i> 100% Gratis & Legal
-          </a> -->
+          <a href="/anime" class="hover:text-purple-500 transition flex items-center gap-1.5 {{if eq .ActiveMenu "anime"}}text-purple-500 font-bold{{else}}text-slate-600 dark:text-slate-300{{end}}">
+            <i class="fa-solid fa-wand-magic-sparkles text-purple-500"></i> Anime
+          </a>
+          <a href="/drama-pendek" class="hover:text-amber-500 transition flex items-center gap-1.5 {{if eq .ActiveMenu "drama_pendek"}}text-amber-500 font-bold{{else}}text-slate-600 dark:text-slate-300{{end}}">
+            <i class="fa-solid fa-masks-theater text-amber-500"></i> Drama Pendek
+          </a>
           <a href="/filter?sort=rating_desc" class="hover:text-brand-500 transition flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
             <i class="fa-solid fa-fire text-amber-500"></i> Populer
           </a>
@@ -71,7 +74,7 @@
       <!-- SEARCH BOX & THEME TOGGLE -->
       <div class="flex items-center gap-3 flex-1 max-w-md justify-end">
         <form action="/search" method="GET" class="flex-1 relative">
-          <input type="text" name="q" value="{{.SearchQuery}}" placeholder="Cari judul film, aktor, sinopsis..." 
+          <input type="text" name="q" value="{{.SearchQuery}}" placeholder="Cari judul film, anime, aktor..." 
             class="w-full bg-slate-100 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-full px-4 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors">
           <button type="submit" class="absolute right-3 top-2.5 text-slate-400 hover:text-brand-500 transition">
             <i class="fa-solid fa-magnifying-glass"></i>
@@ -85,6 +88,25 @@
           <i id="theme-toggle-light-icon" class="fa-solid fa-sun text-base hidden"></i>
         </button>
       </div>
+    </div>
+
+    <!-- MOBILE SUB-NAVBAR SCROLLABLE -->
+    <div class="md:hidden flex items-center gap-2 overflow-x-auto pt-2.5 pb-0.5 max-w-7xl mx-auto border-t border-slate-100 dark:border-dark-800/60 scrollbar-none text-xs font-semibold">
+      <a href="/" class="shrink-0 px-3 py-1.5 rounded-full transition {{if eq .ActiveMenu "home"}}bg-brand-500 text-white shadow{{else}}bg-slate-100 dark:bg-dark-800 text-slate-700 dark:text-slate-300{{end}}">
+        <i class="fa-solid fa-house mr-1"></i> Home
+      </a>
+      <a href="/anime" class="shrink-0 px-3 py-1.5 rounded-full transition {{if eq .ActiveMenu "anime"}}bg-purple-600 text-white shadow{{else}}bg-slate-100 dark:bg-dark-800 text-slate-700 dark:text-slate-300{{end}}">
+        <i class="fa-solid fa-wand-magic-sparkles text-purple-400 mr-1"></i> Anime
+      </a>
+      <a href="/drama-pendek" class="shrink-0 px-3 py-1.5 rounded-full transition {{if eq .ActiveMenu "drama_pendek"}}bg-amber-600 text-white shadow{{else}}bg-slate-100 dark:bg-dark-800 text-slate-700 dark:text-slate-300{{end}}">
+        <i class="fa-solid fa-masks-theater text-amber-400 mr-1"></i> Drama Pendek
+      </a>
+      <a href="/filter?sort=rating_desc" class="shrink-0 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-dark-800 text-slate-700 dark:text-slate-300 hover:text-brand-500 transition">
+        <i class="fa-solid fa-fire text-amber-500 mr-1"></i> Populer
+      </a>
+      <a href="/filter" class="shrink-0 px-3 py-1.5 rounded-full transition {{if eq .ActiveMenu "filter"}}bg-brand-500 text-white shadow{{else}}bg-slate-100 dark:bg-dark-800 text-slate-700 dark:text-slate-300{{end}}">
+        <i class="fa-solid fa-sliders text-brand-500 mr-1"></i> Filter
+      </a>
     </div>
   </nav>
 
@@ -117,6 +139,8 @@
       <p class="text-xs mb-5 max-w-md text-slate-400">Didukung oleh Internet Archive, Blender Open Movies, dan TMDb REST API dengan integrasi subtitle otomatis.</p>
       <div class="flex flex-wrap justify-center gap-6 text-xs font-semibold">
         <a href="/" class="hover:text-brand-500 transition">Home</a>
+        <a href="/anime" class="hover:text-purple-500 transition">Anime</a>
+        <a href="/drama-pendek" class="hover:text-amber-500 transition">Drama Pendek</a>
         <a href="/free" class="hover:text-green-500 transition">Film Legal Gratis</a>
         <a href="/filter" class="hover:text-brand-500 transition">Katalog Lengkap</a>
         <a href="/api/movies" class="hover:text-brand-500 transition" target="_blank">JSON API</a>

@@ -1,4 +1,4 @@
-﻿# 🍿 CINEMBROT — Movie Engine, Streamer & Torrent Subtitle Downloader
+# 🍿 CINEMBROT — Movie Engine, Streamer & Torrent Subtitle Downloader
 
 <p align="center">
   <img src="public/img/cinembrot_mascot_transparent.png" alt="CINEMBROT Logo" width="160" />
@@ -66,39 +66,68 @@ Akses website melalui browser:
 ## ⚙️ Perintah CLI Tersedia
 
 ```powershell
-# Jalankan web server & cron scheduler
+# Jalankan web server (port :8080) & background auto-scraper
 .\cinembrot.exe -serve
 
-# Jalankan proses scraping manual
-.\cinembrot.exe -scrape -source yts -year 2024 -pages 1
+# Jalankan scraping berdasarkan tahun rilis (source: tmdb / archive / yts / all)
+.\cinembrot.exe -by-year 2024 -pages 1 -source yts
 
-# Cek kesehatan link download & stream di database
+# Validasi & periksa kesehatan link unduhan film di database (deteksi link mati)
 .\cinembrot.exe -check-links
 
-# Jalankan pengujian hardsub torrent
-.\cinembrot.exe -hardsub-test
+# Download & konversi gambar film di database ke format WebP lokal (Original & Thumb)
+.\cinembrot.exe -convert-images
+
+# Jalankan 1 siklus scraping terjadwal semua rentang tahun (polite mode)
+.\cinembrot.exe -auto-scrape
+
+# Jalankan daemon background scheduler mandiri (tanpa web server)
+.\cinembrot.exe -daemon
+
+# Cari & ingest metadata film langsung dari TMDb REST API
+.\cinembrot.exe -tmdb "Inception" -year 2010
+
+# Ingest film domain publik dari Internet Archive
+.\cinembrot.exe -archive -archive-limit 10
+
+# Ingest film Creative Commons dari Blender Studio (4K)
+.\cinembrot.exe -openmovies
 ```
+
+> ⚠️ **PENTING — KEBIJAKAN DATABASE:**
+> Seluruh operasi database (`delete`, `restore`, `edit`, ataupun migrasi struktur) membutuhkan kehati-hatian ekstra dan **WAJIB meminta izin (permission)** pengguna sebelum dieksekusi. Dilarang menghapus atau merombak database yang sedang berjalan tanpa konfirmasi eksplisit.
 
 ---
 
 ## 📁 Struktur Direktori
 
 ```text
-cinebrot/
-├── config/             # Konfigurasi aplikasi & database
-├── database/           # Koneksi MariaDB, schema migration & seed data
-├── model/              # Definisi model data GORM (Movie, DownloadLink, dll.)
-├── scraper/            # Modul scraper (TMDB, Archive, Blender, YTS)
-├── scheduler/          # Background worker otomatis untuk scraping berkala
-├── server/             # HTTP Web Server & Route Handlers
-│   └── views/          # Template HTML (Layout, detail, admin CMS)
-├── torrentmgr/         # Download manager torrent & pipeline FFmpeg Hardsub
-├── public/             # Aset statis (Logo, CSS, JS, Favicon, Poster)
-├── schema.sql          # SQL dump database lengkap
-└── CHANGELOG.md        # Catatan riwayat pembaruan
+cinembrot/
+├── auth/               # Modul autentikasi CMS Admin (HMAC-SHA256 & Session Cookie)
+├── config/             # Konfigurasi aplikasi, env, database & API keys
+├── database/           # Koneksi MariaDB, skema migration, & seed settings
+├── imageprocessor/     # Konversi gambar poster/backdrop ke format WebP responsif
+├── model/              # Definisi model data GORM (Movie, DownloadLink, TorrentTask, dll.)
+├── pipeline/           # Pipeline agregasi & pengayaan metadata film lintas provider
+├── provider/           # Adapter client penyedia data (TMDb, OMDb, Archive, Blender, YTS)
+│   ├── archive/        # Client API Internet Archive
+│   ├── omdb/           # Client API OMDb (Rating IMDb)
+│   ├── openmovies/     # Client scraping film Creative Commons Blender Studio
+│   ├── tmdb/           # Client REST API The Movie Database (TMDb)
+│   └── yts/            # Client REST API YTS (YIFY Torrents)
+├── public/             # Aset statis (WebP uploads, banner, maskot logo, favicon, downloads)
+├── scheduler/          # Background worker otomatis & cron scraping periodik
+├── scraper/            # Engine scraping Colly, HTML cleaner, & repository query
+├── server/             # HTTP Web Server, middleware admin, dan route handlers
+│   └── views/          # Template HTML dinamis dengan live auto-reload (F5)
+├── torrentmgr/         # Download manager torrent internal & pipeline rendering hardsub FFmpeg
+├── validator/          # Engine validasi kesehatan & deteksi dead link unduhan
+├── schema.sql          # SQL dump database MariaDB lengkap (DDL + seed default)
+└── CHANGELOG.md        # Catatan riwayat pembaruan & rilis
 ```
 
 ---
 
 ## 📄 Lisensi
 Didistribusikan untuk tujuan edukasi dan pemutaran film domain publik / creative commons legal.
+

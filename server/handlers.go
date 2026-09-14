@@ -225,6 +225,176 @@ func (s *Server) HandleFilter(w http.ResponseWriter, r *http.Request) {
 	s.RenderHTML(w, "list.html", "layout.html", data)
 }
 
+// HandleAnime displays the dedicated Anime catalog with multi-parameter filtering
+func (s *Server) HandleAnime(w http.ResponseWriter, r *http.Request) {
+	yearStr := strings.TrimSpace(r.URL.Query().Get("year"))
+	genreStr := strings.TrimSpace(r.URL.Query().Get("genre"))
+	countryStr := strings.TrimSpace(r.URL.Query().Get("country"))
+	sortStr := strings.TrimSpace(r.URL.Query().Get("sort"))
+
+	query := s.db.Model(&model.Movie{}).Where("type = ?", "anime").Preload("Genres")
+
+	if yearStr != "" {
+		if y, err := strconv.Atoi(yearStr); err == nil && y > 0 {
+			query = query.Where("year = ?", y)
+		}
+	}
+
+	if genreStr != "" {
+		var genre model.Genre
+		if err := s.db.Where("slug = ? OR name = ?", genreStr, genreStr).First(&genre).Error; err == nil {
+			query = query.Joins("JOIN movie_genres ON movie_genres.movie_id = movies.id").
+				Where("movie_genres.genre_id = ?", genre.ID)
+		}
+	}
+
+	if countryStr != "" {
+		query = query.Where("country LIKE ?", "%"+countryStr+"%")
+	}
+
+	// Sorting
+	switch sortStr {
+	case "rating_desc":
+		query = query.Order("rating desc, id desc")
+	case "rating_asc":
+		query = query.Order("rating asc, id desc")
+	case "year_asc":
+		query = query.Order("year asc, id desc")
+	case "title_asc":
+		query = query.Order("title asc")
+	case "views_desc":
+		query = query.Order("views desc, id desc")
+	default:
+		query = query.Order("id desc") // Default: Terbaru ditambahkan
+	}
+
+	var totalCount int64
+	query.Count(&totalCount)
+
+	var movies []model.Movie
+	query.Limit(60).Find(&movies)
+
+	var genres []model.Genre
+	s.db.Order("name asc").Find(&genres)
+
+	var years []int
+	s.db.Model(&model.Movie{}).Distinct().Where("type = ? AND year > 0", "anime").Order("year desc").Pluck("year", &years)
+	if len(years) == 0 {
+		years = []int{2026, 2025, 2024, 2023, 2022, 2021, 2020}
+	}
+
+	var countries []string
+	s.db.Model(&model.Movie{}).Distinct().Where("type = ? AND country <> ''", "anime").Order("country asc").Pluck("country", &countries)
+	if len(countries) == 0 {
+		countries = []string{"Japan", "Jepang", "China", "Korea"}
+	}
+
+	data := PageData{
+		Title:          "Katalog Anime Subtitle Indonesia",
+		SiteName:       "CINEMBROT",
+		ActiveMenu:     "anime",
+		Movies:         movies,
+		Genres:         genres,
+		Years:          years,
+		Countries:      countries,
+		CurrentGenre:   genreStr,
+		CurrentCountry: countryStr,
+		CurrentSort:    sortStr,
+		TotalCount:     totalCount,
+		EnableAds:      s.cfg.EnableAds,
+	}
+	if y, err := strconv.Atoi(yearStr); err == nil {
+		data.CurrentYear = y
+	}
+
+	s.RenderHTML(w, "anime.html", "layout.html", data)
+}
+
+// HandleDramaPendek displays the dedicated Drama Pendek / Mini Series catalog with multi-parameter filtering
+func (s *Server) HandleDramaPendek(w http.ResponseWriter, r *http.Request) {
+	yearStr := strings.TrimSpace(r.URL.Query().Get("year"))
+	genreStr := strings.TrimSpace(r.URL.Query().Get("genre"))
+	countryStr := strings.TrimSpace(r.URL.Query().Get("country"))
+	sortStr := strings.TrimSpace(r.URL.Query().Get("sort"))
+
+	query := s.db.Model(&model.Movie{}).Where("type = ?", "drama_pendek").Preload("Genres")
+
+	if yearStr != "" {
+		if y, err := strconv.Atoi(yearStr); err == nil && y > 0 {
+			query = query.Where("year = ?", y)
+		}
+	}
+
+	if genreStr != "" {
+		var genre model.Genre
+		if err := s.db.Where("slug = ? OR name = ?", genreStr, genreStr).First(&genre).Error; err == nil {
+			query = query.Joins("JOIN movie_genres ON movie_genres.movie_id = movies.id").
+				Where("movie_genres.genre_id = ?", genre.ID)
+		}
+	}
+
+	if countryStr != "" {
+		query = query.Where("country LIKE ?", "%"+countryStr+"%")
+	}
+
+	// Sorting
+	switch sortStr {
+	case "rating_desc":
+		query = query.Order("rating desc, id desc")
+	case "rating_asc":
+		query = query.Order("rating asc, id desc")
+	case "year_asc":
+		query = query.Order("year asc, id desc")
+	case "title_asc":
+		query = query.Order("title asc")
+	case "views_desc":
+		query = query.Order("views desc, id desc")
+	default:
+		query = query.Order("id desc") // Default: Terbaru ditambahkan
+	}
+
+	var totalCount int64
+	query.Count(&totalCount)
+
+	var movies []model.Movie
+	query.Limit(60).Find(&movies)
+
+	var genres []model.Genre
+	s.db.Order("name asc").Find(&genres)
+
+	var years []int
+	s.db.Model(&model.Movie{}).Distinct().Where("type = ? AND year > 0", "drama_pendek").Order("year desc").Pluck("year", &years)
+	if len(years) == 0 {
+		years = []int{2026, 2025, 2024, 2023, 2022}
+	}
+
+	var countries []string
+	s.db.Model(&model.Movie{}).Distinct().Where("type = ? AND country <> ''", "drama_pendek").Order("country asc").Pluck("country", &countries)
+	if len(countries) == 0 {
+		countries = []string{"China", "Korea Selatan", "Indonesia", "Thailand"}
+	}
+
+	data := PageData{
+		Title:          "Serial Drama Pendek & Mini Series Sub Indo",
+		SiteName:       "CINEMBROT",
+		ActiveMenu:     "drama_pendek",
+		Movies:         movies,
+		Genres:         genres,
+		Years:          years,
+		Countries:      countries,
+		CurrentGenre:   genreStr,
+		CurrentCountry: countryStr,
+		CurrentSort:    sortStr,
+		TotalCount:     totalCount,
+		EnableAds:      s.cfg.EnableAds,
+	}
+	if y, err := strconv.Atoi(yearStr); err == nil {
+		data.CurrentYear = y
+	}
+
+	s.RenderHTML(w, "drama_pendek.html", "layout.html", data)
+}
+
 // HandleMovieDetail displays movie details, player, and download links
 func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 	slug := r.PathValue("slug")
@@ -398,3 +568,4 @@ func (s *Server) HandleAPIMovies(w http.ResponseWriter, r *http.Request) {
 	s.db.Preload("Genres").Preload("DownloadLinks").Preload("StreamLinks").Limit(50).Find(&movies)
 	json.NewEncoder(w).Encode(movies)
 }
+

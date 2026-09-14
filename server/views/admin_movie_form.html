@@ -20,11 +20,11 @@
         <i class="fa-solid fa-circle-info text-brand-500"></i> Informasi Utama Film
       </h3>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <!-- JUDUL -->
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Judul Film *</label>
-          <input type="text" name="title" value="{{.Movie.Title}}" required placeholder="Judul Film" 
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Judul *</label>
+          <input type="text" name="title" value="{{.Movie.Title}}" required placeholder="Judul Film / Anime / Drama" 
             class="w-full bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 text-slate-900 dark:text-slate-100 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-500">
         </div>
 
@@ -33,6 +33,17 @@
           <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Judul Asli (Original Title)</label>
           <input type="text" name="original_title" value="{{.Movie.OriginalTitle}}" placeholder="Original Title" 
             class="w-full bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 text-slate-900 dark:text-slate-100 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-500">
+        </div>
+
+        <!-- TIPE / FORMAT TAYANGAN -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Kategori / Tipe *</label>
+          <select name="type" class="w-full bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 text-slate-900 dark:text-slate-100 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-500 font-bold">
+            <option value="movie" {{if or (eq .Movie.Type "movie") (eq .Movie.Type "")}}selected{{end}}>🎬 Film Bioskop (Movie)</option>
+            <option value="anime" {{if eq .Movie.Type "anime"}}selected{{end}}>🎌 Anime</option>
+            <option value="drama_pendek" {{if eq .Movie.Type "drama_pendek"}}selected{{end}}>🎭 Drama Pendek / Mini Series</option>
+            <option value="series" {{if eq .Movie.Type "series"}}selected{{end}}>📺 Serial TV / Series</option>
+          </select>
         </div>
       </div>
 

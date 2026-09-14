@@ -1,46 +1,53 @@
 {{define "content"}}
+{{$baseURI := "/admin/movies"}}
+{{if eq .TypeContext "anime"}}
+  {{$baseURI = "/admin/anime"}}
+{{else if eq .TypeContext "drama_pendek"}}
+  {{$baseURI = "/admin/drama-pendek"}}
+{{end}}
 <div class="space-y-6">
 
   <!-- QUICK STATUS FILTER PILLS -->
   <div class="flex items-center gap-2 overflow-x-auto pb-1">
     <!-- ALL -->
-    <a href="/admin/movies" class="px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-2 {{if eq .CurrentFilter ""}}bg-brand-500 text-white shadow-md shadow-brand-500/20{{else}}bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 text-slate-600 dark:text-slate-300 hover:border-brand-500{{end}}">
-      <i class="fa-solid fa-clapperboard"></i> Semua Film
+    <a href="{{$baseURI}}" class="px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-2 {{if eq .CurrentFilter ""}}{{if eq .TypeContext "anime"}}bg-purple-600 shadow-purple-600/20{{else if eq .TypeContext "drama_pendek"}}bg-amber-600 shadow-amber-600/20{{else}}bg-brand-500 shadow-brand-500/20{{end}} text-white shadow-md{{else}}bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 text-slate-600 dark:text-slate-300 hover:border-brand-500{{end}}">
+      <i class="{{if eq .TypeContext "anime"}}fa-solid fa-wand-magic-sparkles{{else if eq .TypeContext "drama_pendek"}}fa-solid fa-masks-theater{{else}}fa-solid fa-clapperboard{{end}}"></i>
+      {{if eq .TypeContext "anime"}}Semua Anime{{else if eq .TypeContext "drama_pendek"}}Semua Drama Pendek{{else}}Semua Film{{end}}
       <span class="bg-black/20 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">{{index .FilterStats "all"}}</span>
     </a>
 
     <!-- NO DOWNLOAD -->
-    <a href="/admin/movies?filter=no_download" class="px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-2 {{if eq .CurrentFilter "no_download"}}bg-amber-500 text-white shadow-md shadow-amber-500/20{{else}}bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 text-slate-600 dark:text-slate-300 hover:border-amber-500{{end}}">
+    <a href="{{$baseURI}}?filter=no_download" class="px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-2 {{if eq .CurrentFilter "no_download"}}bg-amber-500 text-white shadow-md shadow-amber-500/20{{else}}bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 text-slate-600 dark:text-slate-300 hover:border-amber-500{{end}}">
       <i class="fa-solid fa-triangle-exclamation text-amber-500 {{if eq .CurrentFilter "no_download"}}text-white{{end}}"></i> Belum Ada Download
       <span class="bg-black/20 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">{{index .FilterStats "no_download"}}</span>
     </a>
 
     <!-- NO SYNOPSIS -->
-    <a href="/admin/movies?filter=no_synopsis" class="px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-2 {{if eq .CurrentFilter "no_synopsis"}}bg-purple-500 text-white shadow-md shadow-purple-500/20{{else}}bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 text-slate-600 dark:text-slate-300 hover:border-purple-500{{end}}">
+    <a href="{{$baseURI}}?filter=no_synopsis" class="px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-2 {{if eq .CurrentFilter "no_synopsis"}}bg-purple-500 text-white shadow-md shadow-purple-500/20{{else}}bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 text-slate-600 dark:text-slate-300 hover:border-purple-500{{end}}">
       <i class="fa-solid fa-align-left text-purple-500 {{if eq .CurrentFilter "no_synopsis"}}text-white{{end}}"></i> Belum Ada Sinopsis
       <span class="bg-black/20 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">{{index .FilterStats "no_synopsis"}}</span>
     </a>
 
     <!-- NO STREAM -->
-    <a href="/admin/movies?filter=no_stream" class="px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-2 {{if eq .CurrentFilter "no_stream"}}bg-blue-500 text-white shadow-md shadow-blue-500/20{{else}}bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 text-slate-600 dark:text-slate-300 hover:border-blue-500{{end}}">
+    <a href="{{$baseURI}}?filter=no_stream" class="px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-2 {{if eq .CurrentFilter "no_stream"}}bg-blue-500 text-white shadow-md shadow-blue-500/20{{else}}bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 text-slate-600 dark:text-slate-300 hover:border-blue-500{{end}}">
       <i class="fa-solid fa-play text-blue-500 {{if eq .CurrentFilter "no_stream"}}text-white{{end}}"></i> Belum Ada Player
       <span class="bg-black/20 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">{{index .FilterStats "no_stream"}}</span>
     </a>
 
     <!-- MANUAL EDIT (CMS LOCKED) -->
-    <a href="/admin/movies?filter=manual_edit" class="px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-2 {{if eq .CurrentFilter "manual_edit"}}bg-emerald-500 text-white shadow-md shadow-emerald-500/20{{else}}bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 text-slate-600 dark:text-slate-300 hover:border-emerald-500{{end}}">
+    <a href="{{$baseURI}}?filter=manual_edit" class="px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-2 {{if eq .CurrentFilter "manual_edit"}}bg-emerald-500 text-white shadow-md shadow-emerald-500/20{{else}}bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 text-slate-600 dark:text-slate-300 hover:border-emerald-500{{end}}">
       <i class="fa-solid fa-lock text-emerald-500 {{if eq .CurrentFilter "manual_edit"}}text-white{{end}}"></i> Diedit Manual (CMS)
       <span class="bg-black/20 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">{{index .FilterStats "manual_edit"}}</span>
     </a>
   </div>
 
   <!-- ADVANCED SEARCH & DROPDOWN FILTER BAR -->
-  <form action="/admin/movies" method="GET" class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 p-4 rounded-2xl shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
+  <form action="{{$baseURI}}" method="GET" class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 p-4 rounded-2xl shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
     <div class="flex-1 w-full flex flex-col sm:flex-row items-center gap-3">
       <!-- SEARCH INPUT -->
       <div class="relative w-full sm:w-64">
         <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i class="fa-solid fa-magnifying-glass text-xs"></i></span>
-        <input type="text" name="q" value="{{.SearchQuery}}" placeholder="Cari judul film..." 
+        <input type="text" name="q" value="{{.SearchQuery}}" placeholder="Cari judul..." 
           class="w-full bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 text-slate-900 dark:text-slate-100 text-xs rounded-xl pl-8 pr-4 py-2 focus:outline-none focus:border-brand-500">
       </div>
 
@@ -84,26 +91,29 @@
     </div>
 
     <!-- ADD NEW BUTTON -->
-    <a href="/admin/movies/new" class="w-full sm:w-auto bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition shadow flex items-center justify-center gap-2 shrink-0">
-      <i class="fa-solid fa-plus"></i> Tambah Film Baru
+    <a href="/admin/movies/new{{if eq .TypeContext "anime"}}?type=anime{{else if eq .TypeContext "drama_pendek"}}?type=drama_pendek{{else}}?type=movie{{end}}" 
+       class="w-full sm:w-auto {{if eq .TypeContext "anime"}}bg-purple-600 hover:bg-purple-700{{else if eq .TypeContext "drama_pendek"}}bg-amber-600 hover:bg-amber-700{{else}}bg-brand-500 hover:bg-brand-600{{end}} text-white font-bold text-xs px-4 py-2.5 rounded-xl transition shadow flex items-center justify-center gap-2 shrink-0">
+      <i class="fa-solid fa-plus"></i> 
+      {{if eq .TypeContext "anime"}}Tambah Anime Baru{{else if eq .TypeContext "drama_pendek"}}Tambah Drama Pendek Baru{{else}}Tambah Film Baru{{end}}
     </a>
   </form>
 
-  <!-- MOVIES TABLE -->
+  <!-- MOVIES / ANIME / DRAMA TABLE -->
   <div class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl overflow-hidden shadow-sm">
     <div class="overflow-x-auto">
       <table class="w-full text-left text-xs">
         <thead class="bg-slate-50 dark:bg-dark-950 text-slate-500 dark:text-slate-400 uppercase font-bold text-[10px] border-b border-slate-200 dark:border-dark-800">
           <tr>
             <th class="py-3.5 px-4 w-12 text-center">ID</th>
-            <th class="py-3.5 px-4">Poster & Judul Film</th>
+            <th class="py-3.5 px-4">Poster & Judul</th>
+            <th class="py-3.5 px-4 text-center">Tipe</th>
             <th class="py-3.5 px-4 text-center">Tahun</th>
             <th class="py-3.5 px-4 text-center">Rating</th>
             <th class="py-3.5 px-4 text-center">Sinopsis</th>
             <th class="py-3.5 px-4 text-center">Download</th>
             <th class="py-3.5 px-4 text-center">Stream</th>
-            <th class="py-3.5 px-4 text-center">Asal Sumber Scraping</th>
-            <th class="py-3.5 px-4 text-center">Kunci Edit</th>
+            <th class="py-3.5 px-4 text-center">Sumber</th>
+            <th class="py-3.5 px-4 text-center">Kunci</th>
             <th class="py-3.5 px-4 text-right">Aksi</th>
           </tr>
         </thead>
@@ -121,6 +131,18 @@
                   <p class="text-[10px] text-slate-400 truncate">{{if .OriginalTitle}}{{.OriginalTitle}}{{else}}{{.Country}}{{end}}</p>
                 </div>
               </div>
+            </td>
+            <!-- TIPE BADGE -->
+            <td class="py-3 px-4 text-center">
+              {{if eq .Type "anime"}}
+              <span class="bg-purple-500/20 text-purple-600 dark:text-purple-400 text-[10px] font-black px-2 py-0.5 rounded-full border border-purple-500/30">Anime</span>
+              {{else if eq .Type "drama_pendek"}}
+              <span class="bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-500/30">Drama</span>
+              {{else if eq .Type "series"}}
+              <span class="bg-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-black px-2 py-0.5 rounded-full border border-blue-500/30">Series</span>
+              {{else}}
+              <span class="bg-slate-100 dark:bg-dark-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-slate-200 dark:border-dark-700">Film</span>
+              {{end}}
             </td>
             <td class="py-3 px-4 text-center font-bold text-slate-700 dark:text-slate-300">{{.Year}}</td>
             <td class="py-3 px-4 text-center">
@@ -164,23 +186,23 @@
             <td class="py-3 px-4 text-center">
               {{if or (eq .SourceWebsite "yts.mx") (eq .SourceWebsite "yts.lt") (eq .SourceWebsite "yts.bz") (eq .SourceWebsite "yts.ag") (eq .SourceWebsite "yts")}}
                 <a href="{{if .SourceURL}}{{.SourceURL}}{{else}}https://yts.lt{{end}}" target="_blank" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition" title="Scraped dari YTS (YIFY Torrents)">
-                  <i class="fa-solid fa-magnet"></i> YTS (YIFY)
+                  <i class="fa-solid fa-magnet"></i> YTS
                 </a>
               {{else if or (eq .SourceWebsite "themoviedb.org") (eq .SourceWebsite "tmdb")}}
                 <a href="{{if .SourceURL}}{{.SourceURL}}{{else}}https://www.themoviedb.org{{end}}" target="_blank" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500 hover:text-white transition" title="Scraped dari The Movie Database">
-                  <i class="fa-solid fa-film"></i> TMDb API
+                  <i class="fa-solid fa-film"></i> TMDb
                 </a>
               {{else if or (eq .SourceWebsite "archive.org") (eq .SourceWebsite "Internet Archive")}}
                 <a href="{{if .SourceURL}}{{.SourceURL}}{{else}}https://archive.org{{end}}" target="_blank" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500 hover:text-white transition" title="Scraped dari Internet Archive">
-                  <i class="fa-solid fa-landmark"></i> Internet Archive
+                  <i class="fa-solid fa-landmark"></i> Archive
                 </a>
               {{else if eq .SourceWebsite "studio.blender.org"}}
                 <a href="{{if .SourceURL}}{{.SourceURL}}{{else}}https://studio.blender.org/films/{{end}}" target="_blank" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 hover:bg-orange-500 hover:text-white transition" title="Scraped dari Blender Open Projects">
-                  <i class="fa-solid fa-cube"></i> Blender Studio
+                  <i class="fa-solid fa-cube"></i> Blender
                 </a>
               {{else if eq .SourceWebsite "publicdomainmovies.info"}}
                 <a href="{{if .SourceURL}}{{.SourceURL}}{{else}}https://publicdomainmovies.info/{{end}}" target="_blank" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500 hover:text-white transition" title="Scraped dari Public Domain Movies Hub">
-                  <i class="fa-solid fa-book-open"></i> Public Domain
+                  <i class="fa-solid fa-book-open"></i> Public
                 </a>
               {{else if .SourceWebsite}}
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-dark-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-dark-700">
@@ -188,7 +210,7 @@
                 </span>
               {{else}}
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-dark-800 text-slate-400">
-                  <i class="fa-solid fa-pen-nib"></i> Manual (CMS)
+                  <i class="fa-solid fa-pen-nib"></i> Manual
                 </span>
               {{end}}
             </td>
@@ -206,11 +228,11 @@
             </td>
             <td class="py-3 px-4 text-right">
               <div class="flex items-center justify-end gap-2">
-                <a href="/admin/movies/edit/{{.ID}}" title="Edit Film" class="p-1.5 bg-slate-100 hover:bg-brand-500 hover:text-white dark:bg-dark-800 text-slate-600 dark:text-slate-300 rounded-lg transition font-bold text-xs">
+                <a href="/admin/movies/edit/{{.ID}}" title="Edit Data" class="p-1.5 bg-slate-100 hover:bg-brand-500 hover:text-white dark:bg-dark-800 text-slate-600 dark:text-slate-300 rounded-lg transition font-bold text-xs">
                   <i class="fa-solid fa-pen-to-square"></i>
                 </a>
-                <form action="/admin/movies/delete/{{.ID}}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus film ini?');" class="inline">
-                  <button type="submit" title="Hapus Film" class="p-1.5 bg-slate-100 hover:bg-red-500 hover:text-white dark:bg-dark-800 text-slate-600 dark:text-slate-300 rounded-lg transition font-bold text-xs">
+                <form action="/admin/movies/delete/{{.ID}}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data ini?');" class="inline">
+                  <button type="submit" title="Hapus Data" class="p-1.5 bg-slate-100 hover:bg-red-500 hover:text-white dark:bg-dark-800 text-slate-600 dark:text-slate-300 rounded-lg transition font-bold text-xs">
                     <i class="fa-solid fa-trash"></i>
                   </button>
                 </form>
@@ -219,7 +241,7 @@
           </tr>
           {{else}}
           <tr>
-            <td colspan="10" class="py-12 text-center text-slate-400">Tidak ada film yang sesuai kriteria filter.</td>
+            <td colspan="11" class="py-12 text-center text-slate-400">Tidak ada tayangan yang sesuai kriteria filter.</td>
           </tr>
           {{end}}
         </tbody>
@@ -230,15 +252,15 @@
     {{if gt .TotalPages 1}}
     <div class="p-4 bg-slate-50 dark:bg-dark-950 border-t border-slate-200 dark:border-dark-800 flex flex-col sm:flex-row items-center justify-between gap-4">
       <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">
-        Menampilkan total <span class="font-bold text-slate-900 dark:text-white">{{.TotalCount}}</span> film (Halaman <span class="font-bold text-brand-500">{{.CurrentPage}}</span> dari <span class="font-bold text-slate-900 dark:text-white">{{.TotalPages}}</span>)
+        Menampilkan total <span class="font-bold text-slate-900 dark:text-white">{{.TotalCount}}</span> judul (Halaman <span class="font-bold text-brand-500">{{.CurrentPage}}</span> dari <span class="font-bold text-slate-900 dark:text-white">{{.TotalPages}}</span>)
       </span>
       <div class="flex items-center gap-1.5 flex-wrap justify-center">
         <!-- FIRST & PREV BUTTONS -->
         {{if gt .CurrentPage 1}}
-        <a href="/admin/movies?p=1&q={{$.SearchQuery}}&filter={{$.CurrentFilter}}&year={{$.CurrentYear}}&license={{$.CurrentLicense}}&source={{$.CurrentSource}}" class="w-8 h-8 flex items-center justify-center bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition shadow-sm" title="Halaman Pertama (1)">
+        <a href="{{$baseURI}}?p=1&q={{$.SearchQuery}}&filter={{$.CurrentFilter}}&year={{$.CurrentYear}}&license={{$.CurrentLicense}}&source={{$.CurrentSource}}" class="w-8 h-8 flex items-center justify-center bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition shadow-sm" title="Halaman Pertama (1)">
           <i class="fa-solid fa-angles-left"></i>
         </a>
-        <a href="/admin/movies?p={{sub .CurrentPage 1}}&q={{$.SearchQuery}}&filter={{$.CurrentFilter}}&year={{$.CurrentYear}}&license={{$.CurrentLicense}}&source={{$.CurrentSource}}" class="px-3 h-8 flex items-center gap-1 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition shadow-sm">
+        <a href="{{$baseURI}}?p={{sub .CurrentPage 1}}&q={{$.SearchQuery}}&filter={{$.CurrentFilter}}&year={{$.CurrentYear}}&license={{$.CurrentLicense}}&source={{$.CurrentSource}}" class="px-3 h-8 flex items-center gap-1 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition shadow-sm">
           <i class="fa-solid fa-chevron-left text-[10px]"></i> Prev
         </a>
         {{else}}
@@ -256,7 +278,7 @@
             {{.Number}}
           </span>
           {{else}}
-          <a href="/admin/movies?p={{.Number}}&q={{$.SearchQuery}}&filter={{$.CurrentFilter}}&year={{$.CurrentYear}}&license={{$.CurrentLicense}}&source={{$.CurrentSource}}" class="w-8 h-8 flex items-center justify-center bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition shadow-sm">
+          <a href="{{$baseURI}}?p={{.Number}}&q={{$.SearchQuery}}&filter={{$.CurrentFilter}}&year={{$.CurrentYear}}&license={{$.CurrentLicense}}&source={{$.CurrentSource}}" class="w-8 h-8 flex items-center justify-center bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition shadow-sm">
             {{.Number}}
           </a>
           {{end}}
@@ -264,10 +286,10 @@
 
         <!-- NEXT & LAST BUTTONS -->
         {{if lt .CurrentPage .TotalPages}}
-        <a href="/admin/movies?p={{add .CurrentPage 1}}&q={{$.SearchQuery}}&filter={{$.CurrentFilter}}&year={{$.CurrentYear}}&license={{$.CurrentLicense}}&source={{$.CurrentSource}}" class="px-3 h-8 flex items-center gap-1 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition shadow-sm">
+        <a href="{{$baseURI}}?p={{add .CurrentPage 1}}&q={{$.SearchQuery}}&filter={{$.CurrentFilter}}&year={{$.CurrentYear}}&license={{$.CurrentLicense}}&source={{$.CurrentSource}}" class="px-3 h-8 flex items-center gap-1 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition shadow-sm">
           Next <i class="fa-solid fa-chevron-right text-[10px]"></i>
         </a>
-        <a href="/admin/movies?p={{.TotalPages}}&q={{$.SearchQuery}}&filter={{$.CurrentFilter}}&year={{$.CurrentYear}}&license={{$.CurrentLicense}}&source={{$.CurrentSource}}" class="w-8 h-8 flex items-center justify-center bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition shadow-sm" title="Halaman Terakhir ({{.TotalPages}})">
+        <a href="{{$baseURI}}?p={{.TotalPages}}&q={{$.SearchQuery}}&filter={{$.CurrentFilter}}&year={{$.CurrentYear}}&license={{$.CurrentLicense}}&source={{$.CurrentSource}}" class="w-8 h-8 flex items-center justify-center bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition shadow-sm" title="Halaman Terakhir ({{.TotalPages}})">
           <i class="fa-solid fa-angles-right"></i>
         </a>
         {{else}}

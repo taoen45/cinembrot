@@ -1,0 +1,154 @@
+{{define "content"}}
+<!-- ==================== 1. ANIME HERO BANNER ==================== -->
+<div class="mb-8 relative rounded-2xl overflow-hidden bg-gradient-to-r from-indigo-950 via-purple-950 to-slate-900 border border-purple-800/30 p-6 md:p-10 shadow-xl">
+  <div class="relative z-10 max-w-2xl">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 text-xs font-bold mb-3">
+      <i class="fa-solid fa-wand-magic-sparkles text-purple-400"></i> Katalog Anime Subtitle Indonesia
+    </div>
+    <h1 class="text-2xl md:text-4xl font-black text-white tracking-tight mb-2 flex items-center gap-3">
+      <span>🎌 Anime Terbaru & Terpopuler</span>
+    </h1>
+    <p class="text-slate-300 text-xs md:text-sm font-medium leading-relaxed mb-4">
+      Nikmati streaming dan unduhan serial & movie anime Jepang terlengkap dengan terjemahan Bahasa Indonesia resmi dan subtitle berkualitas tinggi.
+    </p>
+    <div class="flex items-center gap-4 text-xs font-semibold text-purple-200">
+      <span class="flex items-center gap-1.5"><i class="fa-solid fa-layer-group text-purple-400"></i> Total {{.TotalCount}} Judul</span>
+      <span class="flex items-center gap-1.5"><i class="fa-solid fa-bolt text-yellow-400"></i> HD & 720p/1080p</span>
+      <span class="flex items-center gap-1.5"><i class="fa-solid fa-shield-halved text-emerald-400"></i> Sub Indo Siap Tonton</span>
+    </div>
+  </div>
+
+  <!-- Ambient Glow Decorative Elements -->
+  <div class="absolute -right-12 -top-12 w-64 h-64 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="absolute right-12 bottom-0 w-48 h-48 bg-indigo-600/20 rounded-full blur-2xl pointer-events-none"></div>
+</div>
+
+<!-- ==================== 2. FILTER BAR ==================== -->
+<div class="mb-8 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-5 shadow-sm transition-colors">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+      <i class="fa-solid fa-sliders text-brand-500"></i> Filter Katalog Anime
+    </h2>
+    <span class="text-xs text-slate-400 font-medium">Ditemukan {{.TotalCount}} anime</span>
+  </div>
+
+  <form action="/anime" method="GET" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+    <!-- DROPDOWN 1: TAHUN -->
+    <div>
+      <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">📅 Tahun Rilis</label>
+      <select name="year" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-purple-500 transition">
+        <option value="">Semua Tahun</option>
+        {{range .Years}}
+        <option value="{{.}}" {{if eq $.CurrentYear .}}selected{{end}}>{{.}}</option>
+        {{end}}
+      </select>
+    </div>
+
+    <!-- DROPDOWN 2: GENRE -->
+    <div>
+      <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">🎭 Genre Anime</label>
+      <select name="genre" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-purple-500 transition">
+        <option value="">Semua Genre</option>
+        {{range .Genres}}
+        <option value="{{.Slug}}" {{if eq $.CurrentGenre .Slug}}selected{{end}}>{{.Name}}</option>
+        {{end}}
+      </select>
+    </div>
+
+    <!-- DROPDOWN 3: NEGARA / ASAL -->
+    <div>
+      <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">🌍 Asal Studio</label>
+      <select name="country" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-purple-500 transition">
+        <option value="">Semua Negara</option>
+        {{range .Countries}}
+        <option value="{{.}}" {{if eq $.CurrentCountry .}}selected{{end}}>{{.}}</option>
+        {{end}}
+      </select>
+    </div>
+
+    <!-- DROPDOWN 4: URUTKAN -->
+    <div>
+      <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">⚡ Urutkan Hasil</label>
+      <select name="sort" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-purple-500 transition">
+        <option value="year_desc" {{if eq $.CurrentSort "year_desc"}}selected{{end}}>Rilis Terbaru</option>
+        <option value="rating_desc" {{if eq $.CurrentSort "rating_desc"}}selected{{end}}>Rating Tertinggi ★</option>
+        <option value="views_desc" {{if eq $.CurrentSort "views_desc"}}selected{{end}}>Paling Populer</option>
+        <option value="title_asc" {{if eq $.CurrentSort "title_asc"}}selected{{end}}>Judul (A - Z)</option>
+      </select>
+    </div>
+
+    <!-- TOMBOL SUBMIT & RESET -->
+    <div class="col-span-2 sm:col-span-2 md:col-span-4 lg:col-span-1 flex items-end gap-2">
+      <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-md">
+        <i class="fa-solid fa-filter"></i> Terapkan
+      </button>
+      <a href="/anime" class="bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-600 dark:text-slate-300 p-2.5 rounded-xl text-xs transition flex items-center justify-center border border-slate-200 dark:border-dark-700" title="Reset Filter">
+        <i class="fa-solid fa-rotate-left"></i>
+      </a>
+    </div>
+  </form>
+</div>
+
+<!-- ==================== 3. ANIME GRID ==================== -->
+{{if .Movies}}
+<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+  {{range .Movies}}
+  <a href="/movie/{{.Slug}}" class="group bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-xl overflow-hidden hover:border-purple-500 hover:shadow-lg dark:hover:border-purple-500 transition duration-300 flex flex-col shadow-sm">
+    <div class="relative aspect-[2/3] overflow-hidden bg-slate-200 dark:bg-dark-800">
+      {{if .PosterThumbURL}}
+      <img src="{{.PosterThumbURL}}" alt="{{.Title}}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" loading="lazy">
+      {{else if .PosterURL}}
+      <img src="{{.PosterURL}}" alt="{{.Title}}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" loading="lazy">
+      {{else}}
+      <div class="w-full h-full flex items-center justify-center text-slate-400 dark:text-slate-600"><i class="fa-solid fa-tv text-4xl"></i></div>
+      {{end}}
+
+      <!-- Badges -->
+      <div class="absolute top-2 left-2 flex flex-col gap-1">
+        <span class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[9px] font-black px-2 py-0.5 rounded shadow flex items-center gap-1">
+          <i class="fa-solid fa-wand-magic-sparkles text-[8px]"></i> ANIME
+        </span>
+        {{if .IsFree}}
+        <span class="bg-green-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">GRATIS</span>
+        {{end}}
+        {{if .Quality}}
+        <span class="bg-slate-900/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded border border-slate-700 shadow">{{.Quality}}</span>
+        {{end}}
+      </div>
+
+      <div class="absolute top-2 right-2 bg-black/80 text-yellow-400 text-xs font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shadow">
+        <i class="fa-solid fa-star text-[10px]"></i> {{.Rating}}
+      </div>
+    </div>
+
+    <div class="p-3 flex-1 flex flex-col justify-between">
+      <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-purple-500 line-clamp-1 transition">{{.Title}}</h3>
+      <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+        <span>{{.Year}}</span>
+        <span><i class="fa-solid fa-eye text-[10px]"></i> {{.Views}}</span>
+      </div>
+    </div>
+  </a>
+  {{end}}
+</div>
+{{else}}
+<!-- Empty State -->
+<div class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-12 text-center my-6">
+  <div class="w-20 h-20 rounded-full bg-purple-500/10 text-purple-500 flex items-center justify-center text-3xl mx-auto mb-4">
+    <i class="fa-solid fa-wand-magic-sparkles"></i>
+  </div>
+  <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-2">Belum Ada Judul Anime</h3>
+  <p class="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
+    Katalog anime saat ini masih dalam proses kurasi dan pengisian. Anda dapat menambahkan tayangan anime baru secara instan melalui CMS Admin.
+  </p>
+  <div class="flex items-center justify-center gap-3">
+    <a href="/" class="bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-700 dark:text-slate-200 px-5 py-2.5 rounded-xl text-xs font-bold transition">
+      <i class="fa-solid fa-arrow-left mr-1"></i> Kembali ke Beranda
+    </a>
+    <a href="/admin/movies/new?type=anime" class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition shadow">
+      <i class="fa-solid fa-plus mr-1"></i> Tambah Anime via CMS
+    </a>
+  </div>
+</div>
+{{end}}
+{{end}}

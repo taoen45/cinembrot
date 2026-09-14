@@ -188,7 +188,7 @@ func (s *Server) loadTemplates() {
 	layoutPath := filepath.Join(viewsDir, "layout.html")
 
 	// Public Pages
-	pages := []string{"home.html", "detail.html", "list.html"}
+	pages := []string{"home.html", "detail.html", "list.html", "anime.html", "drama_pendek.html"}
 	for _, page := range pages {
 		pagePath := filepath.Join(viewsDir, page)
 		tmpl := template.Must(template.New("layout.html").Funcs(funcMap).ParseFiles(layoutPath, pagePath))
@@ -246,6 +246,8 @@ func (s *Server) Start() error {
 
 	// Route Public Web Endpoints
 	mux.HandleFunc("GET /", s.HandleHome)
+	mux.HandleFunc("GET /anime", s.HandleAnime)
+	mux.HandleFunc("GET /drama-pendek", s.HandleDramaPendek)
 	mux.HandleFunc("GET /filter", s.HandleFilter)
 	mux.HandleFunc("GET /movie/{slug}", s.HandleMovieDetail)
 	mux.HandleFunc("POST /movie/{slug}/comment", s.HandleSubmitComment)
@@ -263,6 +265,8 @@ func (s *Server) Start() error {
 	// Protected CMS Routes (Guarded by RequireAdmin)
 	mux.HandleFunc("GET /admin", s.RequireAdmin(s.HandleAdminDashboard))
 	mux.HandleFunc("GET /admin/movies", s.RequireAdmin(s.HandleAdminMovies))
+	mux.HandleFunc("GET /admin/anime", s.RequireAdmin(s.HandleAdminAnime))
+	mux.HandleFunc("GET /admin/drama-pendek", s.RequireAdmin(s.HandleAdminDramaPendek))
 	mux.HandleFunc("GET /admin/movies/new", s.RequireAdmin(s.HandleAdminMovieNew))
 	mux.HandleFunc("POST /admin/movies/new", s.RequireAdmin(s.HandleAdminMovieNew))
 	mux.HandleFunc("GET /admin/movies/edit/{id}", s.RequireAdmin(s.HandleAdminMovieEdit))
