@@ -27,12 +27,11 @@
       {{if .Movie.Tagline}}<p class="text-brand-500 italic text-sm mb-3">"{{.Movie.Tagline}}"</p>{{end}}
 
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-slate-600 dark:text-slate-300 my-4 bg-slate-50 dark:bg-dark-950 p-3.5 rounded-xl border border-slate-200 dark:border-dark-800">
-        <div><span class="text-slate-400 dark:text-slate-500 font-semibold">Durasi:</span> {{.Movie.DurationFormatted}}</div>
-        <div><span class="text-slate-400 dark:text-slate-500 font-semibold">Usia:</span> {{.Movie.AgeRating}}</div>
-        <div><span class="text-slate-400 dark:text-slate-500 font-semibold">Negara:</span> {{.Movie.Country}}</div>
-        <div><span class="text-slate-400 dark:text-slate-500 font-semibold">Bahasa:</span> {{.Movie.Language}}</div>
-        <!-- <div><span class="text-slate-400 dark:text-slate-500 font-semibold">Lisensi:</span> {{.Movie.LicenseType}}</div> -->
-        <div><span class="text-slate-400 dark:text-slate-500 font-semibold">Views:</span> {{.Movie.Views}} kali</div>
+        <div><span class="text-slate-400 dark:text-slate-500 font-semibold">{{t $.Lang "detail.duration"}}:</span> {{.Movie.DurationFormatted}}</div>
+        <div><span class="text-slate-400 dark:text-slate-500 font-semibold">Rating:</span> {{.Movie.AgeRating}}</div>
+        <div><span class="text-slate-400 dark:text-slate-500 font-semibold">{{t $.Lang "detail.country"}}:</span> {{.Movie.Country}}</div>
+        <div><span class="text-slate-400 dark:text-slate-500 font-semibold">{{t $.Lang "detail.language"}}:</span> {{.Movie.Language}}</div>
+        <div><span class="text-slate-400 dark:text-slate-500 font-semibold">Views:</span> {{.Movie.Views}}</div>
       </div>
 
       <div class="flex flex-wrap gap-1.5 my-3">
@@ -45,7 +44,7 @@
 
       <!-- SINOPSIS BERSIH & RAPI -->
       <div class="mt-4 space-y-3 text-slate-700 dark:text-slate-300 text-sm leading-relaxed border-t border-slate-100 dark:border-dark-800 pt-3">
-        <h3 class="font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">Sinopsis Alur Cerita</h3>
+        <h3 class="font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">{{t $.Lang "hero.synopsis"}}</h3>
         {{range (paragraphs .Movie.Synopsis)}}
         <p class="text-justify">{{.}}</p>
         {{else}}
@@ -215,7 +214,7 @@
   {{if .Movie.Actors}}
   <div class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-6 shadow-sm">
     <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-      <i class="fa-solid fa-users text-brand-500"></i> Pemeran & Aktor:
+      <i class="fa-solid fa-users text-brand-500"></i> {{t $.Lang "detail.cast"}}:
     </h2>
     <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
       {{range .Movie.Actors}}
@@ -240,7 +239,7 @@
   <div id="comments" class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-6 shadow-sm">
     <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-100 dark:border-dark-800">
       <h2 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-        <i class="fa-solid fa-comments text-brand-500"></i> Komentar & Ulasan Penonton
+        <i class="fa-solid fa-comments text-brand-500"></i> {{t $.Lang "detail.comments"}}
       </h2>
       <span class="bg-brand-500/10 text-brand-500 text-xs font-bold px-3 py-1 rounded-full">
         {{len .Movie.Comments}} Komentar

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{if eq .Lang "en"}}en{{else}}id{{end}}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -55,31 +55,58 @@
           <span>CINEMBROT</span>
         </a>
         <div class="hidden md:flex items-center gap-5 text-sm font-semibold">
-          <a href="/" class="hover:text-brand-500 transition {{if eq .ActiveMenu "home"}}text-brand-500{{else}}text-slate-600 dark:text-slate-300{{end}}">Home</a>
+          <a href="/" class="hover:text-brand-500 transition {{if eq .ActiveMenu "home"}}text-brand-500{{else}}text-slate-600 dark:text-slate-300{{end}}">{{t $.Lang "nav.home"}}</a>
           <a href="/anime" class="hover:text-purple-500 transition flex items-center gap-1.5 {{if eq .ActiveMenu "anime"}}text-purple-500 font-bold{{else}}text-slate-600 dark:text-slate-300{{end}}">
-            <i class="fa-solid fa-wand-magic-sparkles text-purple-500"></i> Anime
+            <i class="fa-solid fa-wand-magic-sparkles text-purple-500"></i> {{t $.Lang "nav.anime"}}
           </a>
           <a href="/drama-pendek" class="hover:text-amber-500 transition flex items-center gap-1.5 {{if eq .ActiveMenu "drama_pendek"}}text-amber-500 font-bold{{else}}text-slate-600 dark:text-slate-300{{end}}">
-            <i class="fa-solid fa-masks-theater text-amber-500"></i> Drama Pendek
+            <i class="fa-solid fa-masks-theater text-amber-500"></i> {{t $.Lang "nav.drama_pendek"}}
           </a>
           <a href="/filter?sort=rating_desc" class="hover:text-brand-500 transition flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-            <i class="fa-solid fa-fire text-amber-500"></i> Populer
+            <i class="fa-solid fa-fire text-amber-500"></i> {{t $.Lang "nav.popular"}}
           </a>
           <a href="/filter" class="hover:text-brand-500 transition flex items-center gap-1.5 text-slate-600 dark:text-slate-300 {{if eq .ActiveMenu "filter"}}text-brand-500{{end}}">
-            <i class="fa-solid fa-sliders text-brand-500"></i> Filter Lengkap
+            <i class="fa-solid fa-sliders text-brand-500"></i> {{t $.Lang "nav.filter"}}
           </a>
         </div>
       </div>
 
-      <!-- SEARCH BOX & THEME TOGGLE -->
+      <!-- SEARCH BOX, LANGUAGE SWITCHER & THEME TOGGLE -->
       <div class="flex items-center gap-3 flex-1 max-w-md justify-end">
         <form action="/search" method="GET" class="flex-1 relative">
-          <input type="text" name="q" value="{{.SearchQuery}}" placeholder="Cari judul film, anime, aktor..." 
+          <input type="text" name="q" value="{{.SearchQuery}}" placeholder="{{t $.Lang "nav.search_ph"}}" 
             class="w-full bg-slate-100 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-full px-4 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors">
           <button type="submit" class="absolute right-3 top-2.5 text-slate-400 hover:text-brand-500 transition">
             <i class="fa-solid fa-magnifying-glass"></i>
           </button>
         </form>
+
+        <!-- LANGUAGE SWITCHER DROPDOWN -->
+        <div class="relative inline-block text-left" id="lang-dropdown-wrapper">
+          <button id="lang-menu-btn" type="button" aria-expanded="false" aria-haspopup="true"
+            class="flex items-center gap-1.5 px-3 py-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 border border-slate-200 dark:border-dark-700 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all shadow-sm">
+            {{if eq .Lang "en"}}
+              <span class="text-base leading-none">🇬🇧</span>
+              <span>EN</span>
+            {{else}}
+              <span class="text-base leading-none">🇮🇩</span>
+              <span>ID</span>
+            {{end}}
+            <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
+          </button>
+          <div id="lang-menu-dropdown" class="hidden absolute right-0 mt-2 w-36 rounded-xl bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 shadow-xl py-1.5 z-50">
+            <a href="/set-lang?lang=id" class="flex items-center gap-2 px-3 py-2 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-dark-800 transition {{if ne .Lang "en"}}text-brand-500 font-bold bg-brand-50/40 dark:bg-brand-950/30{{else}}text-slate-700 dark:text-slate-300{{end}}">
+              <span class="text-base leading-none">🇮🇩</span>
+              <span>Indonesia</span>
+              {{if ne .Lang "en"}}<i class="fa-solid fa-check ml-auto text-brand-500 text-[11px]"></i>{{end}}
+            </a>
+            <a href="/set-lang?lang=en" class="flex items-center gap-2 px-3 py-2 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-dark-800 transition {{if eq .Lang "en"}}text-brand-500 font-bold bg-brand-50/40 dark:bg-brand-950/30{{else}}text-slate-700 dark:text-slate-300{{end}}">
+              <span class="text-base leading-none">🇬🇧</span>
+              <span>English</span>
+              {{if eq .Lang "en"}}<i class="fa-solid fa-check ml-auto text-brand-500 text-[11px]"></i>{{end}}
+            </a>
+          </div>
+        </div>
 
         <!-- LIGHT / DARK MODE TOGGLE BUTTON -->
         <button id="theme-toggle" type="button" aria-label="Toggle Theme"
@@ -93,19 +120,23 @@
     <!-- MOBILE SUB-NAVBAR SCROLLABLE -->
     <div class="md:hidden flex items-center gap-2 overflow-x-auto pt-2.5 pb-0.5 max-w-7xl mx-auto border-t border-slate-100 dark:border-dark-800/60 scrollbar-none text-xs font-semibold">
       <a href="/" class="shrink-0 px-3 py-1.5 rounded-full transition {{if eq .ActiveMenu "home"}}bg-brand-500 text-white shadow{{else}}bg-slate-100 dark:bg-dark-800 text-slate-700 dark:text-slate-300{{end}}">
-        <i class="fa-solid fa-house mr-1"></i> Home
+        <i class="fa-solid fa-house mr-1"></i> {{t $.Lang "nav.home"}}
       </a>
       <a href="/anime" class="shrink-0 px-3 py-1.5 rounded-full transition {{if eq .ActiveMenu "anime"}}bg-purple-600 text-white shadow{{else}}bg-slate-100 dark:bg-dark-800 text-slate-700 dark:text-slate-300{{end}}">
-        <i class="fa-solid fa-wand-magic-sparkles text-purple-400 mr-1"></i> Anime
+        <i class="fa-solid fa-wand-magic-sparkles text-purple-400 mr-1"></i> {{t $.Lang "nav.anime"}}
       </a>
       <a href="/drama-pendek" class="shrink-0 px-3 py-1.5 rounded-full transition {{if eq .ActiveMenu "drama_pendek"}}bg-amber-600 text-white shadow{{else}}bg-slate-100 dark:bg-dark-800 text-slate-700 dark:text-slate-300{{end}}">
-        <i class="fa-solid fa-masks-theater text-amber-400 mr-1"></i> Drama Pendek
+        <i class="fa-solid fa-masks-theater text-amber-400 mr-1"></i> {{t $.Lang "nav.drama_pendek"}}
       </a>
       <a href="/filter?sort=rating_desc" class="shrink-0 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-dark-800 text-slate-700 dark:text-slate-300 hover:text-brand-500 transition">
-        <i class="fa-solid fa-fire text-amber-500 mr-1"></i> Populer
+        <i class="fa-solid fa-fire text-amber-500 mr-1"></i> {{t $.Lang "nav.popular"}}
       </a>
       <a href="/filter" class="shrink-0 px-3 py-1.5 rounded-full transition {{if eq .ActiveMenu "filter"}}bg-brand-500 text-white shadow{{else}}bg-slate-100 dark:bg-dark-800 text-slate-700 dark:text-slate-300{{end}}">
-        <i class="fa-solid fa-sliders text-brand-500 mr-1"></i> Filter
+        <i class="fa-solid fa-sliders text-brand-500 mr-1"></i> {{t $.Lang "nav.filter"}}
+      </a>
+      <!-- Mobile Quick Lang Switcher -->
+      <a href="/set-lang?lang={{if eq .Lang "en"}}id{{else}}en{{end}}" class="shrink-0 px-3 py-1.5 rounded-full bg-slate-200 dark:bg-dark-700 text-slate-800 dark:text-slate-200 font-bold ml-auto flex items-center gap-1">
+        <span>{{if eq .Lang "en"}}🇮🇩 ID{{else}}🇬🇧 EN{{end}}</span>
       </a>
     </div>
   </nav>
@@ -135,24 +166,25 @@
         <img src="/favicon.png" alt="CINEMBROT Mascot Logo" class="h-24 w-auto object-contain drop-shadow-lg group-hover:scale-110 transition-transform duration-200 mb-3">
         <span class="text-2xl font-black tracking-widest text-brand-500">CINEMBROT</span>
       </a>
-      <p class="font-semibold text-slate-700 dark:text-slate-200 text-sm mb-1">Platform Streaming & Download Film Gratis Legal</p>
-      <p class="text-xs mb-5 max-w-md text-slate-400">Didukung oleh Internet Archive, Blender Open Movies, dan TMDb REST API dengan integrasi subtitle otomatis.</p>
+      <p class="font-semibold text-slate-700 dark:text-slate-200 text-sm mb-1">{{t $.Lang "footer.tagline"}}</p>
+      <p class="text-xs mb-5 max-w-md text-slate-400">{{t $.Lang "footer.desc"}}</p>
       <div class="flex flex-wrap justify-center gap-6 text-xs font-semibold">
-        <a href="/" class="hover:text-brand-500 transition">Home</a>
-        <a href="/anime" class="hover:text-purple-500 transition">Anime</a>
-        <a href="/drama-pendek" class="hover:text-amber-500 transition">Drama Pendek</a>
-        <a href="/free" class="hover:text-green-500 transition">Film Legal Gratis</a>
-        <a href="/filter" class="hover:text-brand-500 transition">Katalog Lengkap</a>
+        <a href="/" class="hover:text-brand-500 transition">{{t $.Lang "nav.home"}}</a>
+        <a href="/anime" class="hover:text-purple-500 transition">{{t $.Lang "nav.anime"}}</a>
+        <a href="/drama-pendek" class="hover:text-amber-500 transition">{{t $.Lang "nav.drama_pendek"}}</a>
+        <a href="/free" class="hover:text-green-500 transition">{{t $.Lang "footer.legal"}}</a>
+        <a href="/filter" class="hover:text-brand-500 transition">{{t $.Lang "footer.catalog"}}</a>
         <a href="/api/movies" class="hover:text-brand-500 transition" target="_blank">JSON API</a>
       </div>
       <div class="mt-8 pt-6 border-t border-slate-100 dark:border-dark-800 text-[11px] text-slate-400 w-full max-w-md">
-        &copy; 2026 CINEMBROT. All rights reserved.
+        &copy; 2026 CINEMBROT. {{t $.Lang "footer.copyright"}}
       </div>
     </div>
   </footer>
 
-  <!-- Theme Toggle Logic -->
+  <!-- Theme Toggle & Language Dropdown Logic -->
   <script>
+    // Theme Toggle
     const themeToggleBtn = document.getElementById('theme-toggle');
     const darkIcon = document.getElementById('theme-toggle-dark-icon');
     const lightIcon = document.getElementById('theme-toggle-light-icon');
@@ -169,16 +201,33 @@
 
     syncIcons();
 
-    themeToggleBtn.addEventListener('click', function() {
-      if (document.documentElement.classList.contains('dark')) {
-        document.documentElement.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
-      } else {
-        document.documentElement.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
-      }
-      syncIcons();
-    });
+    if (themeToggleBtn) {
+      themeToggleBtn.addEventListener('click', function() {
+        if (document.documentElement.classList.contains('dark')) {
+          document.documentElement.classList.remove('dark');
+          localStorage.setItem('theme', 'light');
+        } else {
+          document.documentElement.classList.add('dark');
+          localStorage.setItem('theme', 'dark');
+        }
+        syncIcons();
+      });
+    }
+
+    // Language Dropdown Toggle
+    const langBtn = document.getElementById('lang-menu-btn');
+    const langDropdown = document.getElementById('lang-menu-dropdown');
+    if (langBtn && langDropdown) {
+      langBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        langDropdown.classList.toggle('hidden');
+      });
+      document.addEventListener('click', function() {
+        if (!langDropdown.classList.contains('hidden')) {
+          langDropdown.classList.add('hidden');
+        }
+      });
+    }
   </script>
 </body>
 </html>

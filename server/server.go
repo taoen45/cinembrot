@@ -12,6 +12,7 @@ import (
 
 	"cinembrot/config"
 	"cinembrot/database"
+	"cinembrot/i18n"
 	"cinembrot/scraper"
 	"cinembrot/torrentmgr"
 	"gorm.io/gorm"
@@ -49,6 +50,9 @@ func NewServer(cfg *config.Config, db *gorm.DB) *Server {
 
 func (s *Server) loadTemplates() {
 	funcMap := template.FuncMap{
+		"t": func(lang string, key string) string {
+			return i18n.T(lang, key)
+		},
 		"safeHTML": func(str string) template.HTML {
 			return template.HTML(str)
 		},
@@ -255,6 +259,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("GET /genre/{slug}", s.HandleGenreFilter)
 	mux.HandleFunc("GET /free", s.HandleFreeFilter)
 	mux.HandleFunc("GET /search", s.HandleSearch)
+	mux.HandleFunc("GET /set-lang", s.HandleSetLang)
 	mux.HandleFunc("GET /api/movies", s.HandleAPIMovies)
 
 	// Route CMS Admin Endpoints
@@ -353,4 +358,19 @@ func (s *Server) Start() error {
 	log.Printf("==============================================================\n")
 
 	return http.ListenAndServe(":"+port, mux)
+}
+
+// HandleSetLang handles switching language and redirects back to the previous page
+func (s *Server) HandleSetLang(w http.ResponseWriter, r *http.Request) {
+	lang := r.URL.Query().Get("lang")
+	i18n.SetLangCookie(w, lang)
+
+	redirect := r.URL.Query().Get("redirect")
+	if redirect == "" || strings.HasPrefix(redirect, "//") || strings.Contains(redirect, "://") {
+		redirect = r.Header.Get("Referer")
+	}
+	if redirect == "" || strings.HasPrefix(redirect, "//") || strings.Contains(redirect, "://") {
+		redirect = "/"
+	}
+	http.Redirect(w, r, redirect, http.StatusSeeOther)
 }

@@ -7,12 +7,14 @@ import (
 	"strings"
 
 	"cinembrot/database"
+	"cinembrot/i18n"
 	"cinembrot/model"
 	"cinembrot/scraper"
 	"gorm.io/gorm"
 )
 
 type PageData struct {
+	Lang            string
 	Title           string
 	SiteName        string
 	ActiveMenu      string
@@ -104,6 +106,7 @@ func (s *Server) HandleHome(w http.ResponseWriter, r *http.Request) {
 	s.db.Model(&model.Movie{}).Distinct().Where("country <> ''").Order("country asc").Pluck("country", &countries)
 
 	data := PageData{
+		Lang:       i18n.GetLang(r),
 		Title:      "Nonton Film Streaming & Download Gratis Legal",
 		SiteName:   "CINEMBROT",
 		ActiveMenu: "home",
@@ -202,6 +205,7 @@ func (s *Server) HandleFilter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := PageData{
+		Lang:            i18n.GetLang(r),
 		Title:           title,
 		SiteName:        "CINEMBROT",
 		ActiveMenu:      "filter",
@@ -290,6 +294,7 @@ func (s *Server) HandleAnime(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := PageData{
+		Lang:           i18n.GetLang(r),
 		Title:          "Katalog Anime Subtitle Indonesia",
 		SiteName:       "CINEMBROT",
 		ActiveMenu:     "anime",
@@ -375,6 +380,7 @@ func (s *Server) HandleDramaPendek(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := PageData{
+		Lang:           i18n.GetLang(r),
 		Title:          "Serial Drama Pendek & Mini Series Sub Indo",
 		SiteName:       "CINEMBROT",
 		ActiveMenu:     "drama_pendek",
@@ -435,6 +441,7 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 	captcha := GenerateCaptcha()
 
 	data := PageData{
+		Lang:            i18n.GetLang(r),
 		Title:           movie.Title + " (" + strconv.Itoa(movie.Year) + ") - Nonton & Download",
 		SiteName:        "CINEMBROT",
 		Movie:           &movie,
@@ -549,6 +556,7 @@ func (s *Server) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	s.db.Find(&genres)
 
 	data := PageData{
+		Lang:        i18n.GetLang(r),
 		Title:       "Hasil Pencarian: " + query,
 		SiteName:    "CINEMBROT",
 		SearchQuery: query,
