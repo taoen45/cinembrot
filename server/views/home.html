@@ -4,7 +4,7 @@
 <div class="relative rounded-2xl overflow-hidden mb-8 border border-slate-200 dark:border-dark-800 bg-slate-900 shadow-2xl group" id="hero-carousel">
   
   <!-- Slides Container -->
-  <div class="relative h-[360px] md:h-[480px] w-full overflow-hidden">
+  <div class="relative h-[380px] sm:h-[420px] md:h-[480px] w-full overflow-hidden">
     {{range $idx, $slide := .Slides}}
     <div class="carousel-slide absolute inset-0 transition-opacity duration-700 ease-in-out {{if eq $idx 0}}opacity-100 z-10{{else}}opacity-0 z-0 pointer-events-none{{end}}" data-index="{{$idx}}">
       
@@ -13,35 +13,35 @@
            style="background-image: url('{{if $slide.BackdropURL}}{{$slide.BackdropURL}}{{else}}{{$slide.PosterURL}}{{end}}');"></div>
       
       <!-- Gradien Lembut (Tidak Terlalu Gelap, Teks Tetap Sangat Terbaca) -->
-      <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+      <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent"></div>
       <div class="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/40 to-transparent max-w-3xl"></div>
 
       <!-- Slide Content -->
-      <div class="relative h-full flex flex-col justify-end p-6 md:p-12 max-w-3xl">
-        <div class="flex items-center gap-2 mb-3">
-          <span class="bg-brand-500 text-white text-xs font-black px-2.5 py-1 rounded shadow-md">TOP #{{add $idx 1}}</span>
+      <div class="relative h-full flex flex-col justify-end p-4 sm:p-6 md:p-12 max-w-3xl">
+        <div class="flex flex-wrap items-center gap-2 mb-2 sm:mb-3">
+          <span class="bg-brand-500 text-white text-[11px] sm:text-xs font-black px-2 sm:px-2.5 py-0.5 sm:py-1 rounded shadow-md">TOP #{{add $idx 1}}</span>
           {{if $slide.IsFree}}
-          <span class="bg-green-600 text-white text-xs font-bold px-2.5 py-1 rounded shadow">100% GRATIS & LEGAL</span>
+          <span class="bg-green-600 text-white text-[11px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded shadow">100% GRATIS</span>
           {{end}}
-          <span class="bg-black/70 text-yellow-400 text-sm font-bold px-2 py-0.5 rounded flex items-center gap-1 shadow">
-            <i class="fa-solid fa-star text-xs"></i> {{$slide.Rating}}
+          <span class="bg-black/70 text-yellow-400 text-xs sm:text-sm font-bold px-2 py-0.5 rounded flex items-center gap-1 shadow">
+            <i class="fa-solid fa-star text-[10px] sm:text-xs"></i> {{$slide.Rating}}
           </span>
-          <span class="text-slate-200 text-sm font-semibold drop-shadow">({{$slide.Year}})</span>
+          <span class="text-slate-200 text-xs sm:text-sm font-semibold drop-shadow">({{$slide.Year}})</span>
           {{if $slide.Quality}}
-          <span class="bg-black/70 text-white border border-slate-600 text-[11px] font-bold px-2 py-0.5 rounded shadow">{{$slide.Quality}}</span>
+          <span class="bg-black/70 text-white border border-slate-600 text-[10px] sm:text-[11px] font-bold px-1.5 sm:px-2 py-0.5 rounded shadow">{{$slide.Quality}}</span>
           {{end}}
         </div>
 
-        <h1 class="text-2xl md:text-5xl font-black text-white mb-3 leading-tight drop-shadow-[0_4px_8px_rgba(0,0,0,0.9)]">{{$slide.Title}}</h1>
-        <p class="text-slate-100 text-xs md:text-sm line-clamp-2 md:line-clamp-3 mb-6 leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] max-w-2xl font-medium">
+        <h1 class="text-xl sm:text-3xl md:text-5xl font-black text-white mb-2 sm:mb-3 leading-tight drop-shadow-[0_4px_8px_rgba(0,0,0,0.9)] line-clamp-2">{{$slide.Title}}</h1>
+        <p class="text-slate-100 text-xs sm:text-sm line-clamp-2 mb-4 md:mb-6 leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] max-w-2xl font-medium">
           {{cleanText $slide.Synopsis}}
         </p>
 
-        <div class="flex flex-wrap gap-3">
-          <a href="/movie/{{$slide.Slug}}" class="bg-brand-500 hover:bg-brand-600 text-white font-bold px-6 py-3 rounded-xl flex items-center gap-2 shadow-2xl transition transform hover:-translate-y-0.5">
+        <div class="flex flex-wrap gap-2.5 sm:gap-3">
+          <a href="/movie/{{$slide.Slug}}" class="bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs sm:text-sm px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl flex items-center gap-2 shadow-2xl transition transform active:scale-95">
             <i class="fa-solid fa-play"></i> {{t $.Lang "hero.watch_now"}}
           </a>
-          <a href="/movie/{{$slide.Slug}}#download" class="bg-slate-900/90 hover:bg-slate-800 text-white font-semibold px-5 py-3 rounded-xl flex items-center gap-2 transition border border-slate-600 shadow-xl">
+          <a href="/movie/{{$slide.Slug}}#download" class="bg-slate-900/90 hover:bg-slate-800 text-white font-semibold text-xs sm:text-sm px-3.5 sm:px-5 py-2.5 sm:py-3 rounded-xl flex items-center gap-2 transition border border-slate-600 shadow-xl active:scale-95">
             <i class="fa-solid fa-download"></i> {{t $.Lang "hero.download"}}
           </a>
         </div>
@@ -50,20 +50,20 @@
     {{end}}
   </div>
 
-  <!-- Navigation Prev / Next Buttons -->
+  <!-- Navigation Prev / Next Buttons (Disembunyikan di Mobile agar Tidak Mengganggu Pandangan) -->
   <button id="carousel-prev" aria-label="Previous Slide" 
-    class="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/60 hover:bg-brand-500 text-white flex items-center justify-center backdrop-blur transition border border-white/20 shadow-lg opacity-80 group-hover:opacity-100 hover:scale-110">
+    class="hidden sm:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/60 hover:bg-brand-500 text-white items-center justify-center backdrop-blur transition border border-white/20 shadow-lg opacity-80 group-hover:opacity-100 hover:scale-110">
     <i class="fa-solid fa-chevron-left text-lg"></i>
   </button>
   <button id="carousel-next" aria-label="Next Slide" 
-    class="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/60 hover:bg-brand-500 text-white flex items-center justify-center backdrop-blur transition border border-white/20 shadow-lg opacity-80 group-hover:opacity-100 hover:scale-110">
+    class="hidden sm:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/60 hover:bg-brand-500 text-white items-center justify-center backdrop-blur transition border border-white/20 shadow-lg opacity-80 group-hover:opacity-100 hover:scale-110">
     <i class="fa-solid fa-chevron-right text-lg"></i>
   </button>
 
   <!-- Indicator Dots (1 - 10) -->
-  <div class="absolute bottom-4 right-6 md:right-12 z-20 flex items-center gap-2">
+  <div class="absolute bottom-3 sm:bottom-4 right-4 sm:right-6 md:right-12 z-20 flex items-center gap-1.5 sm:gap-2">
     {{range $idx, $slide := .Slides}}
-    <button class="carousel-dot h-2.5 rounded-full transition-all duration-300 {{if eq $idx 0}}w-8 bg-brand-500{{else}}w-2.5 bg-white/50 hover:bg-white/90{{end}} shadow" 
+    <button class="carousel-dot h-2 sm:h-2.5 rounded-full transition-all duration-300 {{if eq $idx 0}}w-6 sm:w-8 bg-brand-500{{else}}w-2 sm:w-2.5 bg-white/50 hover:bg-white/90{{end}} shadow" 
             data-index="{{$idx}}" aria-label="Go to slide {{add $idx 1}}"></button>
     {{end}}
   </div>
@@ -146,7 +146,7 @@
     <span class="text-xs text-slate-400 font-medium">Menampilkan {{len .Movies}} film</span>
   </div>
 
-  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
     {{range .Movies}}
     <a href="/movie/{{.Slug}}" class="group bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-xl overflow-hidden hover:border-brand-500 hover:shadow-lg dark:hover:border-brand-500 transition duration-300 flex flex-col shadow-sm">
       <div class="relative aspect-[2/3] overflow-hidden bg-slate-200 dark:bg-dark-800">
@@ -259,6 +259,36 @@
     if (carouselContainer) {
       carouselContainer.addEventListener('mouseenter', stopAutoPlay);
       carouselContainer.addEventListener('mouseleave', startAutoPlay);
+
+      // Mobile Touch Swipe Gesture Support
+      let touchStartX = 0;
+      let touchStartY = 0;
+      let touchEndX = 0;
+      let touchEndY = 0;
+
+      carouselContainer.addEventListener('touchstart', (e) => {
+        if (!e.changedTouches || !e.changedTouches.length) return;
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+        stopAutoPlay();
+      }, { passive: true });
+
+      carouselContainer.addEventListener('touchend', (e) => {
+        if (!e.changedTouches || !e.changedTouches.length) return;
+        touchEndX = e.changedTouches[0].screenX;
+        touchEndY = e.changedTouches[0].screenY;
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = touchEndY - touchStartY;
+        // Hanya picu slide jika usapan horizontal > 40px dan lebih dominan daripada scroll vertikal
+        if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY)) {
+          if (deltaX < 0) {
+            nextSlide();
+          } else {
+            prevSlide();
+          }
+        }
+        startAutoPlay();
+      }, { passive: true });
     }
 
     startAutoPlay();

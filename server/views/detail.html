@@ -23,7 +23,7 @@
         {{end}}
       </div>
 
-      <h1 class="text-3xl md:text-4xl font-black text-slate-900 dark:text-white mb-2">{{.Movie.Title}} ({{.Movie.Year}})</h1>
+      <h1 class="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 dark:text-white mb-2">{{.Movie.Title}} ({{.Movie.Year}})</h1>
       {{if .Movie.Tagline}}<p class="text-brand-500 italic text-sm mb-3">"{{.Movie.Tagline}}"</p>{{end}}
 
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-slate-600 dark:text-slate-300 my-4 bg-slate-50 dark:bg-dark-950 p-3.5 rounded-xl border border-slate-200 dark:border-dark-800">
@@ -176,8 +176,8 @@
             </div>
           </div>
 
-          <!-- TOMBOL DOWNLOAD -->
-          <a href="{{safeURL .URL}}" download target="_blank" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold px-6 py-3 rounded-xl transition shadow-md hover:shadow-emerald-600/25 flex items-center justify-center gap-2 shrink-0 group">
+          <!-- TOMBOL DOWNLOAD (RESPONSIVE FULL-WIDTH DI SMARTPHONE) -->
+          <a href="{{safeURL .URL}}" download target="_blank" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold px-6 py-3 rounded-xl transition shadow-md hover:shadow-emerald-600/25 flex items-center justify-center gap-2 shrink-0 group">
             <i class="fa-solid fa-cloud-arrow-down text-sm group-hover:translate-y-0.5 transition-transform"></i>
             <span>Download MP4</span>
           </a>
@@ -349,9 +349,9 @@
         </div>
       </div>
 
-      <div class="flex items-center justify-between">
-        <span class="text-[11px] text-slate-400"><i class="fa-solid fa-lock text-brand-500 text-[10px] mr-1"></i> Dilindungi Captcha</span>
-        <button type="submit" class="bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs px-6 py-2.5 rounded-xl transition shadow-md flex items-center gap-2">
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <span class="text-[11px] text-slate-400 text-center sm:text-left"><i class="fa-solid fa-lock text-brand-500 text-[10px] mr-1"></i> Dilindungi Captcha</span>
+        <button type="submit" class="w-full sm:w-auto bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs px-6 py-2.5 rounded-xl transition shadow-md flex items-center justify-center gap-2 active:scale-95">
           <i class="fa-solid fa-paper-plane"></i> Kirim Komentar
         </button>
       </div>
