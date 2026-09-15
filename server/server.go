@@ -13,6 +13,7 @@ import (
 	"cinembrot/config"
 	"cinembrot/database"
 	"cinembrot/i18n"
+	"cinembrot/provider/tmdb"
 	"cinembrot/scraper"
 	"cinembrot/torrentmgr"
 	"gorm.io/gorm"
@@ -29,6 +30,7 @@ type Server struct {
 	db         *gorm.DB
 	templates  map[string]*template.Template
 	torrentMgr *torrentmgr.Manager
+	tmdbCli    *tmdb.Client
 }
 
 func NewServer(cfg *config.Config, db *gorm.DB) *Server {
@@ -43,6 +45,7 @@ func NewServer(cfg *config.Config, db *gorm.DB) *Server {
 		db:         db,
 		templates:  make(map[string]*template.Template),
 		torrentMgr: tm,
+		tmdbCli:    tmdb.NewClient(cfg),
 	}
 	s.loadTemplates()
 	return s
@@ -364,6 +367,26 @@ func (s *Server) Start() error {
 func (s *Server) HandleSetLang(w http.ResponseWriter, r *http.Request) {
 	lang := r.URL.Query().Get("lang")
 	i18n.SetLangCookie(w, lang)
+
+	if lang == "en" {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "googtrans",
+			Value:    "/id/en",
+			Path:     "/",
+			Expires:  time.Now().Add(365 * 24 * time.Hour),
+			MaxAge:   365 * 24 * 3600,
+			SameSite: http.SameSiteLaxMode,
+		})
+	} else {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "googtrans",
+			Value:    "/id/id",
+			Path:     "/",
+			Expires:  time.Now().Add(-24 * time.Hour),
+			MaxAge:   -1,
+			SameSite: http.SameSiteLaxMode,
+		})
+	}
 
 	redirect := r.URL.Query().Get("redirect")
 	if redirect == "" || strings.HasPrefix(redirect, "//") || strings.Contains(redirect, "://") {

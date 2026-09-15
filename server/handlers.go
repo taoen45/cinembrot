@@ -59,6 +59,16 @@ func (s *Server) HandleHome(w http.ResponseWriter, r *http.Request) {
 		Limit(10).
 		Find(&slides)
 
+	// Ambil bahasa pengguna
+	lang := i18n.GetLang(r)
+	if lang == "en" {
+		for i := range slides {
+			if enSyn := s.tmdbCli.GetEnglishSynopsis(slides[i].SourceURL, slides[i].Title, slides[i].Type); enSyn != "" {
+				slides[i].Synopsis = enSyn
+			}
+		}
+	}
+
 	var featured *model.Movie
 	if len(slides) > 0 {
 		featured = &slides[0]
@@ -430,6 +440,14 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 	// Update view counter
 	s.db.Model(&movie).UpdateColumn("views", movie.Views+1)
 
+	// Jika bahasa aktif adalah English (en), berikan sinopsis resmi English dari TMDb
+	lang := i18n.GetLang(r)
+	if lang == "en" {
+		if enSynopsis := s.tmdbCli.GetEnglishSynopsis(movie.SourceURL, movie.Title, movie.Type); enSynopsis != "" {
+			movie.Synopsis = enSynopsis
+		}
+	}
+
 	// Related movies
 	var related []model.Movie
 	s.db.Preload("Genres").Where("id <> ?", movie.ID).Order("rating desc, id desc").Limit(6).Find(&related)
@@ -441,7 +459,7 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 	captcha := GenerateCaptcha()
 
 	data := PageData{
-		Lang:            i18n.GetLang(r),
+		Lang:            lang,
 		Title:           movie.Title + " (" + strconv.Itoa(movie.Year) + ") - Nonton & Download",
 		SiteName:        "CINEMBROT",
 		Movie:           &movie,

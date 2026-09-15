@@ -6,7 +6,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"cinembrot/config"
@@ -759,4 +761,101 @@ func (c *Client) DiscoverAnime(limit int, page int) ([]model.Movie, error) {
 	}
 
 	return animes, nil
+}
+
+var (
+	synopsisCache   = make(map[string]string)
+	synopsisCacheMu sync.RWMutex
+)
+
+// GetEnglishSynopsis retrieves English synopsis/overview from TMDb by sourceURL or title
+func (c *Client) GetEnglishSynopsis(sourceURL, title, mediaType string) string {
+	cacheKey := sourceURL
+	if cacheKey == "" {
+		cacheKey = title + ":" + mediaType
+	}
+
+	synopsisCacheMu.RLock()
+	if cached, ok := synopsisCache[cacheKey]; ok {
+		synopsisCacheMu.RUnlock()
+		return cached
+	}
+	synopsisCacheMu.RUnlock()
+
+	apiKey := c.GetAPIKey()
+	var tmdbID int
+	isTV := mediaType == "anime" || mediaType == "drama_pendek" || mediaType == "series" || strings.Contains(sourceURL, "/tv/")
+
+	// Try extracting ID from sourceURL: e.g. https://www.themoviedb.org/tv/99516 or https://www.themoviedb.org/movie/1234
+	if strings.Contains(sourceURL, "themoviedb.org") {
+		parts := strings.Split(sourceURL, "/")
+		for i, part := range parts {
+			if (part == "tv" || part == "movie") && i+1 < len(parts) {
+				if id, err := strconv.Atoi(parts[i+1]); err == nil && id > 0 {
+					tmdbID = id
+					if part == "tv" {
+						isTV = true
+					} else {
+						isTV = false
+					}
+					break
+				}
+			}
+		}
+	}
+
+	// Fetch detail with language=en-US
+	if tmdbID > 0 {
+		var endpoint string
+		if isTV {
+			endpoint = fmt.Sprintf("%s/tv/%d?api_key=%s&language=en-US", BaseURL, tmdbID, apiKey)
+		} else {
+			endpoint = fmt.Sprintf("%s/movie/%d?api_key=%s&language=en-US", BaseURL, tmdbID, apiKey)
+		}
+
+		resp, err := c.httpClient.Get(endpoint)
+		if err == nil && resp.StatusCode == http.StatusOK {
+			defer resp.Body.Close()
+			var detail struct {
+				Overview string `json:"overview"`
+			}
+			if err := json.NewDecoder(resp.Body).Decode(&detail); err == nil && strings.TrimSpace(detail.Overview) != "" {
+				res := scraper.CleanHTMLToPlainText(detail.Overview)
+				synopsisCacheMu.Lock()
+				synopsisCache[cacheKey] = res
+				synopsisCacheMu.Unlock()
+				return res
+			}
+		}
+	}
+
+	// Fallback: search by title
+	if title != "" {
+		var searchURL string
+		if isTV {
+			searchURL = fmt.Sprintf("%s/search/tv?api_key=%s&query=%s&language=en-US", BaseURL, apiKey, url.QueryEscape(title))
+		} else {
+			searchURL = fmt.Sprintf("%s/search/movie?api_key=%s&query=%s&language=en-US", BaseURL, apiKey, url.QueryEscape(title))
+		}
+		resp, err := c.httpClient.Get(searchURL)
+		if err == nil && resp.StatusCode == http.StatusOK {
+			defer resp.Body.Close()
+			var searchRes struct {
+				Results []struct {
+					Overview string `json:"overview"`
+				} `json:"results"`
+			}
+			if err := json.NewDecoder(resp.Body).Decode(&searchRes); err == nil && len(searchRes.Results) > 0 {
+				if overview := strings.TrimSpace(searchRes.Results[0].Overview); overview != "" {
+					res := scraper.CleanHTMLToPlainText(overview)
+					synopsisCacheMu.Lock()
+					synopsisCache[cacheKey] = res
+					synopsisCacheMu.Unlock()
+					return res
+				}
+			}
+		}
+	}
+
+	return ""
 }
