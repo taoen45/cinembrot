@@ -47,14 +47,14 @@ func ProcessMovieImages(movie *model.Movie, userAgent string) {
 		movie.Slug = fmt.Sprintf("movie-%d", time.Now().UnixNano())
 	}
 
-	// 1. Process Poster (Original & Thumb)
+	// 1. Process Poster (Original WebP max 800px & Thumb WebP 300px)
 	if movie.PosterURL != "" && !strings.HasPrefix(movie.PosterURL, "/uploads/") {
 		origPath, thumbPath, err := DownloadAndConvertToWebP(
 			movie.PosterURL,
 			"posters",
 			"poster_"+movie.Slug,
-			1000, // Max orig width
-			320,  // Thumb width
+			800, // Max orig width (sangat tajam & hemat storage)
+			300, // Thumb width (optimal untuk card katalog)
 			userAgent,
 		)
 		if err == nil {
@@ -68,14 +68,14 @@ func ProcessMovieImages(movie *model.Movie, userAgent string) {
 		}
 	}
 
-	// 2. Process Backdrop (Original & Thumb)
+	// 2. Process Backdrop (Original WebP max 1280px & Thumb WebP 500px)
 	if movie.BackdropURL != "" && !strings.HasPrefix(movie.BackdropURL, "/uploads/") {
 		origPath, thumbPath, err := DownloadAndConvertToWebP(
 			movie.BackdropURL,
 			"backdrops",
 			"backdrop_"+movie.Slug,
-			1920, // Max orig width
-			640,  // Thumb width
+			1280, // Max width banner (efisien & tajam)
+			500,  // Thumb width
 			userAgent,
 		)
 		if err == nil {
@@ -86,7 +86,7 @@ func ProcessMovieImages(movie *model.Movie, userAgent string) {
 		}
 	}
 
-	// 3. Process Actor Photos (Thumbnails)
+	// 3. Process Actor Photos (Thumbnails 160px)
 	for i := range movie.Actors {
 		actor := &movie.Actors[i]
 		if actor.PhotoURL != "" && !strings.HasPrefix(actor.PhotoURL, "/uploads/") {
@@ -98,8 +98,8 @@ func ProcessMovieImages(movie *model.Movie, userAgent string) {
 				actor.PhotoURL,
 				"actors",
 				"actor_"+actorSlug,
-				500,
-				180,
+				350,
+				160,
 				userAgent,
 			)
 			if err == nil {
@@ -175,19 +175,19 @@ func DownloadAndConvertToWebP(
 	}
 	defer origFile.Close()
 
-	// Encode to WebP with 85% quality using webpbin
+	// Encode to WebP with 80% quality using webpbin (standar emas WebP: hemat s/d 85%)
 	err = webpbin.NewCWebP().
-		Quality(85).
+		Quality(80).
 		InputImage(origImg).
 		Output(origFile).
 		Run()
 
 	if err != nil {
 		// Fallback to JPEG if cwebp binary is unavailable
-		_ = jpeg.Encode(origFile, origImg, &jpeg.Options{Quality: 85})
+		_ = jpeg.Encode(origFile, origImg, &jpeg.Options{Quality: 80})
 	}
 
-	// 2. Process & Save Thumbnail (e.g. 320px width)
+	// 2. Process & Save Thumbnail
 	var thumbImg image.Image = img
 	if thumbWidth > 0 && bounds.Dx() > thumbWidth {
 		thumbImg = imaging.Resize(img, thumbWidth, 0, imaging.Lanczos)
@@ -199,16 +199,16 @@ func DownloadAndConvertToWebP(
 	}
 	defer thumbFile.Close()
 
-	// Encode to WebP with 80% quality (optimized for speed)
+	// Encode to WebP with 75% quality (sangat ringan, ukuran ~10-18KB per thumbnail)
 	err = webpbin.NewCWebP().
-		Quality(80).
+		Quality(75).
 		InputImage(thumbImg).
 		Output(thumbFile).
 		Run()
 
 	if err != nil {
 		// Fallback to JPEG if cwebp binary is unavailable
-		_ = jpeg.Encode(thumbFile, thumbImg, &jpeg.Options{Quality: 80})
+		_ = jpeg.Encode(thumbFile, thumbImg, &jpeg.Options{Quality: 75})
 	}
 
 	origWebURL = fmt.Sprintf("/uploads/%s/%s", folderType, origFilename)
