@@ -716,16 +716,21 @@ func (c *Client) DiscoverAsianDramas(lang string, page int) ([]model.Movie, erro
 	return dramas, nil
 }
 
-// DiscoverAnime retrieves top popular anime series from TMDb (with_genres=16, with_original_language=ja)
-func (c *Client) DiscoverAnime(limit int, page int) ([]model.Movie, error) {
+// DiscoverAnime retrieves anime series from TMDb (with_genres=16, with_original_language=ja) with custom sort_by
+func (c *Client) DiscoverAnime(limit int, page int, sortBy ...string) ([]model.Movie, error) {
 	apiKey := c.GetAPIKey()
 
 	if page <= 0 {
 		page = 1
 	}
 
-	discoverURL := fmt.Sprintf("%s/discover/tv?api_key=%s&with_genres=16&with_original_language=ja&sort_by=popularity.desc&page=%d&language=%s",
-		BaseURL, apiKey, page, c.cfg.TMDBLanguage)
+	sort := "popularity.desc"
+	if len(sortBy) > 0 && sortBy[0] != "" {
+		sort = sortBy[0]
+	}
+
+	discoverURL := fmt.Sprintf("%s/discover/tv?api_key=%s&with_genres=16&with_original_language=ja&sort_by=%s&page=%d&language=%s",
+		BaseURL, apiKey, sort, page, c.cfg.TMDBLanguage)
 
 	req, err := http.NewRequest("GET", discoverURL, nil)
 	if err != nil {

@@ -352,50 +352,103 @@ func (p *Pipeline) enrichMetadata(movie *model.Movie) {
 	_ = p.omdbCli.EnrichMovie(movie)
 }
 
-// IngestAnime fetches top or seasonal anime from MyAnimeList via Jikan API and saves to DB
+// IngestAnime fetches top popular and/or latest seasonal anime from MyAnimeList/Jikan and TMDb and saves to DB
 func (p *Pipeline) IngestAnime(category string, limit int) (int, error) {
 	startTime := time.Now()
 	if limit <= 0 {
-		limit = 15
+		limit = 20
 	}
 
-	var movies []model.Movie
-	var err error
+	catLower := strings.ToLower(strings.TrimSpace(category))
+	var allMovies []model.Movie
+	seenTitles := make(map[string]bool)
 
-	if category == "seasonal" || category == "now" {
-		movies, err = p.jikanCli.FetchSeasonalAnime(limit, 1)
-	} else {
-		movies, err = p.jikanCli.FetchTopAnime(limit, 1)
-	}
-
-	if err != nil {
-		log.Printf("[WARN] Jikan/MyAnimeList API error (%v). Mengaktifkan fallback resmi TMDb Anime...\n", err)
-		movies, err = p.tmdbCli.DiscoverAnime(limit, 1)
-		if err != nil {
-			_ = p.repo.LogScrape("Anime-Scraper", "Jikan+TMDb", "FAILED", 0, err.Error(), time.Since(startTime))
-			return 0, fmt.Errorf("semua provider anime gagal (Jikan & TMDb): %w", err)
+	addUnique := func(movies []model.Movie) {
+		for _, m := range movies {
+			key := strings.ToLower(strings.TrimSpace(m.Title))
+			if key != "" && !seenTitles[key] {
+				seenTitles[key] = true
+				allMovies = append(allMovies, m)
+			}
 		}
-		log.Printf("[INFO] Fallback TMDb Anime berhasil mengambil %d anime!\n", len(movies))
 	}
+
+	// Helper to fetch multiple pages from Jikan with TMDb fallback
+	fetchBatch := func(subCat string, targetCount int) {
+		got := 0
+		page := 1
+		for got < targetCount && page <= 10 {
+			perPage := targetCount - got
+			if perPage > 25 {
+				perPage = 25
+			}
+
+			var batch []model.Movie
+			var err error
+
+			if subCat == "seasonal" || subCat == "now" || subCat == "latest" {
+				batch, err = p.jikanCli.FetchSeasonalAnime(perPage, page)
+			} else {
+				batch, err = p.jikanCli.FetchTopAnime(perPage, page)
+			}
+
+			if err != nil || len(batch) == 0 {
+				log.Printf("[WARN] Jikan %s page %d notice: %v. Menggunakan fallback TMDb...\n", subCat, page, err)
+				sortOption := "popularity.desc"
+				if subCat == "seasonal" || subCat == "now" || subCat == "latest" {
+					sortOption = "first_air_date.desc"
+				}
+				batch, err = p.tmdbCli.DiscoverAnime(perPage, page, sortOption)
+			}
+
+			if len(batch) == 0 {
+				break
+			}
+
+			addUnique(batch)
+			got += len(batch)
+			page++
+			time.Sleep(350 * time.Millisecond) // Respect rate limits
+		}
+	}
+
+	if catLower == "all" || catLower == "combo" || catLower == "popular-latest" || limit >= 40 {
+		half := limit / 2
+		log.Printf("[ANIME] 🎌 Mengambil %d anime terpopuler sepanjang masa...\n", half)
+		fetchBatch("top", half)
+		log.Printf("[ANIME] 🎌 Mengambil %d anime terbaru & seasonal musim ini...\n", limit-half)
+		fetchBatch("seasonal", limit-half)
+	} else if catLower == "seasonal" || catLower == "now" || catLower == "latest" {
+		fetchBatch("seasonal", limit)
+	} else {
+		fetchBatch("top", limit)
+	}
+
+	if len(allMovies) == 0 {
+		_ = p.repo.LogScrape("Anime-Scraper", fmt.Sprintf("category=%s&limit=%d", category, limit), "FAILED", 0, "tidak ada anime yang berhasil diambil", time.Since(startTime))
+		return 0, fmt.Errorf("tidak ada anime yang berhasil diambil dari provider")
+	}
+
+	log.Printf("[ANIME] 🚀 Mulai memproses %d judul anime unik (enrich metadata + konversi WebP + subtitle)...\n", len(allMovies))
 
 	savedCount := 0
-	for i := range movies {
-		movie := &movies[i]
+	for i := range allMovies {
+		movie := &allMovies[i]
 		p.enrichMetadata(movie)
 
 		// Download & Convert Images to WebP (Original & Thumbnail)
 		imageprocessor.ProcessMovieImages(movie, p.cfg.ScraperUserAgent)
 
 		if err := p.repo.UpsertMovie(movie); err != nil {
-			log.Printf("[ERROR] Failed to upsert anime '%s': %v\n", movie.Title, err)
+			log.Printf("[ERROR] Gagal menyimpan anime '%s': %v\n", movie.Title, err)
 			continue
 		}
-		log.Printf("[SUCCESS] Saved Anime: '%s' (%d) [WebP Ready, Links: %d]\n",
-			movie.Title, movie.Year, len(movie.DownloadLinks))
+		log.Printf("  -> [%d/%d] Saved Anime: '%s' (%d) [WebP: %t, Subtitle Links: %d]\n",
+			savedCount+1, len(allMovies), movie.Title, movie.Year, strings.HasPrefix(movie.PosterURL, "/uploads/"), len(movie.DownloadLinks))
 		savedCount++
 	}
 
-	_ = p.repo.LogScrape("Jikan-MyAnimeList", fmt.Sprintf("category=%s&limit=%d", category, limit), "SUCCESS", savedCount, "", time.Since(startTime))
+	_ = p.repo.LogScrape("Anime-Scraper", fmt.Sprintf("category=%s&limit=%d", category, limit), "SUCCESS", savedCount, "", time.Since(startTime))
 	return savedCount, nil
 }
 

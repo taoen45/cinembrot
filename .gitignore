@@ -6,7 +6,6 @@
 *.dylib
 bin/
 dist/
-public/uploads/
 public/download/movie/
 public/downloads/
 
