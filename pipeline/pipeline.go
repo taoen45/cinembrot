@@ -10,6 +10,7 @@ import (
 	"cinembrot/imageprocessor"
 	"cinembrot/model"
 	"cinembrot/provider/archive"
+	"cinembrot/provider/jikan"
 	"cinembrot/provider/omdb"
 	"cinembrot/provider/openmovies"
 	"cinembrot/provider/tmdb"
@@ -24,6 +25,7 @@ type Pipeline struct {
 	cfg        *config.Config
 	repo       *scraper.Repository
 	archiveCli *archive.Client
+	jikanCli   *jikan.Client
 	tmdbCli    *tmdb.Client
 	omdbCli    *omdb.Client
 	ytsCli     *yts.Client
@@ -34,6 +36,7 @@ func NewPipeline(cfg *config.Config, repo *scraper.Repository) *Pipeline {
 		cfg:        cfg,
 		repo:       repo,
 		archiveCli: archive.NewClient(cfg),
+		jikanCli:   jikan.NewClient(cfg),
 		tmdbCli:    tmdb.NewClient(cfg),
 		omdbCli:    omdb.NewClient(cfg),
 		ytsCli:     yts.NewClient(cfg),
@@ -347,4 +350,80 @@ func (p *Pipeline) enrichMetadata(movie *model.Movie) {
 
 	// 2. Try OMDb enrichment
 	_ = p.omdbCli.EnrichMovie(movie)
+}
+
+// IngestAnime fetches top or seasonal anime from MyAnimeList via Jikan API and saves to DB
+func (p *Pipeline) IngestAnime(category string, limit int) (int, error) {
+	startTime := time.Now()
+	if limit <= 0 {
+		limit = 15
+	}
+
+	var movies []model.Movie
+	var err error
+
+	if category == "seasonal" || category == "now" {
+		movies, err = p.jikanCli.FetchSeasonalAnime(limit, 1)
+	} else {
+		movies, err = p.jikanCli.FetchTopAnime(limit, 1)
+	}
+
+	if err != nil {
+		_ = p.repo.LogScrape("Jikan-MyAnimeList", "https://api.jikan.moe/v4/", "FAILED", 0, err.Error(), time.Since(startTime))
+		return 0, err
+	}
+
+	savedCount := 0
+	for i := range movies {
+		movie := &movies[i]
+		p.enrichMetadata(movie)
+
+		// Download & Convert Images to WebP (Original & Thumbnail)
+		imageprocessor.ProcessMovieImages(movie, p.cfg.ScraperUserAgent)
+
+		if err := p.repo.UpsertMovie(movie); err != nil {
+			log.Printf("[ERROR] Failed to upsert anime '%s': %v\n", movie.Title, err)
+			continue
+		}
+		log.Printf("[SUCCESS] Saved Anime: '%s' (%d) [WebP Ready, Links: %d]\n",
+			movie.Title, movie.Year, len(movie.DownloadLinks))
+		savedCount++
+	}
+
+	_ = p.repo.LogScrape("Jikan-MyAnimeList", fmt.Sprintf("category=%s&limit=%d", category, limit), "SUCCESS", savedCount, "", time.Since(startTime))
+	return savedCount, nil
+}
+
+// IngestAsianDramas fetches top Asian dramas (Korean, Chinese, Japanese, Thai) from TMDb and saves to DB
+func (p *Pipeline) IngestAsianDramas(lang string, page int) (int, error) {
+	startTime := time.Now()
+	if page <= 0 {
+		page = 1
+	}
+
+	dramas, err := p.tmdbCli.DiscoverAsianDramas(lang, page)
+	if err != nil {
+		_ = p.repo.LogScrape("TMDb-TV", fmt.Sprintf("discover/tv?lang=%s", lang), "FAILED", 0, err.Error(), time.Since(startTime))
+		return 0, err
+	}
+
+	savedCount := 0
+	for i := range dramas {
+		drama := &dramas[i]
+		p.enrichMetadata(drama)
+
+		// Download & Convert Images to WebP (Original & Thumbnail)
+		imageprocessor.ProcessMovieImages(drama, p.cfg.ScraperUserAgent)
+
+		if err := p.repo.UpsertMovie(drama); err != nil {
+			log.Printf("[ERROR] Failed to upsert Asian drama '%s': %v\n", drama.Title, err)
+			continue
+		}
+		log.Printf("[SUCCESS] Saved Asian Drama: '%s' (%d) [WebP Ready, Links: %d]\n",
+			drama.Title, drama.Year, len(drama.DownloadLinks))
+		savedCount++
+	}
+
+	_ = p.repo.LogScrape("TMDb-TV", fmt.Sprintf("discover/tv?lang=%s&page=%d", lang, page), "SUCCESS", savedCount, "", time.Since(startTime))
+	return savedCount, nil
 }

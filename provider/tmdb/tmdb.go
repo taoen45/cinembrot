@@ -11,6 +11,7 @@ import (
 
 	"cinembrot/config"
 	"cinembrot/model"
+	"cinembrot/provider/subtitles"
 	"cinembrot/scraper"
 )
 
@@ -421,4 +422,294 @@ func (c *Client) DiscoverMoviesByYear(year int, page int) ([]model.Movie, error)
 	}
 
 	return movies, nil
+}
+
+// SearchTVResponse structure from TMDb Discover TV
+type SearchTVResponse struct {
+	Page         int `json:"page"`
+	TotalResults int `json:"total_results"`
+	TotalPages   int `json:"total_pages"`
+	Results      []struct {
+		ID               int      `json:"id"`
+		Name             string   `json:"name"`
+		OriginalName     string   `json:"original_name"`
+		OriginalLanguage string   `json:"original_language"`
+		Overview         string   `json:"overview"`
+		PosterPath       string   `json:"poster_path"`
+		BackdropPath     string   `json:"backdrop_path"`
+		FirstAirDate     string   `json:"first_air_date"`
+		VoteAverage      float64  `json:"vote_average"`
+		VoteCount        int      `json:"vote_count"`
+		Popularity       float64  `json:"popularity"`
+	} `json:"results"`
+}
+
+// TVDetailResponse represents full response from TMDb TV details API
+type TVDetailResponse struct {
+	ID               int      `json:"id"`
+	Name             string   `json:"name"`
+	OriginalName     string   `json:"original_name"`
+	Overview         string   `json:"overview"`
+	Tagline          string   `json:"tagline"`
+	FirstAirDate     string   `json:"first_air_date"`
+	PosterPath       string   `json:"poster_path"`
+	BackdropPath     string   `json:"backdrop_path"`
+	VoteAverage      float64  `json:"vote_average"`
+	VoteCount        int      `json:"vote_count"`
+	Popularity       float64  `json:"popularity"`
+	Status           string   `json:"status"`
+	NumberOfEpisodes int      `json:"number_of_episodes"`
+	NumberOfSeasons  int      `json:"number_of_seasons"`
+	EpisodeRunTime   []int    `json:"episode_run_time"`
+	OriginCountry    []string `json:"origin_country"`
+	OriginalLanguage string   `json:"original_language"`
+	Genres           []struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	} `json:"genres"`
+	Credits struct {
+		Cast []struct {
+			Name        string `json:"name"`
+			Character   string `json:"character"`
+			ProfilePath string `json:"profile_path"`
+			Order       int    `json:"order"`
+		} `json:"cast"`
+		Crew []struct {
+			Name        string `json:"name"`
+			Job         string `json:"job"`
+			ProfilePath string `json:"profile_path"`
+		} `json:"crew"`
+	} `json:"credits"`
+	Videos struct {
+		Results []struct {
+			Key  string `json:"key"`
+			Site string `json:"site"`
+			Type string `json:"type"`
+		} `json:"results"`
+	} `json:"videos"`
+}
+
+// GetTVDetails fetches rich TV drama metadata by TMDb TV ID
+func (c *Client) GetTVDetails(tvID int) (*model.Movie, error) {
+	apiKey := c.GetAPIKey()
+
+	detailURL := fmt.Sprintf("%s/tv/%d?api_key=%s&language=%s&append_to_response=credits,videos",
+		BaseURL, tvID, apiKey, c.cfg.TMDBLanguage)
+
+	req, err := http.NewRequest("GET", detailURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("TMDb TV API returned status %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var res TVDetailResponse
+	if err := json.Unmarshal(body, &res); err != nil {
+		return nil, err
+	}
+
+	// Format release date and year
+	var releaseDate *time.Time
+	var year int
+	if res.FirstAirDate != "" {
+		if t, err := time.Parse("2006-01-02", res.FirstAirDate); err == nil {
+			releaseDate = &t
+			year = t.Year()
+		}
+	}
+	if year == 0 {
+		year = time.Now().Year()
+	}
+
+	// Format duration
+	durationFormatted := ""
+	runtime := 0
+	if len(res.EpisodeRunTime) > 0 {
+		runtime = res.EpisodeRunTime[0]
+		durationFormatted = fmt.Sprintf("%d min/ep", runtime)
+	}
+	if res.NumberOfEpisodes > 0 {
+		if durationFormatted != "" {
+			durationFormatted = fmt.Sprintf("%s (%d eps)", durationFormatted, res.NumberOfEpisodes)
+		} else {
+			durationFormatted = fmt.Sprintf("%d Episodes", res.NumberOfEpisodes)
+		}
+	}
+
+	// Format genres
+	var genres []model.Genre
+	for _, g := range res.Genres {
+		genres = append(genres, model.Genre{
+			Name: g.Name,
+			Slug: scraper.Slugify(g.Name),
+		})
+	}
+
+	// Format Directors & Cast
+	var directors []model.Director
+	for _, crew := range res.Credits.Crew {
+		if crew.Job == "Director" || crew.Job == "Executive Producer" {
+			photoURL := ""
+			if crew.ProfilePath != "" {
+				photoURL = ThumbnailBaseURL + crew.ProfilePath
+			}
+			directors = append(directors, model.Director{
+				Name:     crew.Name,
+				Slug:     scraper.Slugify(crew.Name),
+				PhotoURL: photoURL,
+			})
+			if len(directors) >= 3 {
+				break
+			}
+		}
+	}
+
+	var actors []model.Actor
+	for _, cast := range res.Credits.Cast {
+		photoURL := ""
+		if cast.ProfilePath != "" {
+			photoURL = ThumbnailBaseURL + cast.ProfilePath
+		}
+		actors = append(actors, model.Actor{
+			Name:          cast.Name,
+			Slug:          scraper.Slugify(cast.Name),
+			CharacterName: cast.Character,
+			PhotoURL:      photoURL,
+		})
+		if len(actors) >= 12 {
+			break
+		}
+	}
+
+	trailerURL := ""
+	for _, v := range res.Videos.Results {
+		if v.Site == "YouTube" && (v.Type == "Trailer" || v.Type == "Teaser") {
+			trailerURL = fmt.Sprintf("https://www.youtube.com/watch?v=%s", v.Key)
+			break
+		}
+	}
+
+	country := ""
+	if len(res.OriginCountry) > 0 {
+		country = res.OriginCountry[0]
+	}
+	language := res.OriginalLanguage
+
+	posterURL := ""
+	if res.PosterPath != "" {
+		posterURL = ImageBaseURL + res.PosterPath
+	}
+	backdropURL := ""
+	if res.BackdropPath != "" {
+		backdropURL = ImageBaseURL + res.BackdropPath
+	}
+
+	// Status mapping
+	status := "released"
+	if strings.Contains(strings.ToLower(res.Status), "returning") || strings.Contains(strings.ToLower(res.Status), "in production") {
+		status = "ongoing"
+	}
+
+	// Subtitle Candidates (Indonesian & English)
+	downloadLinks := subtitles.GenerateSubtitleDownloadLinks(res.Name, year)
+
+	movie := &model.Movie{
+		Title:             res.Name,
+		OriginalTitle:     res.OriginalName,
+		Slug:              fmt.Sprintf("%s-%d", scraper.Slugify(res.Name), year),
+		Type:              "drama_pendek",
+		Status:            status,
+		Tagline:           res.Tagline,
+		Synopsis:          scraper.CleanHTMLToPlainText(res.Overview),
+		ReleaseDate:       releaseDate,
+		Year:              year,
+		DurationMinutes:   runtime,
+		DurationFormatted: durationFormatted,
+		Country:           country,
+		Language:          language,
+		Quality:           "HD 1080p",
+		IsLegal:           true,
+		IsFree:            true,
+		LicenseType:       "Commercial / Promotional",
+		LicenseName:       "Promotional Metadata (TMDb TV API)",
+		LicenseURL:        "https://www.themoviedb.org/terms-of-use",
+		TMDbRating:        res.VoteAverage,
+		Rating:            res.VoteAverage,
+		VoteCount:         res.VoteCount,
+		Popularity:        res.Popularity,
+		PosterURL:         posterURL,
+		BackdropURL:       backdropURL,
+		ThumbnailURL:      ThumbnailBaseURL + res.PosterPath,
+		TrailerURL:        trailerURL,
+		SourceWebsite:     "themoviedb.org (TV)",
+		SourceURL:         fmt.Sprintf("https://www.themoviedb.org/tv/%d", res.ID),
+		Genres:            genres,
+		Directors:         directors,
+		Actors:            actors,
+		DownloadLinks:     downloadLinks,
+		RawMetadata:       string(body),
+	}
+
+	return movie, nil
+}
+
+// DiscoverAsianDramas retrieves top Asian dramas (Korean, Chinese, Japanese, Thai)
+func (c *Client) DiscoverAsianDramas(lang string, page int) ([]model.Movie, error) {
+	apiKey := c.GetAPIKey()
+
+	if page <= 0 {
+		page = 1
+	}
+
+	langParam := "ko|zh|ja|th"
+	if lang != "" && lang != "all" {
+		langParam = lang
+	}
+
+	discoverURL := fmt.Sprintf("%s/discover/tv?api_key=%s&with_original_language=%s&sort_by=popularity.desc&page=%d&language=%s",
+		BaseURL, apiKey, langParam, page, c.cfg.TMDBLanguage)
+
+	req, err := http.NewRequest("GET", discoverURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("TMDb Discover TV API returned status %d", resp.StatusCode)
+	}
+
+	var searchRes SearchTVResponse
+	if err := json.NewDecoder(resp.Body).Decode(&searchRes); err != nil {
+		return nil, err
+	}
+
+	var dramas []model.Movie
+	for _, item := range searchRes.Results {
+		drama, err := c.GetTVDetails(item.ID)
+		if err != nil {
+			continue
+		}
+		dramas = append(dramas, *drama)
+	}
+
+	return dramas, nil
 }

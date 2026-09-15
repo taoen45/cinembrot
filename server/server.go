@@ -291,6 +291,8 @@ func (s *Server) Start() error {
 	mux.HandleFunc("GET /admin/tools", s.RequireAdmin(s.HandleAdminTools))
 	mux.HandleFunc("POST /admin/tools/scheduler-settings", s.RequireAdmin(s.HandleAdminSaveSchedulerSettings))
 	mux.HandleFunc("POST /admin/tools/scrape", s.RequireAdmin(s.HandleAdminTriggerScrape))
+	mux.HandleFunc("POST /admin/tools/scrape-anime", s.RequireAdmin(s.HandleAdminTriggerScrapeAnime))
+	mux.HandleFunc("POST /admin/tools/scrape-drama", s.RequireAdmin(s.HandleAdminTriggerScrapeDrama))
 	mux.HandleFunc("POST /admin/tools/check-links", s.RequireAdmin(s.HandleAdminTriggerCheckLinks))
 
 	// Torrent & Subtitle Downloader & Hardsub Routes

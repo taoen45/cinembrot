@@ -1108,6 +1108,56 @@ func (s *Server) HandleAdminTriggerCheckLinks(w http.ResponseWriter, r *http.Req
 	http.Redirect(w, r, "/admin/tools?success=Pengecekan+kesehatan+link+download+sedang+berjalan+di+latar+belakang!", http.StatusSeeOther)
 }
 
+// HandleAdminTriggerScrapeAnime triggers on-demand anime scraping via Jikan API
+func (s *Server) HandleAdminTriggerScrapeAnime(w http.ResponseWriter, r *http.Request) {
+	_ = r.ParseForm()
+	category := r.FormValue("category")
+	limitStr := r.FormValue("limit")
+
+	limit, _ := strconv.Atoi(limitStr)
+	if limit <= 0 {
+		limit = 15
+	}
+	if category == "" {
+		category = "top"
+	}
+
+	repo := scraper.NewRepository(s.db)
+	pipe := pipeline.NewPipeline(s.cfg, repo)
+
+	go func() {
+		log.Printf("[CMS TOOL] 🎌 Menjalankan scraping Anime MyAnimeList/Jikan (Kategori: %s, Limit: %d)...\n", category, limit)
+		_, _ = pipe.IngestAnime(category, limit)
+	}()
+
+	http.Redirect(w, r, "/admin/tools?success=Scraping+Anime+resmi+(Jikan/MAL)+berhasil+dimulai+di+latar+belakang!", http.StatusSeeOther)
+}
+
+// HandleAdminTriggerScrapeDrama triggers on-demand Asian drama scraping via TMDb TV API
+func (s *Server) HandleAdminTriggerScrapeDrama(w http.ResponseWriter, r *http.Request) {
+	_ = r.ParseForm()
+	language := r.FormValue("language")
+	pageStr := r.FormValue("page")
+
+	page, _ := strconv.Atoi(pageStr)
+	if page <= 0 {
+		page = 1
+	}
+	if language == "" {
+		language = "ko"
+	}
+
+	repo := scraper.NewRepository(s.db)
+	pipe := pipeline.NewPipeline(s.cfg, repo)
+
+	go func() {
+		log.Printf("[CMS TOOL] 🎭 Menjalankan scraping Drama Asia TMDb TV (Bahasa: %s, Hal: %d)...\n", language, page)
+		_, _ = pipe.IngestAsianDramas(language, page)
+	}()
+
+	http.Redirect(w, r, "/admin/tools?success=Scraping+Drama+Asia+resmi+(TMDb+TV)+berhasil+dimulai+di+latar+belakang!", http.StatusSeeOther)
+}
+
 // HandleAdminSources renders the website sources list from MariaDB
 func (s *Server) HandleAdminSources(w http.ResponseWriter, r *http.Request) {
 	user := s.GetLoggedInUser(r)

@@ -213,6 +213,110 @@
     </div>
   </div>
 
+  <!-- ==================== 3. SCRAPER KHUSUS ANIME & DRAMA ASIA / PENDEK ==================== -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- ANIME SCRAPER (JIKAN / MYANIMELIST) -->
+    <div class="bg-white dark:bg-dark-900 border border-purple-200 dark:border-purple-900/40 rounded-2xl p-6 shadow-sm space-y-4 relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-dark-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center text-lg"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Scraper Anime Resmi (MyAnimeList / Jikan)</h3>
+            <p class="text-xs text-slate-400">Ambil katalog anime Jepang resmi beserta poster WebP, skor MAL, & genre</p>
+          </div>
+        </div>
+        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+          Official API
+        </span>
+      </div>
+
+      <form action="/admin/tools/scrape-anime" method="POST" class="space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Kategori Anime</label>
+            <select name="category" class="w-full bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 text-slate-900 dark:text-slate-100 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-purple-500 font-medium">
+              <option value="top" selected>🔥 Top Anime Terpopuler</option>
+              <option value="seasonal">📺 Anime Musim Ini (On-Going)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Jumlah Judul</label>
+            <select name="limit" class="w-full bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 text-slate-900 dark:text-slate-100 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-purple-500 font-medium">
+              <option value="10">10 Anime</option>
+              <option value="15" selected>15 Anime</option>
+              <option value="25">25 Anime</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="p-3 bg-purple-50 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-900/30 rounded-xl">
+          <div class="flex items-start gap-2 text-[11px] text-purple-700 dark:text-purple-300">
+            <i class="fa-solid fa-closed-captioning mt-0.5 shrink-0"></i>
+            <span><strong>Integrasi Subtitle Otomatis:</strong> Otomatis menyiapkan tautan kandidat Subtitle Bahasa Indonesia (SubDL) & English (OpenSubtitles) untuk setiap anime yang di-scrape.</span>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs py-3 rounded-xl transition shadow flex items-center justify-center gap-2">
+          <i class="fa-solid fa-play"></i> Mulai Scraping Anime Sekarang
+        </button>
+      </form>
+    </div>
+
+    <!-- DRAMA ASIA / PENDEK SCRAPER (TMDB TV API) -->
+    <div class="bg-white dark:bg-dark-900 border border-amber-200 dark:border-amber-900/40 rounded-2xl p-6 shadow-sm space-y-4 relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-dark-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-lg"><i class="fa-solid fa-masks-theater"></i></div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Scraper Drama Asia / Pendek (TMDb TV)</h3>
+            <p class="text-xs text-slate-400">Ambil K-Drama, C-Drama, J-Drama, & serial Asia lengkap dengan episode & poster</p>
+          </div>
+        </div>
+        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+          Official API
+        </span>
+      </div>
+
+      <form action="/admin/tools/scrape-drama" method="POST" class="space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Asal / Bahasa Drama</label>
+            <select name="language" class="w-full bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 text-slate-900 dark:text-slate-100 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-amber-500 font-medium">
+              <option value="ko" selected>🇰🇷 Korea (K-Drama)</option>
+              <option value="zh">🇨🇳 China (C-Drama & Mini-series)</option>
+              <option value="ja">🇯🇵 Jepang (J-Drama)</option>
+              <option value="th">🇹🇭 Thailand (Lakorn / Series)</option>
+              <option value="all">🌏 Semua Asia (Campuran)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Halaman</label>
+            <select name="page" class="w-full bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 text-slate-900 dark:text-slate-100 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-amber-500 font-medium">
+              <option value="1" selected>Halaman 1 (Top 20 Judul)</option>
+              <option value="2">Halaman 2</option>
+              <option value="3">Halaman 3</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 rounded-xl">
+          <div class="flex items-start gap-2 text-[11px] text-amber-700 dark:text-amber-300">
+            <i class="fa-solid fa-closed-captioning mt-0.5 shrink-0"></i>
+            <span><strong>Integrasi Subtitle Otomatis:</strong> Menghasilkan kandidat Subtitle Bahasa Indonesia (SubDL) & English (OpenSubtitles) tersinkronisasi untuk setiap judul serial.</span>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-3 rounded-xl transition shadow flex items-center justify-center gap-2">
+          <i class="fa-solid fa-play"></i> Mulai Scraping Drama Asia Sekarang
+        </button>
+      </form>
+    </div>
+  </div>
+
   <!-- SCRAPING AUDIT LOGS TABLE -->
   <div class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-6 shadow-sm">
     <h3 class="text-sm font-bold text-slate-900 dark:text-white pb-3 border-b border-slate-100 dark:border-dark-800 mb-4 flex items-center gap-2">
