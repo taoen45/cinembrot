@@ -84,6 +84,16 @@ Akses website melalui browser:
 # Jalankan daemon background scheduler mandiri (tanpa web server)
 .\cinembrot.exe -daemon
 
+# Scrape anime resmi dari MyAnimeList via Jikan API (WebP + Subtitle otomatis)
+.\cinembrot.exe -scrape-anime -anime-cat top -anime-limit 15
+# Scrape anime musim ini (on-going):
+.\cinembrot.exe -scrape-anime -anime-cat seasonal -anime-limit 20
+
+# Scrape drama Asia dari TMDb TV API (K-Drama Korea, C-Drama China, J-Drama Jepang, Thai)
+.\cinembrot.exe -scrape-drama -drama-lang ko -drama-pages 1
+# Scrape drama China / Mini-series:
+.\cinembrot.exe -scrape-drama -drama-lang zh -drama-pages 1
+
 # Cari & ingest metadata film langsung dari TMDb REST API
 .\cinembrot.exe -tmdb "Inception" -year 2010
 

@@ -177,6 +177,26 @@ Pasang Go di host (dev):
 sudo bash /home/taoen45/docker/setup-golang.sh
 ```
 
+Perintah CLI / Terminal (Setara Artisan di Laravel):
+
+```bash
+cd /home/taoen45/docker/html
+
+# Scrape anime resmi dari MyAnimeList (Jikan API)
+go run . -scrape-anime -anime-cat top -anime-limit 15
+go run . -scrape-anime -anime-cat seasonal -anime-limit 20
+
+# Scrape drama Asia dari TMDb TV API (K-Drama, C-Drama, J-Drama, Thai)
+go run . -scrape-drama -drama-lang ko -drama-pages 1
+go run . -scrape-drama -drama-lang zh -drama-pages 1
+
+# Pengecekan & validasi link download di database
+go run . -check-links
+
+# Jalankan 1 siklus auto-scraper semua tahun
+go run . -auto-scrape
+```
+
 Jellyfin (hanya jika diminta):
 
 ```bash
@@ -277,4 +297,5 @@ Tambah folder lain (contoh `blog`): buat `~/docker/html/blog/`, copy pola `/test
 | 2026-09-12 | **Fitur Baru: Kategori Anime & Drama Pendek.** Perubahan mencakup: (1) Template publik baru `server/views/anime.html` dan `server/views/drama_pendek.html` dengan desain Hero banner dan filter bar. (2) Navigasi publik di `server/views/layout.html` — menu Anime/Drama Pendek di navbar desktop dan mobile pill navbar. (3) Sidebar CMS Admin di `server/views/admin_layout.html` — menu "Kelola Anime" dan "Drama Pendek". (4) Dropdown tipe di `server/views/admin_movie_form.html` — pilihan `movie`, `anime`, `drama_pendek`, `series`. (5) Tabel film CMS (`server/views/admin_movies.html`) — mendukung badge tipe dan tombol tambah sesuai konteks. (6) Dashboard (`server/views/admin_dashboard.html`) — kartu statistik Anime & Drama Pendek. (7) Backend Go: handler publik `HandleAnime`/`HandleDramaPendek` di `server/handlers.go`. (8) Handler admin `HandleAdminAnime`/`HandleAdminDramaPendek` + field `TypeContext` di `AdminPageData` + statistik `total_anime`/`total_drama_pendek` di dashboard + support type pada form create/edit di `server/admin_handlers.go`. (9) Rute HTTP baru di `server/server.go`: `GET /anime`, `GET /drama-pendek`, `GET /admin/anime`, `GET /admin/drama-pendek`. (10) Template anime.html dan drama_pendek.html didaftarkan di `loadTemplates()`. |
 | 2026-09-14 | Persiapan dan kompilasi lokal Windows: instalasi Go toolchain di host Windows, build `cinembrot.exe`, verifikasi konektivitas database remote `55.0.0.157:3306` via WireGuard, dan verifikasi web server berjalan di port 8080. Commit dan push seluruh pembaruan fitur Anime & Drama Pendek beserta dokumentasi ke repositori. |
 | 2026-09-15 | **Fasilitas Scraper Resmi Anime & Drama Asia + Integrasi Subtitle:** (1) Modul baru `provider/jikan` untuk scraping Anime MyAnimeList resmi (Top Anime & Seasonal). (2) Modul `provider/subtitles` untuk generasi otomatis tautan unduh dan kandidat subtitle dwibahasa (Bahasa Indonesia & English). (3) Perluasan `provider/tmdb` dengan endpoint Discover TV & detail serial drama Asia (K-Drama, C-Drama, J-Drama, Thai Drama). (4) Penambahan pipeline `IngestAnime()` dan `IngestAsianDramas()` dengan pemrosesan poster WebP. (5) Penambahan rute/handler CMS Admin `POST /admin/tools/scrape-anime` dan `POST /admin/tools/scrape-drama` serta kartu eksekusi di `admin_tools.html`. |
+| 2026-09-15 | **Penambahan Perintah CLI Terminal (Setara Artisan Laravel) & Optimasi WebP:** (1) Menambahkan flag CLI `-scrape-anime` (argumen `-anime-cat` dan `-anime-limit`) serta `-scrape-drama` (argumen `-drama-lang` dan `-drama-pages`) di `main.go` sehingga scraping dapat dijalankan langsung via terminal. (2) Optimasi kompresi WebP (80%/75%) dan pembatasan lebar resolusi gambar di `imageprocessor/processor.go` agar hemat storage s/d 90%. (3) Dokumentasi perintah operasional terminal disinkronkan di `README.md` dan `INSTRUKSI-SERVER.md`. |
 

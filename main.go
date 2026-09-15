@@ -39,6 +39,15 @@ func main() {
 	convertImages := flag.Bool("convert-images", false, "Download and convert existing movie images in database to local WebP")
 	checkLinks := flag.Bool("check-links", false, "Scan and validate all download file links in database for broken/dead URLs")
 
+	// CLI Scraper Khusus Anime & Drama Asia
+	scrapeAnime := flag.Bool("scrape-anime", false, "Scrape anime resmi dari MyAnimeList via Jikan API (WebP + Subtitle)")
+	animeCat := flag.String("anime-cat", "top", "Kategori anime: 'top' (terpopuler) atau 'seasonal' (musim ini/on-going)")
+	animeLimit := flag.Int("anime-limit", 15, "Jumlah judul anime yang diambil (misal: 10, 15, 25)")
+
+	scrapeDrama := flag.Bool("scrape-drama", false, "Scrape serial drama Asia dari TMDb TV API (WebP + Subtitle)")
+	dramaLang := flag.String("drama-lang", "ko", "Bahasa drama: 'ko' (Korea), 'zh' (China), 'ja' (Jepang), 'th' (Thailand), atau 'all'")
+	dramaPages := flag.Int("drama-pages", 1, "Jumlah halaman drama yang diambil (1 hal = 20 judul)")
+
 	flag.Parse()
 
 	fmt.Println("================================================================")
@@ -149,8 +158,32 @@ func main() {
 		return
 	}
 
+	if *scrapeAnime {
+		fmt.Printf("\n[ACTION] 🎌 Memulai scraping Anime resmi Jikan/MAL (Kategori: %s, Limit: %d)...\n", *animeCat, *animeLimit)
+		count, err := pipe.IngestAnime(*animeCat, *animeLimit)
+		if err != nil {
+			log.Printf("[ERROR] Scraping Anime gagal: %v\n", err)
+		} else {
+			fmt.Printf("\n[SUCCESS] Berhasil scrape dan simpan %d anime (WebP + Subtitle) ke MariaDB!\n", count)
+		}
+		printDatabaseStats(db)
+		return
+	}
+
+	if *scrapeDrama {
+		fmt.Printf("\n[ACTION] 🎭 Memulai scraping Drama Asia resmi TMDb TV (Bahasa: %s, Halaman: %d)...\n", *dramaLang, *dramaPages)
+		count, err := pipe.IngestAsianDramas(*dramaLang, *dramaPages)
+		if err != nil {
+			log.Printf("[ERROR] Scraping Drama Asia gagal: %v\n", err)
+		} else {
+			fmt.Printf("\n[SUCCESS] Berhasil scrape dan simpan %d drama asia (WebP + Subtitle) ke MariaDB!\n", count)
+		}
+		printDatabaseStats(db)
+		return
+	}
+
 	// 6. Start Web Server with background Auto-Scraper enabled
-	if *serveWeb || (!*fetchArchive && !*fetchOpenMovies && !*syncAll && *tmdbQuery == "" && *scrapeURL == "" && *byYear == 0 && !*convertImages && !*checkLinks) {
+	if *serveWeb || (!*fetchArchive && !*fetchOpenMovies && !*syncAll && *tmdbQuery == "" && *scrapeURL == "" && *byYear == 0 && !*convertImages && !*checkLinks && !*scrapeAnime && !*scrapeDrama) {
 		// Launch background polite auto-scraper
 		autoScraper.Start()
 
@@ -170,15 +203,17 @@ func main() {
 
 	printDatabaseStats(db)
 
-	fmt.Println("\n[INFO] Perintah CLI yang dapat digunakan:")
-	fmt.Println("  go run main.go -serve                # 🚀 JALANKAN WEB SERVER & AUTO-SCRAPER BACKGROUND")
-	fmt.Println("  go run main.go -check-links          # 🔍 Pengecekan & validasi link download file di database")
-	fmt.Println("  go run main.go -convert-images       # 🖼️ Download & konversi semua poster/backdrop di DB ke WebP lokal")
-	fmt.Println("  go run main.go -auto-scrape          # 🤖 Jalankan 1 siklus scraping ramah server semua tahun")
-	fmt.Println("  go run main.go -daemon               # ⏳ Jalankan scraper otomatis di background (cron)")
-	fmt.Println("  go run main.go -by-year 2024         # Scrape film-film rilis tahun 2024")
-	fmt.Println("  go run main.go -archive              # Ambil film legal dari Internet Archive API")
-	fmt.Println("  go run main.go -tmdb \"Inception\"     # Ambil metadata HD dari TMDb API")
+	fmt.Println("\n[INFO] Perintah CLI (Terminal) yang dapat digunakan:")
+	fmt.Println("  go run . -serve                      # 🚀 JALANKAN WEB SERVER & AUTO-SCRAPER BACKGROUND")
+	fmt.Println("  go run . -scrape-anime               # 🎌 Scrape anime resmi MyAnimeList (-anime-cat top/seasonal, -anime-limit 15)")
+	fmt.Println("  go run . -scrape-drama               # 🎭 Scrape drama Asia TMDb (-drama-lang ko/zh/ja/th/all, -drama-pages 1)")
+	fmt.Println("  go run . -check-links                # 🔍 Pengecekan & validasi link download file di database")
+	fmt.Println("  go run . -convert-images             # 🖼️ Download & konversi semua poster/backdrop di DB ke WebP lokal")
+	fmt.Println("  go run . -auto-scrape                # 🤖 Jalankan 1 siklus scraping ramah server semua tahun")
+	fmt.Println("  go run . -daemon                     # ⏳ Jalankan scraper otomatis di background (cron)")
+	fmt.Println("  go run . -by-year 2024               # Scrape film-film rilis tahun 2024")
+	fmt.Println("  go run . -archive                    # Ambil film legal dari Internet Archive API")
+	fmt.Println("  go run . -tmdb \"Inception\"           # Ambil metadata HD dari TMDb API")
 	_ = os.Stdout.Sync()
 }
 
