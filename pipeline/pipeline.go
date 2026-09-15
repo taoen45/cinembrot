@@ -369,8 +369,13 @@ func (p *Pipeline) IngestAnime(category string, limit int) (int, error) {
 	}
 
 	if err != nil {
-		_ = p.repo.LogScrape("Jikan-MyAnimeList", "https://api.jikan.moe/v4/", "FAILED", 0, err.Error(), time.Since(startTime))
-		return 0, err
+		log.Printf("[WARN] Jikan/MyAnimeList API error (%v). Mengaktifkan fallback resmi TMDb Anime...\n", err)
+		movies, err = p.tmdbCli.DiscoverAnime(limit, 1)
+		if err != nil {
+			_ = p.repo.LogScrape("Anime-Scraper", "Jikan+TMDb", "FAILED", 0, err.Error(), time.Since(startTime))
+			return 0, fmt.Errorf("semua provider anime gagal (Jikan & TMDb): %w", err)
+		}
+		log.Printf("[INFO] Fallback TMDb Anime berhasil mengambil %d anime!\n", len(movies))
 	}
 
 	savedCount := 0

@@ -308,10 +308,22 @@ func (s *Server) Start() error {
 	mux.HandleFunc("POST /api/admin/downloads/upload-subtitle/{id}", s.RequireAdmin(s.HandleAdminDownloadsUploadSubtitleAPI))
 	mux.HandleFunc("POST /api/admin/downloads/hardsub/{id}", s.RequireAdmin(s.HandleAdminDownloadsHardsubAPI))
 
-	// Serve Static Files (Local WebP Originals & Thumbnails)
+	// Serve Static Files (Local WebP Originals & Thumbnails with Smart Placeholder Fallback)
 	uploadsDir := filepath.Join("public", "uploads")
 	_ = os.MkdirAll(uploadsDir, 0755)
-	mux.Handle("GET /uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadsDir))))
+	fileServer := http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadsDir)))
+	placeholderPath := filepath.Join("public", "img", "poster-placeholder.svg")
+	mux.HandleFunc("GET /uploads/", func(w http.ResponseWriter, r *http.Request) {
+		relPath := strings.TrimPrefix(r.URL.Path, "/uploads/")
+		fullPath := filepath.Join(uploadsDir, filepath.Clean(relPath))
+		if fi, err := os.Stat(fullPath); os.IsNotExist(err) || fi.IsDir() {
+			w.Header().Set("Content-Type", "image/svg+xml")
+			w.Header().Set("Cache-Control", "no-cache")
+			http.ServeFile(w, r, placeholderPath)
+			return
+		}
+		fileServer.ServeHTTP(w, r)
+	})
 
 	// Serve Downloaded Videos & Subtitle Files (Configurable via system_settings, default: public/download/movie)
 	downloadsDir := database.GetDownloadMoviePath(s.db)

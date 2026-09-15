@@ -4,7 +4,7 @@
   <!-- BACKDROP & TITLE HEADER -->
   <div class="flex flex-col md:flex-row gap-6 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-6 shadow-sm transition-colors duration-200">
     <div class="w-full md:w-64 flex-shrink-0">
-      <img src="{{.Movie.PosterURL}}" alt="{{.Movie.Title}}" class="w-full rounded-xl shadow-md border border-slate-200 dark:border-dark-800">
+      <img src="{{if .Movie.PosterURL}}{{.Movie.PosterURL}}{{else}}{{.Movie.ThumbnailURL}}{{end}}" alt="{{.Movie.Title}}" data-fallback="{{.Movie.ThumbnailURL}}" onerror="if (this.dataset.fallback && this.src !== this.dataset.fallback) { this.src = this.dataset.fallback; } else { this.onerror=null; this.src='/img/poster-placeholder.svg'; }" class="w-full rounded-xl shadow-md border border-slate-200 dark:border-dark-800">
     </div>
 
     <div class="flex-1">

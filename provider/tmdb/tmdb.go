@@ -713,3 +713,50 @@ func (c *Client) DiscoverAsianDramas(lang string, page int) ([]model.Movie, erro
 
 	return dramas, nil
 }
+
+// DiscoverAnime retrieves top popular anime series from TMDb (with_genres=16, with_original_language=ja)
+func (c *Client) DiscoverAnime(limit int, page int) ([]model.Movie, error) {
+	apiKey := c.GetAPIKey()
+
+	if page <= 0 {
+		page = 1
+	}
+
+	discoverURL := fmt.Sprintf("%s/discover/tv?api_key=%s&with_genres=16&with_original_language=ja&sort_by=popularity.desc&page=%d&language=%s",
+		BaseURL, apiKey, page, c.cfg.TMDBLanguage)
+
+	req, err := http.NewRequest("GET", discoverURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("TMDb Discover Anime API returned status %d", resp.StatusCode)
+	}
+
+	var searchRes SearchTVResponse
+	if err := json.NewDecoder(resp.Body).Decode(&searchRes); err != nil {
+		return nil, err
+	}
+
+	var animes []model.Movie
+	for _, item := range searchRes.Results {
+		anime, err := c.GetTVDetails(item.ID)
+		if err != nil {
+			continue
+		}
+		anime.Type = "anime"
+		animes = append(animes, *anime)
+		if limit > 0 && len(animes) >= limit {
+			break
+		}
+	}
+
+	return animes, nil
+}
