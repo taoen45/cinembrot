@@ -139,6 +139,44 @@ type MovieDetailResponse struct {
 			Official bool   `json:"official"`
 		} `json:"results"`
 	} `json:"videos"`
+	Translations TMDbTranslations `json:"translations"`
+}
+
+type TMDbTranslations struct {
+	Translations []struct {
+		Iso31661    string `json:"iso_3166_1"`
+		Iso6391     string `json:"iso_639_1"`
+		Name        string `json:"name"`
+		EnglishName string `json:"english_name"`
+		Data        struct {
+			Name     string `json:"name"`
+			Title    string `json:"title"`
+			Overview string `json:"overview"`
+			Tagline  string `json:"tagline"`
+		} `json:"data"`
+	} `json:"translations"`
+}
+
+// extractEnglishInfo extracts English title/name and overview from TMDb translations
+func extractEnglishInfo(trans TMDbTranslations) (enTitle string, enOverview string) {
+	for _, t := range trans.Translations {
+		if t.Iso6391 == "en" {
+			name := strings.TrimSpace(t.Data.Name)
+			if name == "" {
+				name = strings.TrimSpace(t.Data.Title)
+			}
+			if name != "" && !scraper.ContainsNonLatin(name) {
+				enTitle = name
+			}
+			if strings.TrimSpace(t.Data.Overview) != "" {
+				enOverview = strings.TrimSpace(t.Data.Overview)
+			}
+			if enTitle != "" && enOverview != "" {
+				break
+			}
+		}
+	}
+	return
 }
 
 // SearchMovie searches TMDb for a movie title
@@ -209,7 +247,7 @@ func (c *Client) SearchTV(title string) (*SearchTVResponse, error) {
 func (c *Client) GetMovieDetails(tmdbID int) (*model.Movie, error) {
 	apiKey := c.GetAPIKey()
 
-	detailURL := fmt.Sprintf("%s/movie/%d?api_key=%s&language=%s&append_to_response=credits,videos",
+	detailURL := fmt.Sprintf("%s/movie/%d?api_key=%s&language=%s&append_to_response=credits,videos,translations",
 		BaseURL, tmdbID, apiKey, c.cfg.TMDBLanguage)
 
 	req, err := http.NewRequest("GET", detailURL, nil)
@@ -331,14 +369,43 @@ func (c *Client) GetMovieDetails(tmdbID int) (*model.Movie, error) {
 		backdropURL = ImageBaseURL + res.BackdropPath
 	}
 
+	title := res.Title
+	originalTitle := res.OriginalTitle
+	alternativeTitles := ""
+	overview := res.Overview
+
+	enTitle, enOverview := extractEnglishInfo(res.Translations)
+
+	if scraper.ContainsNonLatin(title) {
+		if enTitle != "" {
+			alternativeTitles = title
+			title = enTitle
+		} else if !scraper.ContainsNonLatin(originalTitle) && originalTitle != "" {
+			alternativeTitles = title
+			title = originalTitle
+		}
+	} else if originalTitle != "" && originalTitle != title {
+		alternativeTitles = originalTitle
+	}
+
+	if strings.TrimSpace(overview) == "" && enOverview != "" {
+		overview = enOverview
+	}
+
+	slugBase := scraper.Slugify(title)
+	if slugBase == "" {
+		slugBase = fmt.Sprintf("movie-%d", res.ID)
+	}
+
 	movie := &model.Movie{
-		Title:             res.Title,
-		OriginalTitle:     res.OriginalTitle,
-		Slug:              fmt.Sprintf("%s-%d", scraper.Slugify(res.Title), year),
+		Title:             title,
+		OriginalTitle:     originalTitle,
+		AlternativeTitles: alternativeTitles,
+		Slug:              fmt.Sprintf("%s-%d", slugBase, year),
 		Type:              "movie",
 		Status:            strings.ToLower(res.Status),
 		Tagline:           res.Tagline,
-		Synopsis:          res.Overview,
+		Synopsis:          overview,
 		ReleaseDate:       releaseDate,
 		Year:              year,
 		DurationMinutes:   res.Runtime,
@@ -519,13 +586,14 @@ type TVDetailResponse struct {
 			Type string `json:"type"`
 		} `json:"results"`
 	} `json:"videos"`
+	Translations TMDbTranslations `json:"translations"`
 }
 
 // GetTVDetails fetches rich TV drama metadata by TMDb TV ID
 func (c *Client) GetTVDetails(tvID int) (*model.Movie, error) {
 	apiKey := c.GetAPIKey()
 
-	detailURL := fmt.Sprintf("%s/tv/%d?api_key=%s&language=%s&append_to_response=credits,videos",
+	detailURL := fmt.Sprintf("%s/tv/%d?api_key=%s&language=%s&append_to_response=credits,videos,translations",
 		BaseURL, tvID, apiKey, c.cfg.TMDBLanguage)
 
 	req, err := http.NewRequest("GET", detailURL, nil)
@@ -655,17 +723,49 @@ func (c *Client) GetTVDetails(tvID int) (*model.Movie, error) {
 		status = "ongoing"
 	}
 
-	// Subtitle Candidates (Indonesian & English)
-	downloadLinks := subtitles.GenerateSubtitleDownloadLinks(res.Name, year)
+	title := res.Name
+	originalTitle := res.OriginalName
+	alternativeTitles := ""
+	overview := scraper.CleanHTMLToPlainText(res.Overview)
+
+	enTitle, enOverview := extractEnglishInfo(res.Translations)
+
+	if scraper.ContainsNonLatin(title) {
+		if enTitle != "" {
+			alternativeTitles = title
+			title = enTitle
+		} else if !scraper.ContainsNonLatin(originalTitle) && originalTitle != "" {
+			alternativeTitles = title
+			title = originalTitle
+		}
+	} else if originalTitle != "" && originalTitle != title {
+		alternativeTitles = originalTitle
+	}
+
+	if strings.TrimSpace(overview) == "" && enOverview != "" {
+		overview = scraper.CleanHTMLToPlainText(enOverview)
+	}
+	if strings.TrimSpace(overview) == "" {
+		overview = c.GetEnglishSynopsis(fmt.Sprintf("https://www.themoviedb.org/tv/%d", res.ID), title, "tv")
+	}
+
+	slugBase := scraper.Slugify(title)
+	if slugBase == "" {
+		slugBase = fmt.Sprintf("tv-%d", res.ID)
+	}
+
+	// Subtitle Candidates (Indonesian & English) using English / Latin title
+	downloadLinks := subtitles.GenerateSubtitleDownloadLinks(title, year)
 
 	movie := &model.Movie{
-		Title:             res.Name,
-		OriginalTitle:     res.OriginalName,
-		Slug:              fmt.Sprintf("%s-%d", scraper.Slugify(res.Name), year),
+		Title:             title,
+		OriginalTitle:     originalTitle,
+		AlternativeTitles: alternativeTitles,
+		Slug:              fmt.Sprintf("%s-%d", slugBase, year),
 		Type:              "drama_pendek",
 		Status:            status,
 		Tagline:           res.Tagline,
-		Synopsis:          scraper.CleanHTMLToPlainText(res.Overview),
+		Synopsis:          overview,
 		ReleaseDate:       releaseDate,
 		Year:              year,
 		DurationMinutes:   runtime,
@@ -698,8 +798,8 @@ func (c *Client) GetTVDetails(tvID int) (*model.Movie, error) {
 	return movie, nil
 }
 
-// DiscoverAsianDramas retrieves top Asian dramas (Korean, Chinese, Japanese, Thai)
-func (c *Client) DiscoverAsianDramas(lang string, page int) ([]model.Movie, error) {
+// DiscoverAsianDramas retrieves top Asian dramas (Korean, Chinese, Japanese, Thai) with optional year filter
+func (c *Client) DiscoverAsianDramas(lang string, page int, year ...int) ([]model.Movie, error) {
 	apiKey := c.GetAPIKey()
 
 	if page <= 0 {
@@ -711,8 +811,13 @@ func (c *Client) DiscoverAsianDramas(lang string, page int) ([]model.Movie, erro
 		langParam = lang
 	}
 
-	discoverURL := fmt.Sprintf("%s/discover/tv?api_key=%s&with_original_language=%s&sort_by=popularity.desc&page=%d&language=%s",
-		BaseURL, apiKey, langParam, page, c.cfg.TMDBLanguage)
+	yearFilter := ""
+	if len(year) > 0 && year[0] > 0 {
+		yearFilter = fmt.Sprintf("&first_air_date_year=%d", year[0])
+	}
+
+	discoverURL := fmt.Sprintf("%s/discover/tv?api_key=%s&with_original_language=%s&sort_by=popularity.desc&page=%d&language=%s%s",
+		BaseURL, apiKey, langParam, page, c.cfg.TMDBLanguage, yearFilter)
 
 	req, err := http.NewRequest("GET", discoverURL, nil)
 	if err != nil {
@@ -746,8 +851,8 @@ func (c *Client) DiscoverAsianDramas(lang string, page int) ([]model.Movie, erro
 	return dramas, nil
 }
 
-// DiscoverAnime retrieves anime series from TMDb (with_genres=16, with_original_language=ja) with custom sort_by
-func (c *Client) DiscoverAnime(limit int, page int, sortBy ...string) ([]model.Movie, error) {
+// DiscoverAnime retrieves anime series from TMDb (with_genres=16, with_original_language=ja) with custom sort_by and year
+func (c *Client) DiscoverAnime(limit int, page int, year int, sortBy ...string) ([]model.Movie, error) {
 	apiKey := c.GetAPIKey()
 
 	if page <= 0 {
@@ -759,8 +864,13 @@ func (c *Client) DiscoverAnime(limit int, page int, sortBy ...string) ([]model.M
 		sort = sortBy[0]
 	}
 
-	discoverURL := fmt.Sprintf("%s/discover/tv?api_key=%s&with_genres=16&with_original_language=ja&sort_by=%s&page=%d&language=%s",
-		BaseURL, apiKey, sort, page, c.cfg.TMDBLanguage)
+	yearFilter := ""
+	if year > 0 {
+		yearFilter = fmt.Sprintf("&first_air_date_year=%d", year)
+	}
+
+	discoverURL := fmt.Sprintf("%s/discover/tv?api_key=%s&with_genres=16&with_original_language=ja&sort_by=%s&page=%d&language=%s%s",
+		BaseURL, apiKey, sort, page, c.cfg.TMDBLanguage, yearFilter)
 
 	req, err := http.NewRequest("GET", discoverURL, nil)
 	if err != nil {

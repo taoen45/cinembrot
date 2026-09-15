@@ -4,7 +4,19 @@ import (
 	"html"
 	"regexp"
 	"strings"
+	"unicode"
 )
+
+// ContainsNonLatin checks if a string contains CJK, Hiragana, Katakana, or Hangul characters
+func ContainsNonLatin(s string) bool {
+	for _, r := range s {
+		if unicode.Is(unicode.Han, r) || unicode.Is(unicode.Hiragana, r) || unicode.Is(unicode.Katakana, r) || unicode.Is(unicode.Hangul, r) {
+			return true
+		}
+	}
+	return false
+}
+
 
 var (
 	scriptRegex    = regexp.MustCompile(`(?i)<(script|style)[^>]*>[\s\S]*?</(script|style)>`)

@@ -51,6 +51,9 @@ func main() {
 	// CLI Sinkronisasi Multi-Server Streaming Video
 	populateStreams := flag.Bool("populate-streams", false, "Isi dan perbarui server streaming embed (VidSrc, AutoEmbed, 2Embed, VidLink) untuk semua judul di database")
 
+	// CLI Perbaikan Judul Non-Latin & Sinopsis Kosong
+	fixTitles := flag.Bool("fix-titles", false, "Perbaiki judul-judul kanji/non-Latin ke English QWERTY dan lengkapi sinopsis kosong di database")
+
 	flag.Parse()
 
 	fmt.Println("================================================================")
@@ -162,8 +165,12 @@ func main() {
 	}
 
 	if *scrapeAnime {
-		fmt.Printf("\n[ACTION] 🎌 Memulai scraping Anime resmi Jikan/MAL (Kategori: %s, Limit: %d)...\n", *animeCat, *animeLimit)
-		count, err := pipe.IngestAnime(*animeCat, *animeLimit)
+		yearInfo := ""
+		if *tmdbYear > 0 {
+			yearInfo = fmt.Sprintf(", Tahun: %d", *tmdbYear)
+		}
+		fmt.Printf("\n[ACTION] 🎌 Memulai scraping Anime resmi (Kategori: %s, Limit: %d%s)...\n", *animeCat, *animeLimit, yearInfo)
+		count, err := pipe.IngestAnime(*animeCat, *animeLimit, *tmdbYear)
 		if err != nil {
 			log.Printf("[ERROR] Scraping Anime gagal: %v\n", err)
 		} else {
@@ -174,8 +181,12 @@ func main() {
 	}
 
 	if *scrapeDrama {
-		fmt.Printf("\n[ACTION] 🎭 Memulai scraping Drama Asia resmi TMDb TV (Bahasa: %s, Halaman: %d)...\n", *dramaLang, *dramaPages)
-		count, err := pipe.IngestAsianDramas(*dramaLang, *dramaPages)
+		yearInfo := ""
+		if *tmdbYear > 0 {
+			yearInfo = fmt.Sprintf(", Tahun: %d", *tmdbYear)
+		}
+		fmt.Printf("\n[ACTION] 🎭 Memulai scraping Drama Asia resmi TMDb TV (Bahasa: %s, Halaman: %d%s)...\n", *dramaLang, *dramaPages, yearInfo)
+		count, err := pipe.IngestAsianDramas(*dramaLang, *dramaPages, *tmdbYear)
 		if err != nil {
 			log.Printf("[ERROR] Scraping Drama Asia gagal: %v\n", err)
 		} else {
@@ -197,8 +208,20 @@ func main() {
 		return
 	}
 
+	if *fixTitles {
+		fmt.Println("\n[ACTION] 🛠️ Memulai perbaikan judul non-Latin (Kanji/CJK) ke English QWERTY dan pengisian sinopsis kosong...")
+		count, err := pipe.FixNonLatinTitlesAndSynopses(db)
+		if err != nil {
+			log.Printf("[ERROR] Perbaikan judul & sinopsis gagal: %v\n", err)
+		} else {
+			fmt.Printf("\n[SUCCESS] Berhasil memperbarui %d judul & sinopsis film/anime/drama di MariaDB!\n", count)
+		}
+		printDatabaseStats(db)
+		return
+	}
+
 	// 6. Start Web Server with background Auto-Scraper enabled
-	if *serveWeb || (!*fetchArchive && !*fetchOpenMovies && !*syncAll && *tmdbQuery == "" && *scrapeURL == "" && *byYear == 0 && !*convertImages && !*checkLinks && !*scrapeAnime && !*scrapeDrama) {
+	if *serveWeb || (!*fetchArchive && !*fetchOpenMovies && !*syncAll && *tmdbQuery == "" && *scrapeURL == "" && *byYear == 0 && !*convertImages && !*checkLinks && !*scrapeAnime && !*scrapeDrama && !*populateStreams && !*fixTitles) {
 		// Launch background polite auto-scraper
 		autoScraper.Start()
 
@@ -220,8 +243,10 @@ func main() {
 
 	fmt.Println("\n[INFO] Perintah CLI (Terminal) yang dapat digunakan:")
 	fmt.Println("  go run . -serve                      # 🚀 JALANKAN WEB SERVER & AUTO-SCRAPER BACKGROUND")
-	fmt.Println("  go run . -scrape-anime               # 🎌 Scrape anime resmi MyAnimeList (-anime-cat top/seasonal, -anime-limit 15)")
-	fmt.Println("  go run . -scrape-drama               # 🎭 Scrape drama Asia TMDb (-drama-lang ko/zh/ja/th/all, -drama-pages 1)")
+	fmt.Println("  go run . -scrape-anime -year 2026    # 🎌 Scrape anime resmi (-year 2026, -anime-cat top/seasonal, -anime-limit 15)")
+	fmt.Println("  go run . -scrape-drama -year 2026    # 🎭 Scrape drama Asia TMDb (-year 2026, -drama-lang ko/zh/ja/th/all, -drama-pages 1)")
+	fmt.Println("  go run . -fix-titles                 # 🛠️ Perbaiki judul Kanji ke English QWERTY & isi sinopsis kosong")
+	fmt.Println("  go run . -populate-streams           # 🎬 Isi/perbarui server streaming embed untuk semua judul")
 	fmt.Println("  go run . -check-links                # 🔍 Pengecekan & validasi link download file di database")
 	fmt.Println("  go run . -convert-images             # 🖼️ Download & konversi semua poster/backdrop di DB ke WebP lokal")
 	fmt.Println("  go run . -auto-scrape                # 🤖 Jalankan 1 siklus scraping ramah server semua tahun")

@@ -118,6 +118,21 @@ func (r *Repository) UpsertMovie(movie *model.Movie) error {
 				return nil
 			}
 
+			// Pertahankan sinopsis lama jika sinopsis baru kosong
+			if strings.TrimSpace(movie.Synopsis) == "" && strings.TrimSpace(existingMovie.Synopsis) != "" {
+				movie.Synopsis = existingMovie.Synopsis
+			}
+
+			// Jika judul lama berkarakter non-Latin dan judul baru alfabet latin, prioritaskan judul baru
+			if ContainsNonLatin(existingMovie.Title) && !ContainsNonLatin(movie.Title) {
+				if movie.AlternativeTitles == "" {
+					movie.AlternativeTitles = existingMovie.Title
+				}
+				if movie.OriginalTitle == "" {
+					movie.OriginalTitle = existingMovie.Title
+				}
+			}
+
 			// Update existing movie without cascading has-many
 			movie.ID = existingMovie.ID
 			movie.DownloadLinks = nil

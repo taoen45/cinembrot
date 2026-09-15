@@ -115,6 +115,20 @@ func (c *Client) FetchSeasonalAnime(limit int, page int) ([]model.Movie, error) 
 	return c.fetchAndParse(endpoint)
 }
 
+// FetchAnimeByYear fetches anime released in a specific year from MyAnimeList/Jikan
+func (c *Client) FetchAnimeByYear(year int, limit int, page int) ([]model.Movie, error) {
+	if limit <= 0 {
+		limit = 15
+	}
+	if page <= 0 {
+		page = 1
+	}
+
+	endpoint := fmt.Sprintf("%s/anime?start_date=%d-01-01&end_date=%d-12-31&order_by=popularity&sort=asc&page=%d&limit=%d",
+		BaseURL, year, year, page, limit)
+	return c.fetchAndParse(endpoint)
+}
+
 func (c *Client) fetchAndParse(endpoint string) ([]model.Movie, error) {
 	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
@@ -155,8 +169,25 @@ func (c *Client) fetchAndParse(endpoint string) ([]model.Movie, error) {
 
 func (c *Client) convertAnimeToMovie(a JikanAnime) model.Movie {
 	title := a.Title
-	if a.TitleEnglish != "" && !strings.EqualFold(a.TitleEnglish, a.Title) {
+	if a.TitleEnglish != "" {
 		title = a.TitleEnglish
+	}
+	// Pastikan judul menggunakan alfabet Latin/QWERTY jika masih ada karakter non-Latin
+	if scraper.ContainsNonLatin(title) {
+		if a.TitleEnglish != "" && !scraper.ContainsNonLatin(a.TitleEnglish) {
+			title = a.TitleEnglish
+		} else if !scraper.ContainsNonLatin(a.Title) {
+			title = a.Title
+		}
+	}
+
+	altTitle := a.Title
+	if a.TitleJapanese != "" {
+		if altTitle != "" && altTitle != a.TitleJapanese {
+			altTitle = altTitle + " / " + a.TitleJapanese
+		} else {
+			altTitle = a.TitleJapanese
+		}
 	}
 
 	year := a.Year
@@ -164,10 +195,11 @@ func (c *Client) convertAnimeToMovie(a JikanAnime) model.Movie {
 		year = time.Now().Year()
 	}
 
-	slug := scraper.Slugify(fmt.Sprintf("%s-%d", title, year))
-	if slug == "" {
-		slug = fmt.Sprintf("anime-%d", a.MalID)
+	slugBase := scraper.Slugify(title)
+	if slugBase == "" {
+		slugBase = fmt.Sprintf("anime-%d", a.MalID)
 	}
+	slug := fmt.Sprintf("%s-%d", slugBase, year)
 
 	// Status mapping
 	status := "released"
@@ -238,7 +270,7 @@ func (c *Client) convertAnimeToMovie(a JikanAnime) model.Movie {
 		Slug:              slug,
 		Title:             title,
 		OriginalTitle:     a.TitleJapanese,
-		AlternativeTitles: a.Title,
+		AlternativeTitles: altTitle,
 		Type:              "anime",
 		Status:            status,
 		Tagline:           fmt.Sprintf("Anime %s • %d Episodes • Skor %.1f/10", a.Type, a.Episodes, a.Score),

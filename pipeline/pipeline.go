@@ -3,6 +3,7 @@ package pipeline
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -354,10 +355,15 @@ func (p *Pipeline) enrichMetadata(movie *model.Movie) {
 }
 
 // IngestAnime fetches top popular and/or latest seasonal anime from MyAnimeList/Jikan and TMDb and saves to DB
-func (p *Pipeline) IngestAnime(category string, limit int) (int, error) {
+func (p *Pipeline) IngestAnime(category string, limit int, year ...int) (int, error) {
 	startTime := time.Now()
 	if limit <= 0 {
 		limit = 20
+	}
+
+	targetYear := 0
+	if len(year) > 0 && year[0] > 0 {
+		targetYear = year[0]
 	}
 
 	catLower := strings.ToLower(strings.TrimSpace(category))
@@ -387,7 +393,9 @@ func (p *Pipeline) IngestAnime(category string, limit int) (int, error) {
 			var batch []model.Movie
 			var err error
 
-			if subCat == "seasonal" || subCat == "now" || subCat == "latest" {
+			if targetYear > 0 {
+				batch, err = p.jikanCli.FetchAnimeByYear(targetYear, perPage, page)
+			} else if subCat == "seasonal" || subCat == "now" || subCat == "latest" {
 				batch, err = p.jikanCli.FetchSeasonalAnime(perPage, page)
 			} else {
 				batch, err = p.jikanCli.FetchTopAnime(perPage, page)
@@ -396,10 +404,10 @@ func (p *Pipeline) IngestAnime(category string, limit int) (int, error) {
 			if err != nil || len(batch) == 0 {
 				log.Printf("[WARN] Jikan %s page %d notice: %v. Menggunakan fallback TMDb...\n", subCat, page, err)
 				sortOption := "popularity.desc"
-				if subCat == "seasonal" || subCat == "now" || subCat == "latest" {
+				if targetYear == 0 && (subCat == "seasonal" || subCat == "now" || subCat == "latest") {
 					sortOption = "first_air_date.desc"
 				}
-				batch, err = p.tmdbCli.DiscoverAnime(perPage, page, sortOption)
+				batch, err = p.tmdbCli.DiscoverAnime(perPage, page, targetYear, sortOption)
 			}
 
 			if len(batch) == 0 {
@@ -413,7 +421,10 @@ func (p *Pipeline) IngestAnime(category string, limit int) (int, error) {
 		}
 	}
 
-	if catLower == "all" || catLower == "combo" || catLower == "popular-latest" || limit >= 40 {
+	if targetYear > 0 {
+		log.Printf("[ANIME] 🎌 Mengambil %d anime yang rilis pada tahun %d...\n", limit, targetYear)
+		fetchBatch("year", limit)
+	} else if catLower == "all" || catLower == "combo" || catLower == "popular-latest" || limit >= 40 {
 		half := limit / 2
 		log.Printf("[ANIME] 🎌 Mengambil %d anime terpopuler sepanjang masa...\n", half)
 		fetchBatch("top", half)
@@ -459,13 +470,13 @@ func (p *Pipeline) IngestAnime(category string, limit int) (int, error) {
 }
 
 // IngestAsianDramas fetches top Asian dramas (Korean, Chinese, Japanese, Thai) from TMDb and saves to DB
-func (p *Pipeline) IngestAsianDramas(lang string, page int) (int, error) {
+func (p *Pipeline) IngestAsianDramas(lang string, page int, year ...int) (int, error) {
 	startTime := time.Now()
 	if page <= 0 {
 		page = 1
 	}
 
-	dramas, err := p.tmdbCli.DiscoverAsianDramas(lang, page)
+	dramas, err := p.tmdbCli.DiscoverAsianDramas(lang, page, year...)
 	if err != nil {
 		_ = p.repo.LogScrape("TMDb-TV", fmt.Sprintf("discover/tv?lang=%s", lang), "FAILED", 0, err.Error(), time.Since(startTime))
 		return 0, err
@@ -520,6 +531,111 @@ func (p *Pipeline) PopulateMissingStreamLinks(db *gorm.DB) (int, error) {
 			}
 		}
 	}
+	return updatedCount, nil
+}
+
+// FixNonLatinTitlesAndSynopses scans all records in MariaDB, converts non-Latin titles (Kanji/Hanzi/Kana)
+// into official English QWERTY titles, updates slugs, and populates missing synopses from TMDb
+func (p *Pipeline) FixNonLatinTitlesAndSynopses(db *gorm.DB) (int, error) {
+	var movies []model.Movie
+	if err := db.Find(&movies).Error; err != nil {
+		return 0, err
+	}
+
+	log.Printf("[CLEANUP] Memeriksa %d judul di database untuk konversi judul Kanji -> English (QWERTY) dan pengisian sinopsis kosong...\n", len(movies))
+	updatedCount := 0
+
+	for i := range movies {
+		movie := &movies[i]
+		isNonLatin := scraper.ContainsNonLatin(movie.Title)
+		isSynopsisEmpty := strings.TrimSpace(movie.Synopsis) == "" || strings.Contains(strings.ToLower(movie.Synopsis), "belum tersedia")
+
+		if !isNonLatin && !isSynopsisEmpty {
+			continue
+		}
+
+		updates := make(map[string]interface{})
+		needUpdate := false
+
+		// 1. Dapatkan TMDb ID dari SourceURL jika tersedia
+		var tmdbID int
+		if strings.Contains(movie.SourceURL, "themoviedb.org") {
+			parts := strings.Split(movie.SourceURL, "/")
+			for idx, part := range parts {
+				if (part == "tv" || part == "movie") && idx+1 < len(parts) {
+					if id, err := strconv.Atoi(parts[idx+1]); err == nil && id > 0 {
+						tmdbID = id
+						break
+					}
+				}
+			}
+		}
+
+		isTV := movie.Type == "anime" || movie.Type == "drama_pendek" || strings.Contains(movie.SourceURL, "/tv/")
+
+		var freshMovie *model.Movie
+		var err error
+
+		if tmdbID > 0 {
+			if isTV {
+				freshMovie, err = p.tmdbCli.GetTVDetails(tmdbID)
+			} else {
+				freshMovie, err = p.tmdbCli.GetMovieDetails(tmdbID)
+			}
+		}
+
+		// Fallback jika belum berhasil: cari via SearchTV atau SearchMovie
+		if freshMovie == nil || err != nil {
+			searchQuery := movie.OriginalTitle
+			if searchQuery == "" || scraper.ContainsNonLatin(searchQuery) {
+				searchQuery = movie.Title
+			}
+			if isTV {
+				if searchRes, sErr := p.tmdbCli.SearchTV(searchQuery); sErr == nil && len(searchRes.Results) > 0 {
+					freshMovie, _ = p.tmdbCli.GetTVDetails(searchRes.Results[0].ID)
+				}
+			} else {
+				if searchRes, sErr := p.tmdbCli.SearchMovie(searchQuery, movie.Year); sErr == nil && len(searchRes.Results) > 0 {
+					freshMovie, _ = p.tmdbCli.GetMovieDetails(searchRes.Results[0].ID)
+				}
+			}
+		}
+
+		if freshMovie != nil {
+			if isNonLatin && freshMovie.Title != "" && !scraper.ContainsNonLatin(freshMovie.Title) {
+				updates["title"] = freshMovie.Title
+				if freshMovie.Slug != "" {
+					updates["slug"] = freshMovie.Slug
+				}
+				updates["alternative_titles"] = movie.Title
+				if movie.OriginalTitle == "" {
+					updates["original_title"] = movie.Title
+				}
+				needUpdate = true
+			}
+
+			if isSynopsisEmpty && freshMovie.Synopsis != "" {
+				updates["synopsis"] = freshMovie.Synopsis
+				needUpdate = true
+			}
+		} else if isSynopsisEmpty {
+			enSynopsis := p.tmdbCli.GetEnglishSynopsis(movie.SourceURL, movie.Title, movie.Type)
+			if enSynopsis != "" {
+				updates["synopsis"] = enSynopsis
+				needUpdate = true
+			}
+		}
+
+		if needUpdate {
+			if err := db.Model(movie).Updates(updates).Error; err == nil {
+				updatedCount++
+				log.Printf("  -> [FIX %d] '%s' -> Title: '%v', Slug: '%v', Sinopsis: %d karakter\n",
+					updatedCount, movie.Title, updates["title"], updates["slug"], len(fmt.Sprintf("%v", updates["synopsis"])))
+			}
+		}
+		time.Sleep(80 * time.Millisecond) // Rate limiting
+	}
+
 	return updatedCount, nil
 }
 
