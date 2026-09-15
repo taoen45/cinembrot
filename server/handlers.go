@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"html/template"
 	"net/http"
 	"strconv"
 	"strings"
@@ -14,34 +15,85 @@ import (
 )
 
 type PageData struct {
-	Lang            string
-	Title           string
-	SiteName        string
-	ActiveMenu      string
-	Movies          []model.Movie
-	Slides          []model.Movie
-	BoxOffice       []model.Movie
-	TopRated        []model.Movie
-	FreeMovies      []model.Movie
-	Featured        *model.Movie
-	Movie           *model.Movie
-	Related         []model.Movie
-	Genres          []model.Genre
-	Years           []int
-	Countries       []string
-	Categories      []string
-	CurrentYear     int
-	CurrentGenre    string
-	CurrentCountry  string
-	CurrentCategory string
-	CurrentSort     string
-	SearchQuery     string
-	TotalCount      int64
-	EnableAds       bool
-	EnableComments  bool
-	ShowTorrentPublic bool
-	CaptchaQuestion string
-	CaptchaToken    string
+	Lang                   string
+	Title                  string
+	SiteName               string
+	SiteTagline            string
+	ActiveMenu             string
+	Movies                 []model.Movie
+	Slides                 []model.Movie
+	BoxOffice              []model.Movie
+	TopRated               []model.Movie
+	FreeMovies             []model.Movie
+	Featured               *model.Movie
+	Movie                  *model.Movie
+	Related                []model.Movie
+	Genres                 []model.Genre
+	Years                  []int
+	Countries              []string
+	Categories             []string
+	CurrentYear            int
+	CurrentGenre           string
+	CurrentCountry         string
+	CurrentCategory        string
+	CurrentSort            string
+	SearchQuery            string
+	TotalCount             int64
+	EnableAds              bool
+	EnableComments         bool
+	ShowTorrentPublic      bool
+	TranslateEnabled       bool
+	GoogleTranslateEnabled bool
+	AdsterraPopunder       template.HTML
+	AdsterraSocialBar      template.HTML
+	AdsterraBanner728      template.HTML
+	AdsterraNative         template.HTML
+	AdsterraSmartlink      string
+	CaptchaQuestion        string
+	CaptchaToken           string
+}
+
+// PopulatePageData automatically sets dynamic settings from database into PageData
+func (s *Server) PopulatePageData(r *http.Request, data *PageData) {
+	settings := database.GetAllSettings(s.db)
+
+	if data.Lang == "" && r != nil {
+		data.Lang = i18n.GetLang(r)
+	}
+	if data.SiteName == "" {
+		if val, ok := settings["site_name"]; ok && strings.TrimSpace(val) != "" {
+			data.SiteName = val
+		} else {
+			data.SiteName = "CINEMBROT"
+		}
+	}
+	if data.SiteTagline == "" {
+		data.SiteTagline = settings["site_tagline"]
+	}
+
+	adsVal := settings["ads_enabled"]
+	adsEnabled := adsVal != "false" && adsVal != "0"
+	data.EnableAds = adsEnabled
+
+	if adsEnabled {
+		data.AdsterraPopunder = template.HTML(settings["adsterra_popunder_code"])
+		data.AdsterraSocialBar = template.HTML(settings["adsterra_socialbar_code"])
+		data.AdsterraBanner728 = template.HTML(settings["adsterra_banner_728_code"])
+		data.AdsterraNative = template.HTML(settings["adsterra_native_banner_code"])
+		data.AdsterraSmartlink = settings["adsterra_smartlink_url"]
+	}
+
+	transVal := settings["translate_enabled"]
+	data.TranslateEnabled = transVal != "false" && transVal != "0"
+
+	gTransVal := settings["google_translate_enabled"]
+	data.GoogleTranslateEnabled = gTransVal != "false" && gTransVal != "0"
+
+	comVal := settings["comments_enabled"]
+	data.EnableComments = comVal != "false" && comVal != "0"
+
+	torVal := settings["show_torrent_public"]
+	data.ShowTorrentPublic = torVal == "true" || torVal == "1"
 }
 
 // HandleHome displays home page with top 10 movies slider & multi-filter dropdown bar
@@ -477,7 +529,7 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 
 // HandleSubmitComment saves user submitted comment for a movie
 func (s *Server) HandleSubmitComment(w http.ResponseWriter, r *http.Request) {
-	if !s.cfg.EnableComments {
+	if !s.cfg.EnableComments || database.GetSetting(s.db, "comments_enabled", "true") == "false" {
 		http.Error(w, "Fitur komentar dinonaktifkan oleh administrator.", http.StatusForbidden)
 		return
 	}

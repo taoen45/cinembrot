@@ -214,6 +214,7 @@ func (s *Server) loadTemplates() {
 		"admin_tools.html",
 		"admin_downloads.html",
 		"admin_download_review.html",
+		"admin_settings.html",
 	}
 	for _, page := range adminPages {
 		pagePath := filepath.Join(viewsDir, page)
@@ -230,6 +231,15 @@ func (s *Server) loadTemplates() {
 // Templates are reloaded on every request so HTML edits are visible with just F5 (no restart needed).
 func (s *Server) RenderHTML(w http.ResponseWriter, tmplName, layout string, data interface{}) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	// Automatically populate system settings if rendering public pages with PageData
+	if pd, ok := data.(*PageData); ok {
+		s.PopulatePageData(nil, pd)
+	} else if pd, ok := data.(PageData); ok {
+		s.PopulatePageData(nil, &pd)
+		data = pd
+	}
+
 	s.loadTemplates() // Auto-reload: baca ulang file HTML dari disk setiap request
 	if tmpl, ok := s.templates[tmplName]; ok {
 		var err error
@@ -315,6 +325,10 @@ func (s *Server) Start() error {
 	mux.HandleFunc("POST /api/admin/downloads/select-subtitle/{id}", s.RequireAdmin(s.HandleAdminDownloadsSelectSubtitleAPI))
 	mux.HandleFunc("POST /api/admin/downloads/upload-subtitle/{id}", s.RequireAdmin(s.HandleAdminDownloadsUploadSubtitleAPI))
 	mux.HandleFunc("POST /api/admin/downloads/hardsub/{id}", s.RequireAdmin(s.HandleAdminDownloadsHardsubAPI))
+
+	// System Settings & Adsterra Ad Unit Controls
+	mux.HandleFunc("GET /admin/settings", s.RequireAdmin(s.HandleAdminSettings))
+	mux.HandleFunc("POST /admin/settings", s.RequireAdmin(s.HandleAdminSaveSettings))
 
 	// Serve Static Files (Local WebP Originals & Thumbnails with Smart Placeholder Fallback)
 	uploadsDir := filepath.Join("public", "uploads")

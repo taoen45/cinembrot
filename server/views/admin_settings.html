@@ -1,0 +1,280 @@
+{{define "content"}}
+<div class="space-y-8">
+
+  <!-- HEADER -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+        <i class="fa-solid fa-sliders text-brand-500"></i> Pengaturan Website & Monetisasi
+      </h2>
+      <p class="text-xs text-slate-400 mt-1">
+        Kelola unit iklan Adsterra, kontrol fitur multi-bahasa / translate, atur fitur publik, dan branding website secara dinamis.
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="/" target="_blank" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-700 dark:text-slate-200 transition flex items-center gap-2 border border-slate-200 dark:border-dark-700">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i> Cek Web Publik
+      </a>
+    </div>
+  </div>
+
+  {{if .SuccessMsg}}
+  <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center gap-3">
+    <i class="fa-solid fa-circle-check text-base"></i>
+    <span>{{.SuccessMsg}}</span>
+  </div>
+  {{end}}
+
+  <form action="/admin/settings" method="POST" class="space-y-8">
+
+    <!-- ==================== 1. MONETISASI & IKLAN ADSTERRA ==================== -->
+    <div class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-6 shadow-sm space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-dark-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-rectangle-ad"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Unit Iklan Adsterra & Monetisasi</h3>
+            <p class="text-xs text-slate-400">Atur kode script 5 unit iklan Adsterra resmi untuk memaksimalkan penghasilan website</p>
+          </div>
+        </div>
+        <div>
+          {{if eq (index .Settings "ads_enabled") "false"}}
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-red-500/10 text-red-500 border border-red-500/20">
+            <span class="w-2 h-2 rounded-full bg-red-500"></span> IKLAN DINONAKTIFKAN (OFF)
+          </span>
+          {{else}}
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> IKLAN AKTIF (ON)
+          </span>
+          {{end}}
+        </div>
+      </div>
+
+      <!-- MASTER ADS SWITCH -->
+      <div class="p-4 bg-slate-50 dark:bg-dark-950 rounded-2xl border border-slate-200 dark:border-dark-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-800 dark:text-slate-200">Saklar Master Iklan (Global Ads Switch)</label>
+          <p class="text-[11px] text-slate-400">Matikan atau hidupkan seluruh iklan di website secara instan dengan satu kali klik.</p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer select-none shrink-0">
+          <input type="checkbox" name="ads_enabled" value="true" class="sr-only peer" {{if ne (index .Settings "ads_enabled") "false"}}checked{{end}}>
+          <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-dark-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+          <span class="ml-3 text-xs font-bold text-slate-700 dark:text-slate-300">
+            {{if ne (index .Settings "ads_enabled") "false"}}Aktif (ON){{else}}Mati (OFF){{end}}
+          </span>
+        </label>
+      </div>
+
+      <!-- GRID 5 UNIT IKLAN ADSTERRA -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- 1. POPUNDER -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-purple-500"></span> 1. Script Popunder
+            </label>
+            <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-dark-800 px-2 py-0.5 rounded">High CPM</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Membuka tab iklan di latar belakang saat pengunjung pertama kali mengklik halaman.</p>
+          <textarea name="adsterra_popunder_code" rows="3" class="w-full font-mono text-[11px] bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl p-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="<script src='...popunder.js'></script>">{{index .Settings "adsterra_popunder_code"}}</textarea>
+        </div>
+
+        <!-- 2. SOCIAL BAR -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-blue-500"></span> 2. Script Social Bar
+            </label>
+            <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-dark-800 px-2 py-0.5 rounded">Floating Widget</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Notifikasi mengambang yang ramah mobile & desktop dengan interaksi tinggi.</p>
+          <textarea name="adsterra_socialbar_code" rows="3" class="w-full font-mono text-[11px] bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl p-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="<script src='...socialbar.js'></script>">{{index .Settings "adsterra_socialbar_code"}}</textarea>
+        </div>
+
+        <!-- 3. TOP BANNER 728x90 -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 3. Script Banner 728x90 (Header)
+            </label>
+            <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-dark-800 px-2 py-0.5 rounded">Leaderboard</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Banner responsif tepat di bawah navbar di seluruh halaman website.</p>
+          <textarea name="adsterra_banner_728_code" rows="4" class="w-full font-mono text-[11px] bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl p-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="<script>atOptions = {...};</script><script src='...invoke.js'></script>">{{index .Settings "adsterra_banner_728_code"}}</textarea>
+        </div>
+
+        <!-- 4. NATIVE BANNER -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-pink-500"></span> 4. Script Native Banner (Detail Film)
+            </label>
+            <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-dark-800 px-2 py-0.5 rounded">Native Widget</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Kotak rekomendasi sponsor di halaman detail film sebelum tombol unduhan.</p>
+          <textarea name="adsterra_native_banner_code" rows="4" class="w-full font-mono text-[11px] bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl p-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="<script src='...invoke.js'></script><div id='container-...'></div>">{{index .Settings "adsterra_native_banner_code"}}</textarea>
+        </div>
+
+      </div>
+
+      <!-- 5. SMARTLINK URL -->
+      <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-dark-800">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-amber-500"></span> 5. URL Adsterra Smartlink (Direct Link Sponsor)
+          </label>
+          <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-dark-800 px-2 py-0.5 rounded">Direct Monitizer</span>
+        </div>
+        <p class="text-[11px] text-slate-400">Direct Smartlink yang dipasang sebagai tombol sponsor streaming / download super cepat.</p>
+        <input type="text" name="adsterra_smartlink_url" value="{{index .Settings "adsterra_smartlink_url"}}" class="w-full text-xs font-mono bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="https://ripenhopperwitty.com/...">
+      </div>
+
+    </div>
+
+    <!-- ==================== 2. FITUR TRANSLATE & MULTI-BAHASA ==================== -->
+    <div class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-6 shadow-sm space-y-6">
+      <div class="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-dark-800">
+        <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-language"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Fitur Multi-Bahasa & Penerjemah Otomatis</h3>
+          <p class="text-xs text-slate-400">Kontrol tombol pengalih bahasa bendera Indonesia 🇮🇩 dan English 🇬🇧 serta Google Translator</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- SAKLAR FITUR TRANSLATE -->
+        <div class="p-4 bg-slate-50 dark:bg-dark-950 rounded-2xl border border-slate-200 dark:border-dark-800 flex flex-col justify-between">
+          <div>
+            <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Tombol Pengalih Bahasa</label>
+            <p class="text-[11px] text-slate-400 mb-3">Tampilkan tombol pilihan bendera ID / EN di navbar</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer select-none">
+            <input type="checkbox" name="translate_enabled" value="true" class="sr-only peer" {{if ne (index .Settings "translate_enabled") "false"}}checked{{end}}>
+            <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-dark-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+            <span class="ml-3 text-xs font-bold text-slate-700 dark:text-slate-300">
+              {{if ne (index .Settings "translate_enabled") "false"}}Aktif (ON){{else}}Mati (OFF){{end}}
+            </span>
+          </label>
+        </div>
+
+        <!-- SAKLAR GOOGLE TRANSLATE ENGINE -->
+        <div class="p-4 bg-slate-50 dark:bg-dark-950 rounded-2xl border border-slate-200 dark:border-dark-800 flex flex-col justify-between">
+          <div>
+            <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Google Website Translator</label>
+            <p class="text-[11px] text-slate-400 mb-3">Terjemahkan seluruh teks halaman otomatis saat beralih ke English</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer select-none">
+            <input type="checkbox" name="google_translate_enabled" value="true" class="sr-only peer" {{if ne (index .Settings "google_translate_enabled") "false"}}checked{{end}}>
+            <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-dark-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+            <span class="ml-3 text-xs font-bold text-slate-700 dark:text-slate-300">
+              {{if ne (index .Settings "google_translate_enabled") "false"}}Aktif (ON){{else}}Mati (OFF){{end}}
+            </span>
+          </label>
+        </div>
+
+        <!-- BAHASA DEFAULT -->
+        <div class="p-4 bg-slate-50 dark:bg-dark-950 rounded-2xl border border-slate-200 dark:border-dark-800 flex flex-col justify-between">
+          <div>
+            <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Bahasa Default Pengunjung</label>
+            <p class="text-[11px] text-slate-400 mb-3">Bahasa saat pertama kali membuka website</p>
+          </div>
+          <select name="default_language" class="w-full bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-slate-900 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 font-medium">
+            <option value="id" {{if ne (index .Settings "default_language") "en"}}selected{{end}}>🇮🇩 Bahasa Indonesia (Utama)</option>
+            <option value="en" {{if eq (index .Settings "default_language") "en"}}selected{{end}}>🇬🇧 English (Global)</option>
+          </select>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ==================== 3. FITUR INTERAKSI & PUBLIK ==================== -->
+    <div class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-6 shadow-sm space-y-6">
+      <div class="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-dark-800">
+        <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-comments"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Fitur Interaksi & Konten Publik</h3>
+          <p class="text-xs text-slate-400">Atur ketersediaan kolom komentar dan tautan torrent di halaman publik</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- KOMENTAR PENONTON -->
+        <div class="p-4 bg-slate-50 dark:bg-dark-950 rounded-2xl border border-slate-200 dark:border-dark-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-800 dark:text-slate-200">Kolom Komentar Penonton</label>
+            <p class="text-[11px] text-slate-400">Izinkan pengunjung memberikan komentar dan ulasan film dengan CAPTCHA.</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer select-none shrink-0">
+            <input type="checkbox" name="comments_enabled" value="true" class="sr-only peer" {{if ne (index .Settings "comments_enabled") "false"}}checked{{end}}>
+            <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-dark-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
+            <span class="ml-3 text-xs font-bold text-slate-700 dark:text-slate-300">
+              {{if ne (index .Settings "comments_enabled") "false"}}Aktif (ON){{else}}Mati (OFF){{end}}
+            </span>
+          </label>
+        </div>
+
+        <!-- LINK TORRENT PUBLIK -->
+        <div class="p-4 bg-slate-50 dark:bg-dark-950 rounded-2xl border border-slate-200 dark:border-dark-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-800 dark:text-slate-200">Tampilkan Tautan Torrent Publik</label>
+            <p class="text-[11px] text-slate-400">Tampilkan link .torrent dan magnet link mentah untuk pengunjung umum.</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer select-none shrink-0">
+            <input type="checkbox" name="show_torrent_public" value="true" class="sr-only peer" {{if eq (index .Settings "show_torrent_public") "true"}}checked{{end}}>
+            <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-dark-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
+            <span class="ml-3 text-xs font-bold text-slate-700 dark:text-slate-300">
+              {{if eq (index .Settings "show_torrent_public") "true"}}Aktif (ON){{else}}Mati (OFF){{end}}
+            </span>
+          </label>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ==================== 4. IDENTITAS & BRANDING WEBSITE ==================== -->
+    <div class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-6 shadow-sm space-y-6">
+      <div class="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-dark-800">
+        <div class="w-10 h-10 rounded-xl bg-brand-500/10 text-brand-500 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-palette"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Identitas & Branding Website</h3>
+          <p class="text-xs text-slate-400">Sesuaikan nama platform dan slogan yang tampil di header dan footer</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Nama Brand Website</label>
+          <input type="text" name="site_name" value="{{index .Settings "site_name"}}" class="w-full text-xs bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="CINEMBROT">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Tagline / Slogan Website</label>
+          <input type="text" name="site_tagline" value="{{index .Settings "site_tagline"}}" class="w-full text-xs bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="Platform Streaming & Download Film Gratis Legal">
+        </div>
+      </div>
+    </div>
+
+    <!-- TOMBOL SIMPAN PENGATURAN -->
+    <div class="flex items-center justify-end gap-3 sticky bottom-4 bg-white/95 dark:bg-dark-900/95 backdrop-blur p-4 rounded-2xl border border-slate-200 dark:border-dark-800 shadow-xl z-20">
+      <button type="reset" class="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-dark-800 transition">
+        Reset Form
+      </button>
+      <button type="submit" class="px-6 py-2.5 rounded-xl text-xs font-bold bg-brand-500 hover:bg-brand-600 text-white shadow-lg shadow-brand-500/30 transition flex items-center gap-2">
+        <i class="fa-solid fa-floppy-disk"></i> Simpan Semua Pengaturan
+      </button>
+    </div>
+
+  </form>
+
+</div>
+{{end}}

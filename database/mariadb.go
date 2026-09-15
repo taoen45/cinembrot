@@ -198,6 +198,18 @@ func seedDefaultSettings(db *gorm.DB) {
 		{Key: "auto_scrape_delay_ms", Value: "500", Description: "Jeda waktu ramah server antar permintaan film (ms)"},
 		{Key: "download_movie_path", Value: "public/download/movie", Description: "Direktori penyimpanan file unduhan film dan hardsub subtitle"},
 		{Key: "show_torrent_public", Value: "false", Description: "Tampilkan link torrent mentah di halaman publik film (true/false)"},
+		{Key: "ads_enabled", Value: "true", Description: "Saklar Master ON/OFF Iklan di Website"},
+		{Key: "adsterra_popunder_code", Value: `<script src="https://ripenhopperwitty.com/54/e2/d0/54e2d041392f6fe60241fb7998b44e22.js"></script>`, Description: "Kode Script Iklan Adsterra Popunder"},
+		{Key: "adsterra_socialbar_code", Value: `<script src="https://ripenhopperwitty.com/e8/02/6c/e8026c7abe894a6b7c4f480910f52fc3.js"></script>`, Description: "Kode Script Iklan Adsterra Social Bar"},
+		{Key: "adsterra_banner_728_code", Value: `<script>atOptions = {'key' : '85fa49a7c78f9d85d42fce646c7003ab','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};</script><script src="https://ripenhopperwitty.com/85fa49a7c78f9d85d42fce646c7003ab/invoke.js"></script>`, Description: "Kode Script Iklan Adsterra Top Banner 728x90"},
+		{Key: "adsterra_native_banner_code", Value: `<script async="async" data-cfasync="false" src="https://ripenhopperwitty.com/4436b99755730d92de41c04a72905573/invoke.js"></script><div id="container-4436b99755730d92de41c04a72905573"></div>`, Description: "Kode Script Iklan Adsterra Native Banner Rekomendasi"},
+		{Key: "adsterra_smartlink_url", Value: `https://ripenhopperwitty.com/dshsjtw4mm?key=b8e97cccf7d6fdfe0a74963ec89f2ae2`, Description: "URL Direct Adsterra Smartlink (Download / Streaming)"},
+		{Key: "translate_enabled", Value: "true", Description: "Saklar ON/OFF Fitur Multi-Bahasa / Translate"},
+		{Key: "google_translate_enabled", Value: "true", Description: "Saklar ON/OFF Mesin Google Website Translator"},
+		{Key: "default_language", Value: "id", Description: "Bahasa Default Website (id / en)"},
+		{Key: "comments_enabled", Value: "true", Description: "Saklar ON/OFF Kolom Komentar Penonton"},
+		{Key: "site_name", Value: "CINEMBROT", Description: "Nama Brand Website"},
+		{Key: "site_tagline", Value: "Platform Streaming & Download Film Gratis Legal", Description: "Tagline atau Slogan Website"},
 	}
 
 	for _, s := range defaults {
@@ -206,6 +218,45 @@ func seedDefaultSettings(db *gorm.DB) {
 			_ = db.Create(&s)
 		}
 	}
+}
+
+// GetAllSettings returns all settings as a map
+func GetAllSettings(db *gorm.DB) map[string]string {
+	var settings []model.SystemSetting
+	res := make(map[string]string)
+	if err := db.Find(&settings).Error; err == nil {
+		for _, s := range settings {
+			res[s.Key] = s.Value
+		}
+	}
+	return res
+}
+
+// GetSetting gets a single setting or returns defaultVal
+func GetSetting(db *gorm.DB, key, defaultVal string) string {
+	var s model.SystemSetting
+	if err := db.Where("`key` = ?", key).First(&s).Error; err == nil && s.Value != "" {
+		return s.Value
+	}
+	return defaultVal
+}
+
+// SaveSetting creates or updates a setting
+func SaveSetting(db *gorm.DB, key, value, desc string) error {
+	var s model.SystemSetting
+	if err := db.Where("`key` = ?", key).First(&s).Error; err == nil {
+		return db.Model(&s).Updates(map[string]interface{}{
+			"value":       value,
+			"description": desc,
+			"updated_at":  time.Now(),
+		}).Error
+	}
+	return db.Create(&model.SystemSetting{
+		Key:         key,
+		Value:       value,
+		Description: desc,
+		UpdatedAt:   time.Now(),
+	}).Error
 }
 
 // GetDownloadMoviePath returns the absolute download path configured in system_settings or default

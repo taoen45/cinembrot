@@ -41,7 +41,8 @@
 
   {{if .EnableAds}}
   <!-- ==================== ADSTERRA POPUNDER & SOCIAL BAR ==================== -->
-  <!-- Letakkan script Adsterra Popunder / Social Bar Anda di sini -->
+  {{if .AdsterraPopunder}}{{.AdsterraPopunder}}{{end}}
+  {{if .AdsterraSocialBar}}{{.AdsterraSocialBar}}{{end}}
   {{end}}
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-dark-950 dark:text-slate-100 min-h-screen flex flex-col font-sans antialiased transition-colors duration-200">
@@ -82,6 +83,7 @@
         </form>
 
         <!-- LANGUAGE SWITCHER DROPDOWN -->
+        {{if .TranslateEnabled}}
         <div class="relative inline-block text-left" id="lang-dropdown-wrapper">
           <button id="lang-menu-btn" type="button" aria-expanded="false" aria-haspopup="true"
             class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 border border-slate-200 dark:border-dark-700 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all shadow-sm">
@@ -107,6 +109,7 @@
             </a>
           </div>
         </div>
+        {{end}}
 
         <!-- LIGHT / DARK MODE TOGGLE BUTTON -->
         <button id="theme-toggle" type="button" aria-label="Toggle Theme"
@@ -135,6 +138,7 @@
         <i class="fa-solid fa-sliders text-brand-500 mr-1"></i> {{t $.Lang "nav.filter"}}
       </a>
       <!-- Mobile Quick Lang Switcher -->
+      {{if .TranslateEnabled}}
       <a href="/set-lang?lang={{if eq .Lang "en"}}id{{else}}en{{end}}" class="shrink-0 px-3 py-1.5 rounded-full bg-slate-200 dark:bg-dark-700 text-slate-800 dark:text-slate-200 font-bold ml-auto flex items-center gap-1.5 shadow-xs">
         {{if eq .Lang "en"}}
           <img src="/img/flags/id.svg" class="w-4 h-3 rounded-xs object-cover border border-slate-300 dark:border-dark-600 shadow-xs" alt="ID">
@@ -144,17 +148,15 @@
           <span>EN</span>
         {{end}}
       </a>
+      {{end}}
     </div>
   </nav>
 
   <!-- ADSTERRA BANNER ATAS (728x90) -->
-  {{if .EnableAds}}
+  {{if and .EnableAds .AdsterraBanner728}}
   <div class="max-w-7xl mx-auto px-4 my-3 text-center">
-    <div class="bg-white dark:bg-dark-900 border border-dashed border-slate-300 dark:border-dark-700 rounded-lg p-2 inline-block min-h-[90px] min-w-[320px] md:min-w-[728px] shadow-sm">
-      <span class="text-[10px] text-slate-400 dark:text-slate-500 block mb-1">SPONSORED ADVERTISEMENT</span>
-      <div id="adsterra-banner-header" class="text-slate-400 text-xs py-4">
-        [Adsterra Banner 728x90 Slot Area]
-      </div>
+    <div class="inline-block overflow-hidden rounded-lg shadow-sm">
+      {{.AdsterraBanner728}}
     </div>
   </div>
   {{end}}
@@ -237,6 +239,7 @@
   </script>
 
   <!-- Google Translate Engine (Seamless Automatic Full-Page Translation) -->
+  {{if and .TranslateEnabled .GoogleTranslateEnabled}}
   <div id="google_translate_element" style="display:none"></div>
   <style>
     .goog-te-banner-frame, .skiptranslate, #goog-gt-tt, .goog-te-balloon-frame { display: none !important; }
@@ -268,6 +271,7 @@
       document.cookie = "googtrans=; path=/; domain=" + window.location.hostname + "; expires=Thu, 01 Jan 1970 00:00:00 UTC";
     }
   </script>
+  {{end}}
   {{end}}
 </body>
 </html>

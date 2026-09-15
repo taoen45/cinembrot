@@ -51,6 +51,7 @@ type AdminPageData struct {
 	ShowTorrentPublic bool
 	// TypeContext membedakan konteks halaman: "anime", "drama_pendek", atau "" (semua film)
 	TypeContext       string
+	Settings          map[string]string
 }
 
 // HandleAdminLogin displays and processes the login form
