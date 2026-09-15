@@ -10,6 +10,7 @@ import (
 	"cinembrot/imageprocessor"
 	"cinembrot/model"
 	"cinembrot/provider/archive"
+	"cinembrot/provider/embed"
 	"cinembrot/provider/jikan"
 	"cinembrot/provider/omdb"
 	"cinembrot/provider/openmovies"
@@ -439,6 +440,11 @@ func (p *Pipeline) IngestAnime(category string, limit int) (int, error) {
 		// Download & Convert Images to WebP (Original & Thumbnail)
 		imageprocessor.ProcessMovieImages(movie, p.cfg.ScraperUserAgent)
 
+		// Generate multi-server streaming embed links if empty
+		if len(movie.StreamLinks) == 0 {
+			movie.StreamLinks = embed.GenerateMultiServerStreams(movie, 0, 1, 1)
+		}
+
 		if err := p.repo.UpsertMovie(movie); err != nil {
 			log.Printf("[ERROR] Gagal menyimpan anime '%s': %v\n", movie.Title, err)
 			continue
@@ -473,6 +479,11 @@ func (p *Pipeline) IngestAsianDramas(lang string, page int) (int, error) {
 		// Download & Convert Images to WebP (Original & Thumbnail)
 		imageprocessor.ProcessMovieImages(drama, p.cfg.ScraperUserAgent)
 
+		// Generate multi-server streaming embed links if empty
+		if len(drama.StreamLinks) == 0 {
+			drama.StreamLinks = embed.GenerateMultiServerStreams(drama, 0, 1, 1)
+		}
+
 		if err := p.repo.UpsertMovie(drama); err != nil {
 			log.Printf("[ERROR] Failed to upsert Asian drama '%s': %v\n", drama.Title, err)
 			continue
@@ -485,3 +496,30 @@ func (p *Pipeline) IngestAsianDramas(lang string, page int) (int, error) {
 	_ = p.repo.LogScrape("TMDb-TV", fmt.Sprintf("discover/tv?lang=%s&page=%d", lang, page), "SUCCESS", savedCount, "", time.Since(startTime))
 	return savedCount, nil
 }
+
+// PopulateMissingStreamLinks updates existing movies/anime/drama in database that lack streaming links
+func (p *Pipeline) PopulateMissingStreamLinks(db *gorm.DB) (int, error) {
+	var movies []model.Movie
+	if err := db.Preload("StreamLinks").Find(&movies).Error; err != nil {
+		return 0, err
+	}
+
+	updatedCount := 0
+	for i := range movies {
+		movie := &movies[i]
+		if len(movie.StreamLinks) == 0 {
+			newStreams := embed.GenerateMultiServerStreams(movie, 0, 1, 1)
+			if len(newStreams) > 0 {
+				for _, st := range newStreams {
+					st.MovieID = movie.ID
+					_ = db.Create(&st).Error
+				}
+				updatedCount++
+				log.Printf("  -> [%d] Ditambahkan %d server streaming untuk: '%s' (%s)\n",
+					updatedCount, len(newStreams), movie.Title, movie.Type)
+			}
+		}
+	}
+	return updatedCount, nil
+}
+

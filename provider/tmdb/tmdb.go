@@ -175,6 +175,36 @@ func (c *Client) SearchMovie(title string, year int) (*SearchMovieResponse, erro
 	return &result, nil
 }
 
+// SearchTV searches TMDb for a TV series / anime / drama title
+func (c *Client) SearchTV(title string) (*SearchTVResponse, error) {
+	apiKey := c.GetAPIKey()
+
+	queryURL := fmt.Sprintf("%s/search/tv?api_key=%s&query=%s&language=%s",
+		BaseURL, apiKey, url.QueryEscape(title), c.cfg.TMDBLanguage)
+
+	req, err := http.NewRequest("GET", queryURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("TMDb Search TV API returned status %d", resp.StatusCode)
+	}
+
+	var result SearchTVResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
 // GetMovieDetails fetches full rich movie metadata by TMDb ID
 func (c *Client) GetMovieDetails(tmdbID int) (*model.Movie, error) {
 	apiKey := c.GetAPIKey()

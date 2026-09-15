@@ -48,6 +48,9 @@ func main() {
 	dramaLang := flag.String("drama-lang", "ko", "Bahasa drama: 'ko' (Korea), 'zh' (China), 'ja' (Jepang), 'th' (Thailand), atau 'all'")
 	dramaPages := flag.Int("drama-pages", 1, "Jumlah halaman drama yang diambil (1 hal = 20 judul)")
 
+	// CLI Sinkronisasi Multi-Server Streaming Video
+	populateStreams := flag.Bool("populate-streams", false, "Isi dan perbarui server streaming embed (VidSrc, AutoEmbed, 2Embed, VidLink) untuk semua judul di database")
+
 	flag.Parse()
 
 	fmt.Println("================================================================")
@@ -177,6 +180,18 @@ func main() {
 			log.Printf("[ERROR] Scraping Drama Asia gagal: %v\n", err)
 		} else {
 			fmt.Printf("\n[SUCCESS] Berhasil scrape dan simpan %d drama asia (WebP + Subtitle) ke MariaDB!\n", count)
+		}
+		printDatabaseStats(db)
+		return
+	}
+
+	if *populateStreams {
+		fmt.Println("\n[ACTION] 🎬 Memulai sinkronisasi server streaming embed (VidSrc, AutoEmbed, 2Embed, VidLink) untuk semua judul di database...")
+		count, err := pipe.PopulateMissingStreamLinks(db)
+		if err != nil {
+			log.Printf("[ERROR] Sinkronisasi stream link gagal: %v\n", err)
+		} else {
+			fmt.Printf("\n[SUCCESS] Berhasil menambahkan server streaming untuk %d judul film/anime/drama di MariaDB!\n", count)
 		}
 		printDatabaseStats(db)
 		return

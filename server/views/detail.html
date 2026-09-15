@@ -54,31 +54,44 @@
     </div>
   </div>
 
-  <!-- VIDEO PLAYER -->
-  <div class="bg-black border border-slate-200 dark:border-dark-800 rounded-2xl overflow-hidden shadow-xl">
-    <div class="bg-slate-900 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
-      <span class="font-bold text-white text-sm flex items-center gap-2">
-        <i class="fa-solid fa-circle-play text-brand-500"></i>
-        {{if .Movie.StreamLinks}}
-        Video Streaming Player
-        {{else if .Movie.TrailerURL}}
-        Trailer Resmi YouTube
-        {{else}}
-        Video Streaming Player
+  <!-- VIDEO PLAYER & MULTI-SERVER / EPISODE SELECTOR -->
+  <div class="bg-black border border-slate-200 dark:border-dark-800 rounded-2xl overflow-hidden shadow-2xl" id="streaming-player-section">
+    <!-- TOP BAR PLAYER -->
+    <div class="bg-slate-900 px-4 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span class="font-bold text-white text-sm flex items-center gap-1.5">
+          <i class="fa-solid fa-circle-play text-brand-500"></i>
+          <span>Streaming Video Player</span>
+        </span>
+        <span id="active-server-badge" class="bg-brand-500/20 text-brand-400 border border-brand-500/30 text-[10px] font-bold px-2 py-0.5 rounded ml-1">
+          Server 1
+        </span>
+        {{if .EpisodesList}}
+        <span id="active-episode-badge" class="bg-purple-500/20 text-purple-400 border border-purple-500/30 text-[10px] font-bold px-2 py-0.5 rounded">
+          Episode 1
+        </span>
         {{end}}
-      </span>
-      {{if .Movie.TrailerURL}}
-      <a href="{{.Movie.TrailerURL}}" target="_blank" class="text-xs text-red-400 hover:text-red-300 font-bold flex items-center gap-1 transition">
-        <i class="fa-brands fa-youtube"></i> Buka di YouTube <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-      </a>
-      {{end}}
+      </div>
+      
+      <div class="flex items-center gap-2">
+        {{if .Movie.TrailerURL}}
+        <button type="button" onclick="switchToTrailer()" class="text-xs text-red-400 hover:text-red-300 font-bold flex items-center gap-1 transition px-2.5 py-1 rounded bg-red-950/40 border border-red-800/40 cursor-pointer">
+          <i class="fa-brands fa-youtube"></i> Trailer
+        </button>
+        {{end}}
+        <button type="button" onclick="reloadPlayer()" class="text-xs text-slate-400 hover:text-white font-medium flex items-center gap-1 transition px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 cursor-pointer" title="Refresh Player">
+          <i class="fa-solid fa-rotate-right"></i> Refresh
+        </button>
+      </div>
     </div>
 
-    <div class="aspect-video w-full bg-black">
+    <!-- PLAYER IFRAME -->
+    <div class="aspect-video w-full bg-black relative">
       {{if .Movie.StreamLinks}}
-      <iframe src="{{(index .Movie.StreamLinks 0).EmbedURL}}" class="w-full h-full" allowfullscreen frameborder="0"></iframe>
+      <iframe id="main-stream-player" src="{{(index .Movie.StreamLinks 0).EmbedURL}}" class="w-full h-full" allowfullscreen frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
       {{else if .Movie.TrailerURL}}
-      <iframe src="{{youtubeEmbed .Movie.TrailerURL}}" class="w-full h-full" allowfullscreen frameborder="0"></iframe>
+      <iframe id="main-stream-player" src="{{youtubeEmbed .Movie.TrailerURL}}" class="w-full h-full" allowfullscreen frameborder="0"></iframe>
       {{else}}
       <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 p-6 text-center">
         <i class="fa-solid fa-video-slash text-5xl mb-3 text-slate-600"></i>
@@ -86,6 +99,59 @@
       </div>
       {{end}}
     </div>
+
+    <!-- SERVER SWITCHER BAR -->
+    {{if .Movie.StreamLinks}}
+    <div class="bg-slate-950 p-3.5 border-t border-slate-800">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
+        <span class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+          <i class="fa-solid fa-server text-emerald-400"></i> Pilihan Server Streaming:
+        </span>
+        <span class="text-[11px] text-slate-400 italic">*Jika video buffering/error, silakan klik server alternatif</span>
+      </div>
+      <div class="flex flex-wrap items-center gap-2" id="server-button-container">
+        {{range $sIdx, $server := .Movie.StreamLinks}}
+        <button type="button" 
+                onclick="switchServer({{$sIdx}}, '{{$server.EmbedURL}}', '{{$server.ServerName}}')" 
+                class="server-btn px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer {{if eq $sIdx 0}}bg-brand-500 text-white shadow-lg shadow-brand-500/25 active-server{{else}}bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800{{end}}"
+                data-index="{{$sIdx}}"
+                data-embed="{{$server.EmbedURL}}"
+                data-name="{{$server.ServerName}}">
+          <i class="fa-solid fa-play text-[10px]"></i>
+          <span>{{$server.ServerName}}</span>
+          <span class="text-[10px] opacity-75 font-normal">({{$server.Quality}})</span>
+        </button>
+        {{end}}
+      </div>
+    </div>
+    {{end}}
+
+    <!-- EPISODE SELECTOR BAR (KHUSUS ANIME & DRAMA PENDEK) -->
+    {{if .EpisodesList}}
+    <div class="bg-slate-900/90 p-4 border-t border-slate-800" id="episode-selector-section">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-xs font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-list-ol text-purple-400"></i>
+          <span>Daftar Episode (Total {{len .EpisodesList}} Episode)</span>
+        </span>
+        <span class="text-[11px] text-purple-300 font-semibold bg-purple-950/60 px-2.5 py-0.5 rounded-full border border-purple-800/40">
+          Pilih episode untuk langsung memutar
+        </span>
+      </div>
+      
+      <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-700" style="-webkit-overflow-scrolling: touch;">
+        {{range .EpisodesList}}
+        <button type="button"
+                onclick="switchEpisode({{.}})"
+                class="episode-btn shrink-0 w-11 h-11 rounded-xl font-bold text-xs flex flex-col items-center justify-center transition border cursor-pointer {{if eq . 1}}bg-purple-600 text-white border-purple-500 shadow-md shadow-purple-600/30 active-episode{{else}}bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border-slate-700{{end}}"
+                data-episode="{{.}}">
+          <span class="text-[9px] uppercase opacity-70">EPS</span>
+          <span class="text-sm font-black">{{.}}</span>
+        </button>
+        {{end}}
+      </div>
+    </div>
+    {{end}}
   </div>
 
   <!-- ADSTERRA NATIVE BANNER -->
@@ -393,5 +459,99 @@
   </div>
   {{end}}
 
+  <!-- CLIENT SCRIPT STREAMING & EPISODE SWITCHER -->
+  <script>
+    let currentServerIndex = 0;
+    let currentEpisodeNumber = 1;
+    const tmdbID = {{.TMDbID}};
+    const isTV = {{if or (eq .Movie.Type "anime") (eq .Movie.Type "drama_pendek") (eq .Movie.Type "series")}}true{{else}}false{{end}};
+
+    function switchServer(index, embedURL, serverName) {
+      currentServerIndex = index;
+      const player = document.getElementById('main-stream-player');
+      const badge = document.getElementById('active-server-badge');
+      
+      document.querySelectorAll('.server-btn').forEach(btn => {
+        btn.classList.remove('bg-brand-500', 'text-white', 'shadow-lg', 'shadow-brand-500/25', 'active-server');
+        btn.classList.add('bg-slate-900', 'text-slate-300', 'border', 'border-slate-800');
+        if (parseInt(btn.getAttribute('data-index'), 10) === index) {
+          btn.classList.remove('bg-slate-900', 'text-slate-300', 'border', 'border-slate-800');
+          btn.classList.add('bg-brand-500', 'text-white', 'shadow-lg', 'shadow-brand-500/25', 'active-server');
+        }
+      });
+
+      if (badge && serverName) badge.textContent = serverName;
+
+      let targetURL = embedURL;
+      if (isTV && tmdbID > 0) {
+        targetURL = buildEpisodeEmbedURL(index, currentEpisodeNumber);
+      }
+
+      if (player && targetURL) {
+        player.src = targetURL;
+      }
+    }
+
+    function switchEpisode(epNum) {
+      currentEpisodeNumber = epNum;
+      const badge = document.getElementById('active-episode-badge');
+      if (badge) badge.textContent = 'Episode ' + epNum;
+
+      document.querySelectorAll('.episode-btn').forEach(btn => {
+        btn.classList.remove('bg-purple-600', 'text-white', 'border-purple-500', 'shadow-md', 'shadow-purple-600/30', 'active-episode');
+        btn.classList.add('bg-slate-800', 'text-slate-300', 'border-slate-700');
+        if (parseInt(btn.getAttribute('data-episode'), 10) === epNum) {
+          btn.classList.remove('bg-slate-800', 'text-slate-300', 'border-slate-700');
+          btn.classList.add('bg-purple-600', 'text-white', 'border-purple-500', 'shadow-md', 'shadow-purple-600/30', 'active-episode');
+        }
+      });
+
+      const player = document.getElementById('main-stream-player');
+      if (player) {
+        player.src = buildEpisodeEmbedURL(currentServerIndex, epNum);
+      }
+    }
+
+    function buildEpisodeEmbedURL(serverIdx, epNum) {
+      if (!tmdbID || tmdbID <= 0) {
+        const activeBtn = document.querySelector(`.server-btn[data-index="${serverIdx}"]`);
+        return activeBtn ? activeBtn.getAttribute('data-embed') : '';
+      }
+
+      switch (serverIdx) {
+        case 0:
+          return `https://vidsrc.xyz/embed/tv/${tmdbID}/1/${epNum}`;
+        case 1:
+          return `https://player.autoembed.cc/embed/tv/${tmdbID}/1/${epNum}`;
+        case 2:
+          return `https://www.2embed.cc/embedtv/${tmdbID}&s=1&e=${epNum}`;
+        case 3:
+          return `https://vidlink.pro/tv/${tmdbID}/1/${epNum}`;
+        case 4:
+          return `https://multiembed.mov/?video_id=${tmdbID}&tmdb=1&s=1&e=${epNum}`;
+        default:
+          return `https://vidsrc.xyz/embed/tv/${tmdbID}/1/${epNum}`;
+      }
+    }
+
+    function reloadPlayer() {
+      const player = document.getElementById('main-stream-player');
+      if (player && player.src) {
+        const cur = player.src;
+        player.src = 'about:blank';
+        setTimeout(() => { player.src = cur; }, 120);
+      }
+    }
+
+    function switchToTrailer() {
+      const player = document.getElementById('main-stream-player');
+      const trailer = "{{youtubeEmbed .Movie.TrailerURL}}";
+      if (player && trailer) {
+        player.src = trailer;
+        const badge = document.getElementById('active-server-badge');
+        if (badge) badge.textContent = 'Trailer Resmi';
+      }
+    }
+  </script>
 </div>
 {{end}}

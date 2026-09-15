@@ -10,6 +10,7 @@ import (
 	"cinembrot/database"
 	"cinembrot/i18n"
 	"cinembrot/model"
+	"cinembrot/provider/embed"
 	"cinembrot/scraper"
 	"gorm.io/gorm"
 )
@@ -56,6 +57,9 @@ type PageData struct {
 	AdsterraSmartlink      string
 	CaptchaQuestion        string
 	CaptchaToken           string
+	EpisodesList           []int
+	CurrentEpisode         int
+	TMDbID                 int
 }
 
 // PopulatePageData automatically sets dynamic settings from database into PageData
@@ -517,21 +521,60 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 	var genres []model.Genre
 	s.db.Find(&genres)
 
+	// Embed & Streaming Resolver: populate multi-server streams if not present in database
+	tmdbID := embed.ExtractTMDbID(&movie)
+	if tmdbID == 0 && s.tmdbCli != nil {
+		// Try resolving TMDb ID by searching title
+		if movie.Type == "anime" || movie.Type == "drama_pendek" || movie.Type == "series" {
+			if tvRes, err := s.tmdbCli.SearchTV(movie.Title); err == nil && len(tvRes.Results) > 0 {
+				tmdbID = tvRes.Results[0].ID
+			} else if movieRes, err := s.tmdbCli.SearchMovie(movie.Title, movie.Year); err == nil && len(movieRes.Results) > 0 {
+				tmdbID = movieRes.Results[0].ID
+			}
+		} else {
+			if movieRes, err := s.tmdbCli.SearchMovie(movie.Title, movie.Year); err == nil && len(movieRes.Results) > 0 {
+				tmdbID = movieRes.Results[0].ID
+			}
+		}
+	}
+
+	if len(movie.StreamLinks) == 0 {
+		movie.StreamLinks = embed.GenerateMultiServerStreams(&movie, tmdbID, 1, 1)
+	}
+
+	// Generate Episode List for anime, drama pendek, and TV series
+	var episodesList []int
+	if movie.Type == "anime" || movie.Type == "drama_pendek" || movie.Type == "series" {
+		totalEps := embed.ExtractEpisodeCount(&movie)
+		if totalEps < 1 {
+			totalEps = 1
+		}
+		if totalEps > 100 {
+			totalEps = 100 // Safe upper bound for UI display
+		}
+		for ep := 1; ep <= totalEps; ep++ {
+			episodesList = append(episodesList, ep)
+		}
+	}
+
 	// Generate Anti-Spam Math CAPTCHA Challenge
 	captcha := GenerateCaptcha()
 
 	data := PageData{
-		Lang:            lang,
-		Title:           movie.Title + " (" + strconv.Itoa(movie.Year) + ") - Nonton & Download",
-		SiteName:        "CINEMBROT",
-		Movie:           &movie,
-		Related:         related,
-		Genres:          genres,
+		Lang:              lang,
+		Title:             movie.Title + " (" + strconv.Itoa(movie.Year) + ") - Nonton & Download",
+		SiteName:          "CINEMBROT",
+		Movie:             &movie,
+		Related:           related,
+		Genres:            genres,
 		EnableAds:         s.cfg.EnableAds,
 		EnableComments:    s.cfg.EnableComments,
 		ShowTorrentPublic: database.GetShowTorrentPublic(s.db),
 		CaptchaQuestion:   captcha.Question,
 		CaptchaToken:      captcha.Token,
+		EpisodesList:      episodesList,
+		CurrentEpisode:    1,
+		TMDbID:            tmdbID,
 	}
 
 	s.RenderHTML(w, "detail.html", "layout.html", data)
