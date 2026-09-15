@@ -161,10 +161,58 @@
   </div>
   {{end}}
 
+  <!-- ADSTERRA FLOATING STICKY SIDEBAR KIRI (160x600 - LAYAR LEBAR 2XL) -->
+  {{if and .EnableAds .AdsterraBanner160x600}}
+  <div id="ad-sidebar-left" class="fixed left-2 top-24 z-40 hidden 2xl:flex flex-col items-center transition-all">
+    <div class="flex items-center justify-between w-full bg-slate-900/90 text-[9px] text-slate-400 px-2 py-0.5 rounded-t-md font-mono">
+      <span>SPONSOR</span>
+      <button type="button" onclick="document.getElementById('ad-sidebar-left').remove()" class="hover:text-white font-bold cursor-pointer px-1" title="Tutup Iklan">&times;</button>
+    </div>
+    <div class="overflow-hidden rounded-b-md shadow-2xl bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800">
+      {{.AdsterraBanner160x600}}
+    </div>
+  </div>
+  {{end}}
+
+  <!-- ADSTERRA FLOATING STICKY SIDEBAR KANAN (160x300 - LAYAR LEBAR 2XL) -->
+  {{if and .EnableAds .AdsterraBanner160x300}}
+  <div id="ad-sidebar-right" class="fixed right-2 top-24 z-40 hidden 2xl:flex flex-col items-center transition-all">
+    <div class="flex items-center justify-between w-full bg-slate-900/90 text-[9px] text-slate-400 px-2 py-0.5 rounded-t-md font-mono">
+      <span>SPONSOR</span>
+      <button type="button" onclick="document.getElementById('ad-sidebar-right').remove()" class="hover:text-white font-bold cursor-pointer px-1" title="Tutup Iklan">&times;</button>
+    </div>
+    <div class="overflow-hidden rounded-b-md shadow-2xl bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800">
+      {{.AdsterraBanner160x300}}
+    </div>
+  </div>
+  {{end}}
+
   <!-- MAIN CONTENT -->
   <main class="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-6">
     {{template "content" .}}
   </main>
+
+  <!-- ADSTERRA BANNER 468x60 (PRE-FOOTER SECTION DIVIDER) -->
+  {{if and .EnableAds .AdsterraBanner468}}
+  <div class="max-w-7xl mx-auto px-4 my-4 text-center">
+    <div class="inline-block overflow-hidden rounded-xl shadow-sm border border-slate-200 dark:border-dark-800 bg-white dark:bg-dark-900 p-1.5">
+      {{.AdsterraBanner468}}
+    </div>
+  </div>
+  {{end}}
+
+  <!-- ADSTERRA MOBILE STICKY BOTTOM (320x50 - KHUSUS SMARTPHONE) -->
+  {{if and .EnableAds .AdsterraBanner320}}
+  <div id="ad-mobile-bottom" class="fixed bottom-0 left-0 right-0 z-40 md:hidden flex flex-col items-center justify-center bg-white/95 dark:bg-dark-950/95 backdrop-blur border-t border-slate-200 dark:border-dark-800 py-1 shadow-2xl transition-all">
+    <div class="flex items-center justify-between w-[320px] pb-0.5 px-1 text-[9px] text-slate-400">
+      <span class="uppercase font-semibold tracking-wider">Iklan Sponsor</span>
+      <button type="button" onclick="document.getElementById('ad-mobile-bottom').remove()" class="text-xs text-slate-500 hover:text-red-500 font-bold px-1.5" title="Tutup Iklan">&times; Tutup</button>
+    </div>
+    <div class="overflow-hidden flex justify-center">
+      {{.AdsterraBanner320}}
+    </div>
+  </div>
+  {{end}}
 
   <!-- FOOTER -->
   <footer class="bg-white dark:bg-dark-900 border-t border-slate-200 dark:border-dark-800 py-12 px-4 text-center text-sm text-slate-500 dark:text-slate-400 transition-colors duration-200">

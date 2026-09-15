@@ -67,7 +67,7 @@
         </label>
       </div>
 
-      <!-- GRID 5 UNIT IKLAN ADSTERRA -->
+      <!-- GRID 10 UNIT IKLAN ADSTERRA -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         <!-- 1. POPUNDER -->
@@ -98,38 +98,98 @@
         <div class="space-y-2">
           <div class="flex items-center justify-between">
             <label class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 3. Script Banner 728x90 (Header)
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 3. Banner 728x90 (Header Leaderboard)
             </label>
-            <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-dark-800 px-2 py-0.5 rounded">Leaderboard</span>
+            <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-dark-800 px-2 py-0.5 rounded">Desktop Top</span>
           </div>
           <p class="text-[11px] text-slate-400">Banner responsif tepat di bawah navbar di seluruh halaman website.</p>
-          <textarea name="adsterra_banner_728_code" rows="4" class="w-full font-mono text-[11px] bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl p-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="<script>atOptions = {...};</script><script src='...invoke.js'></script>">{{index .Settings "adsterra_banner_728_code"}}</textarea>
+          <textarea name="adsterra_banner_728_code" rows="3" class="w-full font-mono text-[11px] bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl p-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="<script>atOptions = {...};</script><script src='...invoke.js'></script>">{{index .Settings "adsterra_banner_728_code"}}</textarea>
         </div>
 
-        <!-- 4. NATIVE BANNER -->
+        <!-- 4. BANNER 468x60 -->
         <div class="space-y-2">
           <div class="flex items-center justify-between">
             <label class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-pink-500"></span> 4. Script Native Banner (Detail Film)
+              <span class="w-2 h-2 rounded-full bg-teal-500"></span> 4. Banner 468x60 (Section Divider / Pre-Footer)
+            </label>
+            <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-dark-800 px-2 py-0.5 rounded">Middle / Footer</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Banner jeda visual sebelum footer atau di antara section kategori film.</p>
+          <textarea name="adsterra_banner_468_code" rows="3" class="w-full font-mono text-[11px] bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl p-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="<script>atOptions = {...};</script><script src='...invoke.js'></script>">{{index .Settings "adsterra_banner_468_code"}}</textarea>
+        </div>
+
+        <!-- 5. BANNER 300x250 -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-amber-500"></span> 5. Banner 300x250 (Medium Rectangle Detail)
+            </label>
+            <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-dark-800 px-2 py-0.5 rounded">High Engagement</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Kotak banner persegi di halaman detail film sebelum kolom komentar penonton.</p>
+          <textarea name="adsterra_banner_300_code" rows="3" class="w-full font-mono text-[11px] bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl p-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="<script>atOptions = {...};</script><script src='...invoke.js'></script>">{{index .Settings "adsterra_banner_300_code"}}</textarea>
+        </div>
+
+        <!-- 6. BANNER 160x600 (LEFT SKYSCRAPER) -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-indigo-500"></span> 6. Banner 160x600 (Floating Sticky Sidebar Kiri)
+            </label>
+            <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-dark-800 px-2 py-0.5 rounded">Desktop Sidebar</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Banner vertikal tinggi melayang di sisi kiri layar lebar (layar 2XL) tanpa menutupi konten.</p>
+          <textarea name="adsterra_banner_160x600_code" rows="3" class="w-full font-mono text-[11px] bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl p-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="<script>atOptions = {...};</script><script src='...invoke.js'></script>">{{index .Settings "adsterra_banner_160x600_code"}}</textarea>
+        </div>
+
+        <!-- 7. BANNER 160x300 (RIGHT SKYSCRAPER) -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-violet-500"></span> 7. Banner 160x300 (Floating Sticky Sidebar Kanan)
+            </label>
+            <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-dark-800 px-2 py-0.5 rounded">Desktop Sidebar</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Banner melayang di sisi kanan layar lebar (layar 2XL) dengan tombol sembunyikan.</p>
+          <textarea name="adsterra_banner_160x300_code" rows="3" class="w-full font-mono text-[11px] bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl p-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="<script>atOptions = {...};</script><script src='...invoke.js'></script>">{{index .Settings "adsterra_banner_160x300_code"}}</textarea>
+        </div>
+
+        <!-- 8. BANNER 320x50 (MOBILE STICKY BOTTOM) -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-rose-500"></span> 8. Banner 320x50 (Mobile Floating Sticky Footer)
+            </label>
+            <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-dark-800 px-2 py-0.5 rounded">Mobile Only</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Banner melayang di bagian bawah layar smartphone dengan tombol tutup 'X' ramah pengguna.</p>
+          <textarea name="adsterra_banner_320_code" rows="3" class="w-full font-mono text-[11px] bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl p-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="<script>atOptions = {...};</script><script src='...invoke.js'></script>">{{index .Settings "adsterra_banner_320_code"}}</textarea>
+        </div>
+
+        <!-- 9. NATIVE BANNER -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-pink-500"></span> 9. Native Banner (Detail Film Rekomendasi)
             </label>
             <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-dark-800 px-2 py-0.5 rounded">Native Widget</span>
           </div>
           <p class="text-[11px] text-slate-400">Kotak rekomendasi sponsor di halaman detail film sebelum tombol unduhan.</p>
-          <textarea name="adsterra_native_banner_code" rows="4" class="w-full font-mono text-[11px] bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl p-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="<script src='...invoke.js'></script><div id='container-...'></div>">{{index .Settings "adsterra_native_banner_code"}}</textarea>
+          <textarea name="adsterra_native_banner_code" rows="3" class="w-full font-mono text-[11px] bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl p-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="<script src='...invoke.js'></script><div id='container-...'></div>">{{index .Settings "adsterra_native_banner_code"}}</textarea>
         </div>
 
-      </div>
-
-      <!-- 5. SMARTLINK URL -->
-      <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-dark-800">
-        <div class="flex items-center justify-between">
-          <label class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-amber-500"></span> 5. URL Adsterra Smartlink (Direct Link Sponsor)
-          </label>
-          <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-dark-800 px-2 py-0.5 rounded">Direct Monitizer</span>
+        <!-- 10. SMARTLINK URL -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-amber-500"></span> 10. Adsterra Smartlink URL (Tombol Sponsor Direct)
+            </label>
+            <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-dark-800 px-2 py-0.5 rounded">Direct Monitizer</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Direct Smartlink yang dipasang sebagai tombol sponsor streaming / download super cepat.</p>
+          <input type="text" name="adsterra_smartlink_url" value="{{index .Settings "adsterra_smartlink_url"}}" class="w-full text-xs font-mono bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="https://ripenhopperwitty.com/...">
         </div>
-        <p class="text-[11px] text-slate-400">Direct Smartlink yang dipasang sebagai tombol sponsor streaming / download super cepat.</p>
-        <input type="text" name="adsterra_smartlink_url" value="{{index .Settings "adsterra_smartlink_url"}}" class="w-full text-xs font-mono bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="https://ripenhopperwitty.com/...">
+
       </div>
 
     </div>

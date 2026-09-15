@@ -47,6 +47,11 @@ type PageData struct {
 	AdsterraPopunder       template.HTML
 	AdsterraSocialBar      template.HTML
 	AdsterraBanner728      template.HTML
+	AdsterraBanner468      template.HTML
+	AdsterraBanner300      template.HTML
+	AdsterraBanner160x600  template.HTML
+	AdsterraBanner160x300  template.HTML
+	AdsterraBanner320      template.HTML
 	AdsterraNative         template.HTML
 	AdsterraSmartlink      string
 	CaptchaQuestion        string
@@ -79,6 +84,11 @@ func (s *Server) PopulatePageData(r *http.Request, data *PageData) {
 		data.AdsterraPopunder = template.HTML(settings["adsterra_popunder_code"])
 		data.AdsterraSocialBar = template.HTML(settings["adsterra_socialbar_code"])
 		data.AdsterraBanner728 = template.HTML(settings["adsterra_banner_728_code"])
+		data.AdsterraBanner468 = template.HTML(settings["adsterra_banner_468_code"])
+		data.AdsterraBanner300 = template.HTML(settings["adsterra_banner_300_code"])
+		data.AdsterraBanner160x600 = template.HTML(settings["adsterra_banner_160x600_code"])
+		data.AdsterraBanner160x300 = template.HTML(settings["adsterra_banner_160x300_code"])
+		data.AdsterraBanner320 = template.HTML(settings["adsterra_banner_320_code"])
 		data.AdsterraNative = template.HTML(settings["adsterra_native_banner_code"])
 		data.AdsterraSmartlink = settings["adsterra_smartlink_url"]
 	}

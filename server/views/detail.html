@@ -261,6 +261,18 @@
   </div>
   {{end}}
 
+  <!-- ADSTERRA BANNER 300x250 (MEDIUM RECTANGLE) -->
+  {{if and .EnableAds .AdsterraBanner300}}
+  <div class="my-6 flex flex-col items-center justify-center text-center">
+    <span class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+      <i class="fa-solid fa-rectangle-ad text-amber-500"></i> Rekomendasi Sponsor
+    </span>
+    <div class="inline-block overflow-hidden rounded-2xl shadow-sm border border-slate-200 dark:border-dark-800 bg-white dark:bg-dark-900 p-2">
+      {{.AdsterraBanner300}}
+    </div>
+  </div>
+  {{end}}
+
   <!-- ==================== USER COMMENTS SECTION (ON/OFF CONFIGURABLE) ==================== -->
   {{if .EnableComments}}
   <div id="comments" class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-6 shadow-sm">
