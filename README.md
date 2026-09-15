@@ -5,139 +5,196 @@
 </p>
 
 <p align="center">
-  <b>Platform Streaming & Download Film Legal Gratis dengan Integrasi Subtitle Indonesia Otomatis.</b>
+  <b>Platform Streaming & Download Film, Anime, dan Drama Asia Legal Gratis dengan Integrasi Subtitle Dwibahasa (ID/EN) & Multi-Server Video Player.</b>
 </p>
 
 ---
 
 ## 🚀 Fitur Utama
 
-- 🎬 **Multi-Source Movie Scraper**: Mengambil metadata & stream film dari TMDB REST API, Internet Archive, Blender Open Movies, PublicDomainMovie, dan YTS.
-- 💬 **Auto-Hardsub Subtitle Indonesia**: Terintegrasi dengan Torrent Client internal dan FFmpeg untuk mengunduh torrent, mencocokkan subtitle Bahasa Indonesia, dan meng-encode langsung menjadi file video MP4 siap tonton di HP, PC, dan Smart TV.
-- 👁️ **Kontrol Privasi Torrent Publik**: Pilihan untuk menyembunyikan atau menampilkan link magnet/torrent mentah ke publik melalui saklar toggle di CMS Admin.
-- ⚡ **Live Auto-Reload HTML**: Template web dimuat ulang secara otomatis saat disimpan (*save*), mempercepat pengembangan UI tanpa perlu me-restart server Go.
-- 🛡️ **CMS Admin Lengkap**: Dashboard statistik, manajemen katalog film, sinkronisasi scraper, log aktivitas, dan pengaturan sistem.
-- 🎨 **Modern Dark/Light UI**: Didesain menggunakan Tailwind CSS, responsif, dan ramah seluler.
+- 📺 **Multi-Server Streaming Player**: Dilengkapi 5 server embed streaming video instan (**Server 1: VidSrc HD**, **Server 2: AutoEmbed Fast**, **Server 3: 2Embed VIP**, **Server 4: VidLink Pro**, **Server 5: SuperEmbed Multi**, serta **Trailer Resmi YouTube**) yang dapat dipilih penonton secara fleksibel langsung di halaman detail tanpa reload halaman.
+- 📑 **Episode Selector Bar**: Navigasi pemilih episode interaktif client-side untuk serial Anime dan Drama Pendek, memudahkan penonton berpindah antar episode dengan mulus.
+- 🔤 **Resolusi Judul English Standar QWERTY & Alias Name**: Judul berbahasa non-Latin (Kanji Jepang, Hanzi Mandarin, Hangeul Korea) secara otomatis dikonversi ke versi **English resmi standar keyboard QWERTY** via TMDb Translations API (`iso_639_1 == "en"`) dan Jikan. Judul asli tetap dipertahankan pada kolom `original_title` dan `alternative_titles` (*alias name*), serta URL slug selalu bersih (contoh: `異世界かるてっと` $\rightarrow$ **`Isekai Quartet`** / `/movie/isekai-quartet-2019`).
+- 📝 **Auto-Fill Sinopsis Kosong**: Pengecekan otomatis saat proses generate/scraping; jika sinopsis berbahasa Indonesia kosong, sistem otomatis melengkapinya dari sinopsis resmi bahasa Inggris sehingga tidak ada lagi film/anime bersinopsis kosong.
+- 📅 **Scraper Berdasarkan Tahun Rilis**: Kemampuan menyaring dan mengumpulkan seluruh anime atau drama Asia yang rilis pada tahun tertentu (misal: `-year 2026`) secara akurat.
+- 🌐 **Fitur Terjemahan Dwibahasa (ID / EN)**:
+  - Bahasa Indonesia sebagai bahasa utama (*default*) dan English sebagai bahasa kedua.
+  - Dropdown pemilih bahasa elegan dengan ikon bendera SVG asli berwarna di desktop & mobile sub-navbar.
+  - Sinopsis film otomatis berubah penuh ke bahasa Inggris saat memilih English mode via TMDb cache.
+  - Terintegrasi engine Google Website Translator untuk terjemahan menyeluruh.
+- 📢 **Manajemen Iklan Adsterra & CMS Pengaturan Dinamis (`/admin/settings`)**:
+  - Kontrol fleksibel saklar ON/OFF dan input script untuk 10 unit iklan: Popunder, Social Bar, Banner 728x90 Header, Native Banner Rekomendasi, Direct Smartlink, Floating Sticky Skyscraper Samping (160x600 & 160x300), Mobile Sticky Bottom 320x50, Pre-footer 468x60, dan Medium Rectangle 300x250.
+  - Pengaturan branding situs (Nama Situs, Tagline, Saklar Bahasa, Saklar Komentar) langsung dari antarmuka web admin tanpa perlu restart server.
+- 📱 **Desain Mobile Smartphone Matang & Ramah Sentuhan**:
+  - Slider hero beranda mendukung gesture **Touch Swipe** jempol (`touchstart`, `touchend`).
+  - Bebas horizontal scroll overflow di smartphone berkat penyembunyian banner lebar responsif.
+  - Bantalan safe area bawah (`pb-24`) agar floating sticky ad tidak menutupi tombol konten.
+- 🎌 **Katalog Khusus Anime & Drama Pendek**:
+  - Halaman khusus `/anime` dan `/drama-pendek` dengan Hero Banner, filter genre, dan status rilis.
+  - Scraping anime resmi via MyAnimeList / Jikan API v4 dengan fallback TMDb.
+  - Scraping drama Asia (K-Drama Korea, C-Drama China, J-Drama Jepang, Thai Drama) via TMDb TV API.
+- 💬 **Auto-Subtitle Dwibahasa (Indonesia & English)**: Kandidat unduhan subtitle SRT otomatis dicari dan disiapkan dari SubDL dan OpenSubtitles.
+- 🖼️ **Optimalisasi Storage WebP (Hemat 90%)**: Download dan konversi otomatis poster serta backdrop ke format WebP lokal (Full & Thumbnail) dengan *Smart Placeholder SVG* jika gambar belum terunduh.
+- 🎬 **Multi-Source Legal Movie Scraper**: Agregasi metadata dari TMDb REST API, Internet Archive, Blender Open Movies, PublicDomainMovie, dan YTS.
+- ⚡ **Live Auto-Reload HTML**: Template web dimuat ulang otomatis saat file template disimpan tanpa me-restart service Go.
 
 ---
 
 ## 🛠️ Prasyarat Sistem
 
-1. **Go** (Golang) versi 1.22 atau lebih baru.
+1. **Go (Golang)** versi 1.22 atau lebih baru.
 2. **MariaDB / MySQL** (Database `cinembrot`).
-3. **FFmpeg** (Wajib jika menggunakan fitur hardsub rendering otomatis).
+3. **FFmpeg** (Opsional, untuk fitur torrent hardsub rendering).
 
 ---
 
 ## 📦 Instalasi & Menjalankan
 
 ### 1. Persiapan Database
-Pastikan layanan MariaDB aktif, lalu buat dan impor skema awal:
+Pastikan MariaDB aktif, buat database:
 ```sql
 CREATE DATABASE IF NOT EXISTS cinembrot;
 ```
-Impor skema dan data awal bawaan:
+Impor skema awal (jika database baru):
 ```powershell
 mysql -u root -p cinembrot < schema.sql
 ```
 
-### 2. Jalankan Server
-Compile dan jalankan aplikasi:
+### 2. Kompilasi & Jalankan Server
 ```powershell
 # Build binary
 go build -o cinembrot.exe .
 
-# Jalankan server web & background scheduler
+# Jalankan server web & background auto-scraper
 .\cinembrot.exe -serve
 ```
-Atau jalankan di latar belakang (background mode di Windows):
+Atau jalankan di background (Windows):
 ```powershell
 Start-Process .\cinembrot.exe -ArgumentList "-serve" -WindowStyle Hidden
 ```
 
-Akses website melalui browser:
+Akses situs melalui browser:
 - **Halaman Utama**: [http://localhost:8080](http://localhost:8080)
+- **Katalog Anime**: [http://localhost:8080/anime](http://localhost:8080/anime)
+- **Drama Pendek / Asia**: [http://localhost:8080/drama-pendek](http://localhost:8080/drama-pendek)
 - **CMS Admin**: [http://localhost:8080/admin](http://localhost:8080/admin)
   - **Username**: `admin`
   - **Password**: `cinembrot123`
+- **Pengaturan Situs & Iklan CMS**: [http://localhost:8080/admin/settings](http://localhost:8080/admin/settings)
 
 ---
 
-## ⚙️ Perintah CLI Tersedia
+## ⚙️ Perintah CLI Terminal Lengkap (Internal Commands)
 
+Aplikasi menyediakan berbagai opsi CLI terminal (setara *Artisan* pada Laravel) untuk mempermudah automasi, pemeliharaan, dan scraping:
+
+### 1. Operasional Web Server & Scheduler
 ```powershell
-# Jalankan web server (port :8080) & background auto-scraper
+# Jalankan web server di port :8080 beserta auto-scraper background
 .\cinembrot.exe -serve
 
-# Jalankan scraping berdasarkan tahun rilis (source: tmdb / archive / yts / all)
-.\cinembrot.exe -by-year 2024 -pages 1 -source yts
-
-# Validasi & periksa kesehatan link unduhan film di database (deteksi link mati)
-.\cinembrot.exe -check-links
-
-# Download & konversi gambar film di database ke format WebP lokal (Original & Thumb)
-.\cinembrot.exe -convert-images
-
-# Jalankan 1 siklus scraping terjadwal semua rentang tahun (polite mode)
-.\cinembrot.exe -auto-scrape
-
-# Jalankan daemon background scheduler mandiri (tanpa web server)
+# Jalankan daemon scheduler otomatis mandiri (tanpa web server)
 .\cinembrot.exe -daemon
 
-# Scrape anime resmi dari MyAnimeList via Jikan API (WebP + Subtitle otomatis)
-.\cinembrot.exe -scrape-anime -anime-cat top -anime-limit 15
-# Scrape anime musim ini (on-going):
+# Jalankan 1 siklus scraping ramah server (polite mode) untuk seluruh rentang tahun
+.\cinembrot.exe -auto-scrape
+```
+
+### 2. Scraper Anime & Drama Asia (Berdasarkan Tahun & Kategori)
+```powershell
+# Scrape anime yang rilis pada tahun tertentu (contoh: tahun 2026)
+.\cinembrot.exe -scrape-anime -year 2026 -anime-limit 15
+
+# Scrape anime terpopuler sepanjang masa (MyAnimeList / TMDb)
+.\cinembrot.exe -scrape-anime -anime-cat top -anime-limit 20
+
+# Scrape anime musim ini / on-going (Seasonal)
 .\cinembrot.exe -scrape-anime -anime-cat seasonal -anime-limit 20
 
-# Scrape drama Asia dari TMDb TV API (K-Drama Korea, C-Drama China, J-Drama Jepang, Thai)
+# Scrape drama Asia rilis tahun tertentu (contoh: tahun 2026)
+.\cinembrot.exe -scrape-drama -year 2026 -drama-pages 1
+
+# Scrape K-Drama Korea dari TMDb TV API
 .\cinembrot.exe -scrape-drama -drama-lang ko -drama-pages 1
-# Scrape drama China / Mini-series:
+
+# Scrape Drama China (C-Drama) / Mini-series
 .\cinembrot.exe -scrape-drama -drama-lang zh -drama-pages 1
 
-# Cari & ingest metadata film langsung dari TMDb REST API
+# Scrape Drama Jepang (J-Drama) atau Drama Thailand
+.\cinembrot.exe -scrape-drama -drama-lang ja -drama-pages 1
+.\cinembrot.exe -scrape-drama -drama-lang th -drama-pages 1
+```
+
+### 3. Pemeliharaan, Perbaikan Data & Sinkronisasi Streaming
+```powershell
+# 🛠️ Perbaiki judul non-Latin (Kanji/CJK) ke English QWERTY, slug bersih & isi sinopsis kosong di DB
+.\cinembrot.exe -fix-titles
+
+# 🎬 Isi & perbarui server streaming embed (VidSrc, AutoEmbed, 2Embed, VidLink) untuk semua judul di DB
+.\cinembrot.exe -populate-streams
+
+# 🔍 Validasi & scan kesehatan tautan download film di database (deteksi link mati/rusak)
+.\cinembrot.exe -check-links
+
+# 🖼️ Download & konversi gambar poster/backdrop di database ke WebP lokal (Original & Thumb)
+.\cinembrot.exe -convert-images
+```
+
+### 4. Scraping Film Barat & Domain Publik
+```powershell
+# Scrape film rilis tahun tertentu dari provider (tmdb / archive / yts / all)
+.\cinembrot.exe -by-year 2024 -pages 1 -source yts
+
+# Cari & ingest metadata film berkualitas tinggi langsung dari TMDb REST API
 .\cinembrot.exe -tmdb "Inception" -year 2010
 
-# Ingest film domain publik dari Internet Archive
+# Ingest film domain publik legal dari Internet Archive API
 .\cinembrot.exe -archive -archive-limit 10
 
-# Ingest film Creative Commons dari Blender Studio (4K)
+# Ingest film Creative Commons dari Blender Studio (Resolusi 4K)
 .\cinembrot.exe -openmovies
 ```
 
-> ⚠️ **PENTING — KEBIJAKAN DATABASE:**
-> Seluruh operasi database (`delete`, `restore`, `edit`, ataupun migrasi struktur) membutuhkan kehati-hatian ekstra dan **WAJIB meminta izin (permission)** pengguna sebelum dieksekusi. Dilarang menghapus atau merombak database yang sedang berjalan tanpa konfirmasi eksplisit.
+> ⚠️ **PENTING — KEBIJAKAN KEAMANAN DATABASE:**
+> Sesuai aturan server di `AGENTS.md` (Poin 4), seluruh operasi database yang memodifikasi skema atau data (`delete`, `restore`, `edit`) **WAJIB meminta izin (permission)** eksplisit dari pengguna terlebih dahulu sebelum dieksekusi.
 
 ---
 
-## 📁 Struktur Direktori
+## 📁 Struktur Direktori Proyek
 
 ```text
 cinembrot/
 ├── auth/               # Modul autentikasi CMS Admin (HMAC-SHA256 & Session Cookie)
 ├── config/             # Konfigurasi aplikasi, env, database & API keys
-├── database/           # Koneksi MariaDB, skema migration, & seed settings
-├── imageprocessor/     # Konversi gambar poster/backdrop ke format WebP responsif
-├── model/              # Definisi model data GORM (Movie, DownloadLink, TorrentTask, dll.)
-├── pipeline/           # Pipeline agregasi & pengayaan metadata film lintas provider
-├── provider/           # Adapter client penyedia data (TMDb, OMDb, Archive, Blender, YTS)
+├── database/           # Koneksi MariaDB, migration skema, & pengelolaan system_settings
+├── i18n/               # Kamus translasi dwibahasa (Bahasa Indonesia & English)
+├── imageprocessor/     # Konversi & kompresi WebP (Original & Thumbnail) hemat 90% storage
+├── model/              # Definisi struct model GORM (Movie, DownloadLink, StreamLink, dll.)
+├── pipeline/           # Pipeline agregasi, resolusi metadata, enricher, & perbaikan judul
+├── provider/           # Adapter client penyedia data & streaming
 │   ├── archive/        # Client API Internet Archive
+│   ├── embed/          # Multi-server streaming embed generator (VidSrc, AutoEmbed, 2Embed, dll.)
+│   ├── jikan/          # Client API MyAnimeList / Jikan v4 (Anime resmi)
 │   ├── omdb/           # Client API OMDb (Rating IMDb)
-│   ├── openmovies/     # Client scraping film Creative Commons Blender Studio
-│   ├── tmdb/           # Client REST API The Movie Database (TMDb)
+│   ├── openmovies/     # Client film Creative Commons Blender Studio
+│   ├── subtitles/      # Generator link pencarian subtitle dwibahasa (SubDL & OpenSubtitles)
+│   ├── tmdb/           # Client REST API The Movie Database (TMDb Movie & TV)
 │   └── yts/            # Client REST API YTS (YIFY Torrents)
-├── public/             # Aset statis (WebP uploads, banner, maskot logo, favicon, downloads)
+├── public/             # Aset statis (WebP uploads, logo, bendera SVG, favicon)
 ├── scheduler/          # Background worker otomatis & cron scraping periodik
-├── scraper/            # Engine scraping Colly, HTML cleaner, & repository query
+├── scraper/            # Engine scraping Colly, HTML cleaner, deteksi non-Latin, & repository query
 ├── server/             # HTTP Web Server, middleware admin, dan route handlers
-│   └── views/          # Template HTML dinamis dengan live auto-reload (F5)
-├── torrentmgr/         # Download manager torrent internal & pipeline rendering hardsub FFmpeg
-├── validator/          # Engine validasi kesehatan & deteksi dead link unduhan
-├── schema.sql          # SQL dump database MariaDB lengkap (DDL + seed default)
-└── CHANGELOG.md        # Catatan riwayat pembaruan & rilis
+│   └── views/          # Template HTML dinamis Tailwind dengan live auto-reload (F5)
+├── torrentmgr/         # Download manager torrent internal & pipeline hardsub FFmpeg
+├── validator/          # Engine validasi kesehatan tautan unduhan
+├── schema.sql          # SQL dump database MariaDB lengkap
+├── INSTRUKSI-SERVER.md # Sumber kebenaran spesifikasi & riwayat pembaruan sistem server
+└── README.md           # Panduan lengkap fitur, instalasi, dan perintah CLI aplikasi
 ```
 
 ---
 
 ## 📄 Lisensi
-Didistribusikan untuk tujuan edukasi dan pemutaran film domain publik / creative commons legal.
+Didistribusikan untuk tujuan edukasi dan pemutaran film/anime domain publik serta lisensi promosi resmi.
+
 
