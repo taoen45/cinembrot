@@ -6,8 +6,14 @@
 *.dylib
 bin/
 dist/
+public/uploads/
 public/download/movie/
 public/downloads/
+
+# Docker local deployment
+Dockerfile
+.dockerignore
+.gitkeep
 
 # Test binary
 *.test
