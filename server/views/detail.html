@@ -578,7 +578,8 @@
        data-movie-id="{{.Movie.ID}}" 
        data-tmdb-id="{{.TMDbID}}" 
        data-is-tv="{{if or (eq .Movie.Type "anime") (eq .Movie.Type "drama_pendek") (eq .Movie.Type "series")}}true{{else}}false{{end}}" 
-       data-trailer="{{if .Movie.TrailerURL}}{{youtubeEmbed .Movie.TrailerURL}}{{end}}">
+       data-trailer="{{if .Movie.TrailerURL}}{{youtubeEmbed .Movie.TrailerURL}}{{end}}"
+       data-interstitial-enabled="{{if and .EnableAds .EnableDownloadInterstitial}}true{{else}}false{{end}}">
   </div>
 
   <!-- CLIENT SCRIPT STREAMING & EPISODE SWITCHER -->
@@ -820,7 +821,7 @@
     // ==================== GLOBAL DOWNLOAD BUFFER INTERSTITIAL ====================
     var pendingDownloadURL = '';
     var interstitialCountdown = null;
-    var isInterstitialEnabled = {{if and .EnableAds .EnableDownloadInterstitial}}true{{else}}false{{end}};
+    var isInterstitialEnabled = metaEl ? (metaEl.dataset.interstitialEnabled === 'true') : false;
 
     function handleDownloadClick(event, targetURL, sponsorURL, itemName) {
       if (!isInterstitialEnabled || !sponsorURL) {
