@@ -1308,6 +1308,25 @@ func (s *Server) HandleAdminTriggerScrapeHollywood(w http.ResponseWriter, r *htt
 	http.Redirect(w, r, "/admin/tools?success=Scraping+Film+Hollywood+resmi+(TMDb)+berhasil+dimulai+di+latar+belakang!", http.StatusSeeOther)
 }
 
+// HandleAdminTriggerDailyScrape triggers on-demand execution of the 05:00 & 17:00 daily catch-up scrape
+func (s *Server) HandleAdminTriggerDailyScrape(w http.ResponseWriter, r *http.Request) {
+	repo := scraper.NewRepository(s.db)
+	pipe := pipeline.NewPipeline(s.cfg, repo)
+	autoScraper := scheduler.NewAutoScraper(s.cfg, s.db, pipe, repo)
+
+	go func() {
+		loc, err := time.LoadLocation("Asia/Jakarta")
+		currentYear := time.Now().Year()
+		if err == nil {
+			currentYear = time.Now().In(loc).Year()
+		}
+		log.Printf("[CMS TOOL ⏰] Menjalankan siklus scraper harian lengkap (05:00/17:00) untuk tahun %d...\n", currentYear)
+		_, _ = autoScraper.RunDailyCatchupCycle(currentYear)
+	}()
+
+	http.Redirect(w, r, "/admin/tools?success=Siklus+Scraper+Harian+Lengkap+(Film,+Anime,+Drama+Tahun+Sekarang)+berhasil+dimulai+di+latar+belakang!", http.StatusSeeOther)
+}
+
 // HandleAdminSources renders the website sources list from MariaDB
 func (s *Server) HandleAdminSources(w http.ResponseWriter, r *http.Request) {
 	user := s.GetLoggedInUser(r)

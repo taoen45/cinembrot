@@ -67,6 +67,9 @@ func main() {
 	// CLI Sinkronisasi Link Download File / Subtitle
 	populateDownloads := flag.Bool("populate-downloads", false, "Isi dan perbarui URL link download secara massal untuk semua film di database")
 
+	// CLI Scheduler Harian Lengkap (05:00 & 17:00 WIB)
+	dailyScrape := flag.Bool("daily-scrape", false, "Jalankan 1 siklus lengkap scraper harian (Anime On-Going, Drama Asia, Hollywood, TMDb, YTS) untuk tahun sekarang")
+
 	flag.Parse()
 
 	fmt.Println("================================================================")
@@ -292,8 +295,29 @@ func main() {
 		return
 	}
 
+	if *dailyScrape {
+		targetYear := *tmdbYear
+		if targetYear <= 0 {
+			loc, _ := time.LoadLocation("Asia/Jakarta")
+			if loc != nil {
+				targetYear = time.Now().In(loc).Year()
+			} else {
+				targetYear = time.Now().Year()
+			}
+		}
+		fmt.Printf("\n[ACTION] ⏰ Menjalankan siklus scraper harian lengkap untuk tahun %d...\n", targetYear)
+		count, err := autoScraper.RunDailyCatchupCycle(targetYear)
+		if err != nil {
+			log.Printf("[ERROR] Siklus scraper harian gagal: %v\n", err)
+		} else {
+			fmt.Printf("\n[SUCCESS] Berhasil! Total %d konten baru/diperbarui untuk tahun %d.\n", count, targetYear)
+		}
+		printDatabaseStats(db)
+		return
+	}
+
 	// 6. Start Web Server with background Auto-Scraper enabled
-	if *serveWeb || (!*fetchArchive && !*fetchOpenMovies && !*syncAll && *tmdbQuery == "" && *scrapeURL == "" && *byYear == 0 && !*convertImages && !*checkLinks && !*scrapeAnime && !*scrapeDrama && !*scrapeHollywood && !*populateStreams && !*fixTitles && !*translateSynopsis && !*populateDownloads) {
+	if *serveWeb || (!*fetchArchive && !*fetchOpenMovies && !*syncAll && *tmdbQuery == "" && *scrapeURL == "" && *byYear == 0 && !*convertImages && !*checkLinks && !*scrapeAnime && !*scrapeDrama && !*scrapeHollywood && !*populateStreams && !*fixTitles && !*translateSynopsis && !*populateDownloads && !*dailyScrape) {
 		// Launch background polite auto-scraper
 		autoScraper.Start()
 

@@ -147,6 +147,73 @@
         </button>
       </div>
     </form>
+  <!-- ==================== 1.5. JADWAL HARIAN OTOMATIS (05:00 & 17:00 WIB) ==================== -->
+  <div class="bg-gradient-to-br from-amber-500/10 via-brand-500/5 to-slate-900 border border-amber-500/30 rounded-2xl p-6 shadow-sm space-y-5">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-amber-500/20">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg shadow-inner">
+          <i class="fa-solid fa-calendar-check"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Jadwal Harian Scraper Otomatis (05:00 & 17:00 WIB)</h3>
+            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+              Aktif Harian
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 mt-0.5">Pemeriksaan otomatis film baru, anime on-going, drama Asia & rilis episode baru setiap jam 5 pagi dan 5 sore</p>
+        </div>
+      </div>
+      <div>
+        <span class="text-xs font-bold text-amber-300 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+          <i class="fa-solid fa-clock"></i> 05:00 WIB & 17:00 WIB
+        </span>
+      </div>
+    </div>
+
+    <!-- DETAIL CAKUPAN SCRAPER HARIAN -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+      <div class="p-3 bg-slate-900/60 border border-slate-800 rounded-xl space-y-1">
+        <div class="flex items-center gap-1.5 text-pink-400 font-bold">
+          <i class="fa-solid fa-tv"></i> <span>Anime On-Going</span>
+        </div>
+        <p class="text-[11px] text-slate-400">Seasonal musim ini & top anime tahun berjalan (update episode baru)</p>
+      </div>
+
+      <div class="p-3 bg-slate-900/60 border border-slate-800 rounded-xl space-y-1">
+        <div class="flex items-center gap-1.5 text-purple-400 font-bold">
+          <i class="fa-solid fa-masks-theater"></i> <span>Drama Asia</span>
+        </div>
+        <p class="text-[11px] text-slate-400">Serial K-Drama, C-Drama, J-Drama & Thai drama rilis tahun berjalan</p>
+      </div>
+
+      <div class="p-3 bg-slate-900/60 border border-slate-800 rounded-xl space-y-1">
+        <div class="flex items-center gap-1.5 text-amber-400 font-bold">
+          <i class="fa-solid fa-clapperboard"></i> <span>Hollywood Bioskop</span>
+        </div>
+        <p class="text-[11px] text-slate-400">Rilis bioskop terbaru (Now Playing) & film Hollywood terpopuler</p>
+      </div>
+
+      <div class="p-3 bg-slate-900/60 border border-slate-800 rounded-xl space-y-1">
+        <div class="flex items-center gap-1.5 text-blue-400 font-bold">
+          <i class="fa-solid fa-film"></i> <span>TMDb & YTS Movies</span>
+        </div>
+        <p class="text-[11px] text-slate-400">Katalog film global tahun berjalan + auto WebP & streaming player</p>
+      </div>
+    </div>
+
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+      <p class="text-[11px] text-slate-400 flex items-center gap-1.5">
+        <i class="fa-solid fa-circle-info text-amber-400"></i>
+        <span>Jadwal berjalan otomatis di background server. Anda juga dapat memicunya secara instan kapan saja.</span>
+      </p>
+      <form action="/admin/tools/run-daily-scrape" method="POST" class="shrink-0">
+        <button type="submit" class="bg-gradient-to-r from-amber-500 to-red-600 hover:from-amber-600 hover:to-red-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition shadow flex items-center gap-2">
+          <i class="fa-solid fa-bolt"></i> Jalankan Siklus Harian Sekarang (Semua Scraper)
+        </button>
+      </form>
+    </div>
   </div>
 
   <!-- ==================== 2. MANUAL SCRAPING & LINK CHECKER ==================== -->

@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/rand"
 	"strconv"
+	"sync"
 	"time"
 
 	"cinembrot/config"
@@ -16,11 +17,13 @@ import (
 
 // AutoScraper manages background automated scraping with polite rate limiting
 type AutoScraper struct {
-	cfg      *config.Config
-	db       *gorm.DB
-	pipe     *pipeline.Pipeline
-	repo     *scraper.Repository
-	stopChan chan struct{}
+	cfg        *config.Config
+	db         *gorm.DB
+	pipe       *pipeline.Pipeline
+	repo       *scraper.Repository
+	stopChan   chan struct{}
+	dailyLock  sync.Mutex
+	isDailyRun bool
 }
 
 func NewAutoScraper(cfg *config.Config, db *gorm.DB, pipe *pipeline.Pipeline, repo *scraper.Repository) *AutoScraper {
@@ -96,6 +99,10 @@ func GetSchedulerConfig(db *gorm.DB, defaultCfg *config.Config) model.SchedulerC
 func (s *AutoScraper) Start() {
 	log.Printf("\n[SCHEDULER] 🤖 Background Auto-Scraper Scheduler aktif (Menggunakan pengaturan MariaDB & CMS)...\n")
 
+	// 1. Pengawas Jadwal Harian Tetap (Pukul 05:00 & 17:00 WIB)
+	s.startDailyFixedScheduler()
+
+	// 2. Interval Auto-Scraper umum
 	go func() {
 		// Run initial check after 10 seconds of startup
 		time.Sleep(10 * time.Second)
@@ -230,3 +237,175 @@ func (s *AutoScraper) politeSleep() {
 	sleepDuration := time.Duration(baseMs+jitter) * time.Millisecond
 	time.Sleep(sleepDuration)
 }
+
+// startDailyFixedScheduler monitors the clock and triggers RunDailyCatchupCycle at 05:00 WIB and 17:00 WIB daily
+func (s *AutoScraper) startDailyFixedScheduler() {
+	loc, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+		loc = time.FixedZone("WIB", 7*3600)
+	}
+
+	go func() {
+		log.Printf("[DAILY-SCHEDULER ⏰] Pengawas jadwal harian aktif (Target: 05:00 WIB & 17:00 WIB)...\n")
+		for {
+			now := time.Now().In(loc)
+
+			// Waktu target hari ini
+			t05 := time.Date(now.Year(), now.Month(), now.Day(), 5, 0, 0, 0, loc)
+			t17 := time.Date(now.Year(), now.Month(), now.Day(), 17, 0, 0, 0, loc)
+
+			var nextRun time.Time
+			if now.Before(t05) {
+				nextRun = t05
+			} else if now.Before(t17) {
+				nextRun = t17
+			} else {
+				// Sudah lewat jam 17:00, target berikutnya adalah jam 05:00 besok
+				nextRun = t05.Add(24 * time.Hour)
+			}
+
+			waitDur := time.Until(nextRun)
+			log.Printf("[DAILY-SCHEDULER ⏰] ⏳ Eksekusi berikutnya dijadwalkan pada: %s (%v lagi)\n",
+				nextRun.Format("2006-01-02 15:04:05 MST"), waitDur.Round(time.Minute))
+
+			select {
+			case <-time.After(waitDur):
+				go func() {
+					currentYear := time.Now().In(loc).Year()
+					log.Printf("[DAILY-SCHEDULER ⏰] 🔔 Waktu jadwal harian (%s WIB) tercapai! Memulai scraping tahun %d...\n",
+						time.Now().In(loc).Format("15:04"), currentYear)
+					_, _ = s.RunDailyCatchupCycle(currentYear)
+				}()
+				// Jeda sejenak 2 menit agar loop tidak mendeteksi menit yang sama
+				time.Sleep(2 * time.Minute)
+			case <-s.stopChan:
+				log.Println("[DAILY-SCHEDULER] Pengawas jadwal harian dihentikan.")
+				return
+			}
+		}
+	}()
+}
+
+// RunDailyCatchupCycle executes a full catch-up scrape across all categories for the target year (2026/current year):
+// 1. Anime (Seasonal on-going & Top) untuk judul dan episode baru
+// 2. Asian Dramas (Korea, China, Jepang, Thailand) untuk judul dan episode baru
+// 3. Hollywood Movies (Now Playing bioskop & Populer) untuk film baru
+// 4. TMDb & YTS general movies untuk film baru
+func (s *AutoScraper) RunDailyCatchupCycle(targetYear int) (int, error) {
+	s.dailyLock.Lock()
+	if s.isDailyRun {
+		s.dailyLock.Unlock()
+		log.Println("[DAILY-SCHEDULER ⚠️] Siklus harian sedang berjalan saat ini. Panggilan baru diabaikan.")
+		return 0, nil
+	}
+	s.isDailyRun = true
+	s.dailyLock.Unlock()
+
+	defer func() {
+		s.dailyLock.Lock()
+		s.isDailyRun = false
+		s.dailyLock.Unlock()
+	}()
+
+	loc, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+		loc = time.FixedZone("WIB", 7*3600)
+	}
+
+	if targetYear <= 0 {
+		targetYear = time.Now().In(loc).Year()
+	}
+
+	startTime := time.Now()
+	log.Println("\n==========================================================================")
+	log.Printf(" [DAILY-SCHEDULER ⏰] 🚀 Memulai siklus scraping harian (Pukul 05:00/17:00 WIB)\n")
+	log.Printf("  Target Tahun: %d (Film Baru, Anime On-Going, Drama Asia & Episode Baru)\n", targetYear)
+	log.Println("==========================================================================")
+
+	totalIngested := 0
+
+	// 1. ANIME: Seasonal On-Going & Top Anime Tahun Sekarang (Mendeteksi Anime & Episode Baru)
+	log.Printf("[DAILY-SCHEDULER] 🎌 [1/4] Scraping Anime Musim Ini / On-Going & Populer Tahun %d...\n", targetYear)
+	if count, err := s.pipe.IngestAnime("seasonal", 0, targetYear); err == nil {
+		totalIngested += count
+		log.Printf("[DAILY-SCHEDULER]  -> Berhasil ingest %d anime seasonal/on-going.\n", count)
+	} else {
+		log.Printf("[DAILY-SCHEDULER]  ⚠️ Ingest anime seasonal notice: %v\n", err)
+	}
+	s.politeSleep()
+
+	if count, err := s.pipe.IngestAnime("top", 50, targetYear); err == nil {
+		totalIngested += count
+		log.Printf("[DAILY-SCHEDULER]  -> Berhasil ingest %d anime top tahun %d.\n", count, targetYear)
+	} else {
+		log.Printf("[DAILY-SCHEDULER]  ⚠️ Ingest anime top notice: %v\n", err)
+	}
+	s.politeSleep()
+
+	// 2. DRAMA ASIA: Serial Drama Korea, China, Jepang, Thailand Tahun Sekarang (Mendeteksi Drama & Episode Baru)
+	log.Printf("[DAILY-SCHEDULER] 🎭 [2/4] Scraping Serial Drama Asia (Korea, China, Jepang, Thailand) Tahun %d...\n", targetYear)
+	dramaLangs := []struct {
+		code string
+		name string
+	}{
+		{"ko", "Korea (K-Drama)"},
+		{"zh", "China (C-Drama)"},
+		{"ja", "Jepang (J-Drama)"},
+		{"th", "Thailand (Thai Drama)"},
+	}
+	for _, dl := range dramaLangs {
+		log.Printf("[DAILY-SCHEDULER]  -> Memindai Drama %s (Tahun %d)...\n", dl.name, targetYear)
+		if count, err := s.pipe.IngestAsianDramas(dl.code, 3, targetYear); err == nil {
+			totalIngested += count
+			log.Printf("[DAILY-SCHEDULER]  -> Berhasil ingest %d serial drama %s.\n", count, dl.name)
+		} else {
+			log.Printf("[DAILY-SCHEDULER]  ⚠️ Ingest drama %s notice: %v\n", dl.name, err)
+		}
+		s.politeSleep()
+	}
+
+	// 3. HOLLYWOOD / BOX OFFICE: Film Rilis Bioskop Terbaru (Now Playing) & Populer Tahun Sekarang
+	log.Printf("[DAILY-SCHEDULER] 🎬 [3/4] Scraping Film Hollywood / Box Office Bioskop Terbaru Tahun %d...\n", targetYear)
+	if count, err := s.pipe.IngestHollywoodMovies("now_playing", 3, targetYear); err == nil {
+		totalIngested += count
+		log.Printf("[DAILY-SCHEDULER]  -> Berhasil ingest %d film Hollywood Now Playing bioskop.\n", count)
+	} else {
+		log.Printf("[DAILY-SCHEDULER]  ⚠️ Ingest Hollywood now_playing notice: %v\n", err)
+	}
+	s.politeSleep()
+
+	if count, err := s.pipe.IngestHollywoodMovies("popular", 3, targetYear); err == nil {
+		totalIngested += count
+		log.Printf("[DAILY-SCHEDULER]  -> Berhasil ingest %d film Hollywood Popular.\n", count)
+	} else {
+		log.Printf("[DAILY-SCHEDULER]  ⚠️ Ingest Hollywood popular notice: %v\n", err)
+	}
+	s.politeSleep()
+
+	// 4. TMDB & YTS: Katalog Film Umum Tahun Sekarang
+	log.Printf("[DAILY-SCHEDULER] 🍿 [4/4] Scraping Katalog Film TMDb & YTS Tahun %d...\n", targetYear)
+	if count, err := s.pipe.IngestByYear(targetYear, 3, "tmdb"); err == nil {
+		totalIngested += count
+		log.Printf("[DAILY-SCHEDULER]  -> Berhasil ingest %d film TMDb.\n", count)
+	} else {
+		log.Printf("[DAILY-SCHEDULER]  ⚠️ Ingest TMDb by-year notice: %v\n", err)
+	}
+	s.politeSleep()
+
+	if count, err := s.pipe.IngestByYear(targetYear, 3, "yts"); err == nil {
+		totalIngested += count
+		log.Printf("[DAILY-SCHEDULER]  -> Berhasil ingest %d film YTS.\n", count)
+	} else {
+		log.Printf("[DAILY-SCHEDULER]  ⚠️ Ingest YTS by-year notice: %v\n", err)
+	}
+
+	duration := time.Since(startTime)
+	log.Printf("\n[DAILY-SCHEDULER] ✅ SIKLUS HARIAN SELESAI dalam %v. Total %d konten (Film/Anime/Drama/Episode Baru) diproses.\n",
+		duration.Round(time.Second), totalIngested)
+
+	_ = s.repo.LogScrape("DailyScheduler-05:00/17:00", fmt.Sprintf("year=%d (anime,drama,hollywood,tmdb,yts)", targetYear),
+		"SUCCESS", totalIngested, "", duration)
+
+	return totalIngested, nil
+}
+
