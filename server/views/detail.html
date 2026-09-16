@@ -9,11 +9,6 @@
 
     <div class="flex-1">
       <div class="flex flex-wrap items-center gap-2 mb-2">
-        <!-- {{if .Movie.IsFree}}
-        <span class="bg-green-600 text-white text-xs font-bold px-2.5 py-1 rounded shadow">100% GRATIS & LEGAL</span>
-        {{else}}
-        <span class="bg-blue-600 text-white text-xs font-bold px-2.5 py-1 rounded shadow">BERLISENSI KOMERSIL</span>
-        {{end}} -->
         <span class="bg-slate-100 dark:bg-dark-800 text-slate-700 dark:text-slate-300 text-xs px-2.5 py-1 rounded border border-slate-200 dark:border-dark-700">{{.Movie.Quality}}</span>
         <span class="text-yellow-500 dark:text-yellow-400 font-bold text-sm"><i class="fa-solid fa-star"></i> {{.Movie.Rating}}/10</span>
         {{if .Movie.TrailerURL}}
@@ -534,12 +529,25 @@
   </div>
   {{end}}
 
+  <!-- METADATA MOVIE UNTUK JAVASCRIPT CLIENT (MENCEGAH SYNTAX ERROR TEMPLATE DI EDITOR) -->
+  <div id="movie-client-meta" 
+       class="hidden" 
+       data-movie-id="{{.Movie.ID}}" 
+       data-tmdb-id="{{.TMDbID}}" 
+       data-is-tv="{{if or (eq .Movie.Type "anime") (eq .Movie.Type "drama_pendek") (eq .Movie.Type "series")}}true{{else}}false{{end}}" 
+       data-trailer="{{if .Movie.TrailerURL}}{{youtubeEmbed .Movie.TrailerURL}}{{end}}">
+  </div>
+
   <!-- CLIENT SCRIPT STREAMING & EPISODE SWITCHER -->
   <script>
+    const metaEl = document.getElementById('movie-client-meta');
+    const movieId = metaEl ? parseInt(metaEl.dataset.movieId, 10) : 0;
+    const tmdbID = metaEl ? parseInt(metaEl.dataset.tmdbId, 10) : 0;
+    const isTV = metaEl ? (metaEl.dataset.isTv === 'true') : false;
+    const officialTrailer = metaEl ? (metaEl.dataset.trailer || '') : '';
+
     let currentServerIndex = 0;
     let currentEpisodeNumber = 1;
-    const tmdbID = {{.TMDbID}};
-    const isTV = {{if or (eq .Movie.Type "anime") (eq .Movie.Type "drama_pendek") (eq .Movie.Type "series")}}true{{else}}false{{end}};
 
     function switchServer(index, embedURL, serverName) {
       currentServerIndex = index;
@@ -620,26 +628,25 @@
 
     function switchToTrailer() {
       const player = document.getElementById('main-stream-player');
-      const trailer = "{{youtubeEmbed .Movie.TrailerURL}}";
-      if (player && trailer) {
-        player.src = trailer;
+      if (player && officialTrailer) {
+        player.src = officialTrailer;
         const badge = document.getElementById('active-server-badge');
         if (badge) badge.textContent = 'Trailer Resmi';
       }
     }
 
     // Logika Cooldown 24 Jam (1 Hari) untuk Tombol Scraper Mandiri
-    function getCooldownKey(type, movieId) {
-      return 'cinembrot_' + type + '_cooldown_' + movieId;
+    function getCooldownKey(type, activeId) {
+      return 'cinembrot_' + type + '_cooldown_' + activeId;
     }
 
-    function checkButtonCooldown(type, movieId, btnId, iconId, textId, defaultText) {
+    function checkButtonCooldown(type, activeId, btnId, iconId, textId, defaultText) {
       const btn = document.getElementById(btnId);
       const icon = document.getElementById(iconId);
       const text = document.getElementById(textId);
       if (!btn) return;
 
-      const key = getCooldownKey(type, movieId);
+      const key = getCooldownKey(type, activeId);
       const expireStr = localStorage.getItem(key);
       if (expireStr) {
         const expireTime = parseInt(expireStr, 10);
@@ -658,11 +665,11 @@
       return false;
     }
 
-    function apply24HourCooldown(type, movieId, btnId, iconId, textId) {
+    function apply24HourCooldown(type, activeId, btnId, iconId, textId) {
       const btn = document.getElementById(btnId);
       const icon = document.getElementById(iconId);
       const text = document.getElementById(textId);
-      const key = getCooldownKey(type, movieId);
+      const key = getCooldownKey(type, activeId);
       const expireTime = Date.now() + (24 * 60 * 60 * 1000); // 24 Jam
       localStorage.setItem(key, expireTime.toString());
 
@@ -675,7 +682,8 @@
     }
 
     // Refresh & Re-scrape Broken Download Link secara mandiri ke website sumber
-    function refreshMovieDownload(movieId) {
+    function refreshMovieDownload(targetMovieId) {
+      const activeMovieId = targetMovieId || movieId;
       const btn = document.getElementById('btn-refresh-dl');
       const icon = document.getElementById('icon-refresh-dl');
       const text = document.getElementById('text-refresh-dl');
@@ -685,7 +693,7 @@
       if (icon) icon.classList.add('fa-spin');
       if (text) text.textContent = 'Memeriksa sumber...';
 
-      fetch('/api/movie/' + movieId + '/refresh-download', {
+      fetch('/api/movie/' + activeMovieId + '/refresh-download', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       })
@@ -693,14 +701,14 @@
       .then(function(data) {
         if (icon) icon.classList.remove('fa-spin');
         if (data.status === 'updated') {
-          localStorage.removeItem(getCooldownKey('dl', movieId));
+          localStorage.removeItem(getCooldownKey('dl', activeMovieId));
           btn.className = 'inline-flex items-center justify-center gap-2 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-xs font-bold px-4 py-2.5 rounded-xl border border-emerald-300 dark:border-emerald-800 shadow-sm shrink-0';
           if (icon) icon.className = 'fa-solid fa-circle-check text-emerald-500';
           if (text) text.textContent = 'Link Berhasil Diperbarui!';
           setTimeout(function() { window.location.reload(); }, 1200);
         } else {
           // URL sama persis: Kunci tombol selama 24 jam (1 hari)
-          apply24HourCooldown('dl', movieId, 'btn-refresh-dl', 'icon-refresh-dl', 'text-refresh-dl');
+          apply24HourCooldown('dl', activeMovieId, 'btn-refresh-dl', 'icon-refresh-dl', 'text-refresh-dl');
         }
       })
       .catch(function(err) {
@@ -711,7 +719,8 @@
     }
 
     // Refresh & Re-scrape Broken Streaming Link secara mandiri
-    function refreshMovieStream(movieId) {
+    function refreshMovieStream(targetMovieId) {
+      const activeMovieId = targetMovieId || movieId;
       const btn = document.getElementById('btn-refresh-stream') || document.getElementById('btn-refresh-stream-empty');
       const icon = document.getElementById('icon-refresh-stream') || document.getElementById('icon-refresh-stream-empty');
       const text = document.getElementById('text-refresh-stream') || document.getElementById('text-refresh-stream-empty');
@@ -721,7 +730,7 @@
       if (icon) icon.classList.add('fa-spin');
       if (text) text.textContent = 'Menghubungkan...';
 
-      fetch('/api/movie/' + movieId + '/refresh-stream', {
+      fetch('/api/movie/' + activeMovieId + '/refresh-stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       })
@@ -729,7 +738,7 @@
       .then(function(data) {
         if (icon) icon.classList.remove('fa-spin');
         if (data.status === 'updated') {
-          localStorage.removeItem(getCooldownKey('stream', movieId));
+          localStorage.removeItem(getCooldownKey('stream', activeMovieId));
           if (icon) icon.className = 'fa-solid fa-circle-check text-emerald-400';
           if (text) text.textContent = 'Server Diperbarui!';
           setTimeout(function() { window.location.reload(); }, 1200);
@@ -738,7 +747,7 @@
           const btnId = btn.id;
           const iconId = icon.id;
           const textId = text.id;
-          apply24HourCooldown('stream', movieId, btnId, iconId, textId);
+          apply24HourCooldown('stream', activeMovieId, btnId, iconId, textId);
         }
       })
       .catch(function(err) {
@@ -750,7 +759,6 @@
 
     // Inisialisasi status cooldown saat halaman dimuat
     document.addEventListener('DOMContentLoaded', function() {
-      const movieId = {{.Movie.ID}};
       checkButtonCooldown('dl', movieId, 'btn-refresh-dl', 'icon-refresh-dl', 'text-refresh-dl', 'Cek / Segarkan Link');
       checkButtonCooldown('stream', movieId, 'btn-refresh-stream', 'icon-refresh-stream', 'text-refresh-stream', 'Cek / Segarkan Server');
       checkButtonCooldown('stream', movieId, 'btn-refresh-stream-empty', 'icon-refresh-stream-empty', 'text-refresh-stream-empty', 'Cari / Hubungkan Server Streaming');
