@@ -24,11 +24,16 @@
   - **OpenGraph & Twitter Cards**: Tampilan preview visual saat link dibagikan ke WhatsApp, Telegram, Facebook, dan Twitter/X.
   - **Schema.org Rich Snippets (JSON-LD)**: Format `Movie` dan `TVSeries` dengan `AggregateRating` agar bintang kuning rating film muncul di hasil pencarian Google SERP, serta schema `WebSite` dengan `SearchAction` (Sitelinks Searchbox) di beranda.
   - **CMS Webmaster Verifications**: Kontrol setting di `/admin/settings` untuk memasukkan kode verifikasi Google Search Console, Bing Webmaster, dan Yandex tanpa edit kode HTML.
-- 🌐 **Fitur Terjemahan Dwibahasa (ID / EN)**:
+- 🌐 **Fitur Terjemahan Dwibahasa (ID / EN) & Auto-Translate Sinopsis**:
   - Bahasa Indonesia sebagai bahasa utama (*default*) dan English sebagai bahasa kedua.
   - Dropdown pemilih bahasa elegan dengan ikon bendera SVG asli berwarna di desktop & mobile sub-navbar.
-  - Sinopsis film otomatis berubah penuh ke bahasa Inggris saat memilih English mode via TMDb cache.
+  - **Auto-Translate Sinopsis Dwibahasa**: Saat scraping, sinopsis bahasa Inggris (atau bahasa non-Latin/Kanji) otomatis diterjemahkan ke Bahasa Indonesia (`synopsis`) dan versi aslinya disimpan di `synopsis_en`.
+  - Mode 🇮🇩 ID menampilkan sinopsis Bahasa Indonesia yang alami, sedangkan mode 🇬🇧 EN menampilkan sinopsis Bahasa Inggris resmi.
   - Terintegrasi engine Google Website Translator untuk terjemahan menyeluruh.
+- 📥 **Scraper Link Download Langsung & Refresh Broken Link Mandiri**:
+  - Link download video matang langsung disiapkan dari sumber scraper (Archive MP4, Open Movies, Torrent, dan Subtitle).
+  - Tombol **"🔄 Cek / Segarkan Link"** di halaman detail film: jika link download broken, sistem secara mandiri melakukan rescrape ke website sumber untuk mencari URL download baru.
+  - Jika URL download dari website sumber sama persis (tidak ada link baru), tombol otomatis **disabled** untuk menjaga efisiensi server.
 - 📢 **Manajemen Iklan Adsterra & CMS Pengaturan Dinamis (`/admin/settings`)**:
   - Kontrol fleksibel saklar ON/OFF dan input script untuk 10 unit iklan: Popunder, Social Bar, Banner 728x90 Header, Native Banner Rekomendasi, Direct Smartlink, Floating Sticky Skyscraper Samping (160x600 & 160x300), Mobile Sticky Bottom 320x50, Pre-footer 468x60, dan Medium Rectangle 300x250.
   - Pengaturan branding situs (Nama Situs, Tagline, Saklar Bahasa, Saklar Komentar) langsung dari antarmuka web admin tanpa perlu restart server.
@@ -164,6 +169,9 @@ Aplikasi menyediakan berbagai opsi CLI terminal (setara *Artisan* pada Laravel) 
 
 ### 4. Pemeliharaan, Perbaikan Data & Sinkronisasi Streaming
 ```powershell
+# 🌐 Sinkronisasi terjemahan sinopsis dwibahasa (terjemahkan sinopsis Inggris ke Indonesia & isi synopsis_en)
+.\cinembrot.exe -translate-synopsis
+
 # 🛠️ Perbaiki judul non-Latin (Kanji/CJK) ke English QWERTY, slug bersih & isi sinopsis kosong di DB
 .\cinembrot.exe -fix-titles
 

@@ -17,7 +17,8 @@ type Movie struct {
 	Type               string         `gorm:"size:50;default:'movie';index" json:"type"`     // movie, series, anime, documentary, tv_show
 	Status             string         `gorm:"size:50;default:'released';index" json:"status"` // ongoing, completed, released, upcoming
 	Tagline            string         `gorm:"size:500" json:"tagline,omitempty"`
-	Synopsis           string         `gorm:"type:longtext" json:"synopsis,omitempty"`
+	Synopsis           string         `gorm:"type:longtext" json:"synopsis,omitempty"` // Default Indonesian Synopsis
+	SynopsisEN         string         `gorm:"type:longtext" json:"synopsis_en,omitempty"` // English Synopsis
 	ReleaseDate        *time.Time     `json:"release_date,omitempty"`
 	Year               int            `gorm:"index" json:"year,omitempty"`
 	DurationMinutes    int            `json:"duration_minutes,omitempty"`

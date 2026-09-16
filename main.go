@@ -60,6 +60,9 @@ func main() {
 	// CLI Perbaikan Judul Non-Latin & Sinopsis Kosong
 	fixTitles := flag.Bool("fix-titles", false, "Perbaiki judul-judul kanji/non-Latin ke English QWERTY dan lengkapi sinopsis kosong di database")
 
+	// CLI Sinkronisasi Terjemahan Sinopsis Dwibahasa (ID & EN)
+	translateSynopsis := flag.Bool("translate-synopsis", false, "Terjemahkan seluruh sinopsis film di database ke Bahasa Indonesia (ID) & English (EN)")
+
 	flag.Parse()
 
 	fmt.Println("================================================================")
@@ -260,8 +263,20 @@ func main() {
 		return
 	}
 
+	if *translateSynopsis {
+		fmt.Println("\n[ACTION] 🌐 Memulai sinkronisasi terjemahan sinopsis dwibahasa (Indonesia & English)...")
+		count, err := pipeline.TranslateAllExistingSynopses(db)
+		if err != nil {
+			log.Printf("[ERROR] Sinkronisasi terjemahan sinopsis gagal: %v\n", err)
+		} else {
+			fmt.Printf("\n[SUCCESS] Berhasil menerjemahkan dan menyinkronkan %d sinopsis film di MariaDB!\n", count)
+		}
+		printDatabaseStats(db)
+		return
+	}
+
 	// 6. Start Web Server with background Auto-Scraper enabled
-	if *serveWeb || (!*fetchArchive && !*fetchOpenMovies && !*syncAll && *tmdbQuery == "" && *scrapeURL == "" && *byYear == 0 && !*convertImages && !*checkLinks && !*scrapeAnime && !*scrapeDrama && !*scrapeHollywood && !*populateStreams && !*fixTitles) {
+	if *serveWeb || (!*fetchArchive && !*fetchOpenMovies && !*syncAll && *tmdbQuery == "" && *scrapeURL == "" && *byYear == 0 && !*convertImages && !*checkLinks && !*scrapeAnime && !*scrapeDrama && !*scrapeHollywood && !*populateStreams && !*fixTitles && !*translateSynopsis) {
 		// Launch background polite auto-scraper
 		autoScraper.Start()
 
@@ -287,6 +302,7 @@ func main() {
 	fmt.Println("  go run . -scrape-anime -year 2026     # 🎌 Scrape SEMUA halaman anime rilis tahun 2026")
 	fmt.Println("  go run . -scrape-drama -year 2026     # 🎭 Scrape SEMUA halaman drama Asia rilis tahun 2026")
 	fmt.Println("  go run . -fix-titles                  # 🛠️ Perbaiki judul Kanji ke English QWERTY & isi sinopsis kosong")
+	fmt.Println("  go run . -translate-synopsis          # 🌐 Sinkronisasi terjemahan sinopsis dwibahasa (ID & EN)")
 	fmt.Println("  go run . -populate-streams            # 🎬 Isi/perbarui server streaming embed untuk semua judul")
 	fmt.Println("  go run . -check-links                # 🔍 Pengecekan & validasi link download file di database")
 	fmt.Println("  go run . -convert-images             # 🖼️ Download & konversi semua poster/backdrop di DB ke WebP lokal")

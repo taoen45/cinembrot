@@ -200,13 +200,21 @@
         <i class="fa-solid fa-fire mr-1"></i> Rekomendasi Utama
       </div>
 
-      <div class="mb-4">
-        <h2 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
-          <i class="fa-solid fa-circle-check text-emerald-500 text-2xl"></i> File Download Siap Nonton (Hardsub Indonesia)
-        </h2>
-        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          File video matang berformat MP4 dengan <b>Subtitle Bahasa Indonesia sudah menempel permanen</b>. Langsung tonton di HP, PC, atau Smart TV tanpa perlu cari subtitle lagi!
-        </p>
+      <div class="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
+            <i class="fa-solid fa-circle-check text-emerald-500 text-2xl"></i> File Download Siap Nonton (Hardsub Indonesia)
+          </h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            File video matang berformat MP4 dengan <b>Subtitle Bahasa Indonesia sudah menempel permanen</b>. Langsung tonton di HP, PC, atau Smart TV tanpa perlu cari subtitle lagi!
+          </p>
+        </div>
+
+        <!-- TOMBOL REFRESH / CEK LINK DOWNLOAD MANDIRI KE SUMBER -->
+        <button type="button" id="btn-refresh-dl" onclick="refreshMovieDownload({{.Movie.ID}})" class="inline-flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-700 dark:text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition border border-slate-200 dark:border-dark-700 shadow-sm shrink-0 self-start sm:self-auto cursor-pointer" title="Periksa dan cari URL link download baru dari website sumber jika link broken">
+          <i id="icon-refresh-dl" class="fa-solid fa-arrows-rotate text-brand-500"></i>
+          <span id="text-refresh-dl">Cek / Segarkan Link</span>
+        </button>
       </div>
 
       {{if .Movie.MatangDownloads}}
@@ -551,6 +559,44 @@
         const badge = document.getElementById('active-server-badge');
         if (badge) badge.textContent = 'Trailer Resmi';
       }
+    }
+
+    // Refresh & Re-scrape Broken Download Link secara mandiri ke website sumber
+    function refreshMovieDownload(movieId) {
+      const btn = document.getElementById('btn-refresh-dl');
+      const icon = document.getElementById('icon-refresh-dl');
+      const text = document.getElementById('text-refresh-dl');
+      if (!btn || btn.disabled) return;
+
+      btn.disabled = true;
+      if (icon) icon.classList.add('fa-spin');
+      if (text) text.textContent = 'Memeriksa ke sumber...';
+
+      fetch('/api/movie/' + movieId + '/refresh-download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (icon) icon.classList.remove('fa-spin');
+        if (data.status === 'updated') {
+          btn.className = 'inline-flex items-center justify-center gap-2 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-xs font-bold px-4 py-2.5 rounded-xl border border-emerald-300 dark:border-emerald-800 shadow-sm shrink-0';
+          if (icon) icon.className = 'fa-solid fa-circle-check text-emerald-500';
+          if (text) text.textContent = 'Link Berhasil Diperbarui!';
+          setTimeout(function() { window.location.reload(); }, 1200);
+        } else {
+          // Jika ternyata URL sama persis / tidak ada URL baru dari sumber: Tombol otomatis disabled
+          btn.disabled = true;
+          btn.className = 'inline-flex items-center justify-center gap-2 bg-slate-100 dark:bg-dark-800 text-slate-400 dark:text-slate-500 text-xs font-bold px-4 py-2.5 rounded-xl border border-slate-200 dark:border-dark-700 shadow-sm shrink-0 cursor-not-allowed opacity-75';
+          if (icon) icon.className = 'fa-solid fa-check text-slate-400';
+          if (text) text.textContent = 'Link Sudah Versi Terbaru';
+        }
+      })
+      .catch(function(err) {
+        if (icon) icon.classList.remove('fa-spin');
+        btn.disabled = false;
+        if (text) text.textContent = 'Coba Lagi';
+      });
     }
   </script>
 </div>

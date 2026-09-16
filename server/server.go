@@ -13,7 +13,9 @@ import (
 	"cinembrot/config"
 	"cinembrot/database"
 	"cinembrot/i18n"
+	"cinembrot/provider/archive"
 	"cinembrot/provider/tmdb"
+	"cinembrot/provider/yts"
 	"cinembrot/scraper"
 	"cinembrot/torrentmgr"
 	"gorm.io/gorm"
@@ -31,6 +33,8 @@ type Server struct {
 	templates  map[string]*template.Template
 	torrentMgr *torrentmgr.Manager
 	tmdbCli    *tmdb.Client
+	archiveCli *archive.Client
+	ytsCli     *yts.Client
 }
 
 func NewServer(cfg *config.Config, db *gorm.DB) *Server {
@@ -46,6 +50,8 @@ func NewServer(cfg *config.Config, db *gorm.DB) *Server {
 		templates:  make(map[string]*template.Template),
 		torrentMgr: tm,
 		tmdbCli:    tmdb.NewClient(cfg),
+		archiveCli: archive.NewClient(cfg),
+		ytsCli:     yts.NewClient(cfg),
 	}
 	s.loadTemplates()
 	return s
@@ -286,6 +292,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("GET /search", s.HandleSearch)
 	mux.HandleFunc("GET /set-lang", s.HandleSetLang)
 	mux.HandleFunc("GET /api/movies", s.HandleAPIMovies)
+	mux.HandleFunc("POST /api/movie/{id}/refresh-download", s.HandleRefreshDownloadLink)
 
 	// SEO & Search Engine Discovery Endpoints
 	mux.HandleFunc("GET /sitemap.xml", s.HandleSitemapXML)

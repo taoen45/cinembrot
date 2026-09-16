@@ -18,6 +18,7 @@ import (
 	"cinembrot/provider/tmdb"
 	"cinembrot/provider/yts"
 	"cinembrot/scraper"
+	"cinembrot/translator"
 	"cinembrot/validator"
 
 	"gorm.io/gorm"
@@ -319,6 +320,34 @@ func ConvertExistingImagesToWebP(db *gorm.DB, userAgent string, limit int) int {
 	return converted
 }
 
+// ProcessMovieSynopses ensures the movie has both an Indonesian synopsis and English synopsis.
+// If either is missing or if the synopsis is still English, it auto-translates seamlessly.
+func ProcessMovieSynopses(movie *model.Movie) {
+	if movie == nil {
+		return
+	}
+	raw := strings.TrimSpace(movie.Synopsis)
+	if raw == "" && strings.TrimSpace(movie.SynopsisEN) != "" {
+		raw = strings.TrimSpace(movie.SynopsisEN)
+	}
+	if raw == "" {
+		return
+	}
+
+	// Jika belum ada SynopsisEN atau Synopsis masih sama persis dengan raw (belum ter-bilingual)
+	if strings.TrimSpace(movie.SynopsisEN) == "" || movie.Synopsis == movie.SynopsisEN {
+		synID, synEN, err := translator.TranslateBilingual(raw)
+		if err == nil {
+			if synID != "" {
+				movie.Synopsis = synID
+			}
+			if synEN != "" {
+				movie.SynopsisEN = synEN
+			}
+		}
+	}
+}
+
 // enrichMetadata tries to query TMDb and OMDb to enhance metadata automatically
 func (p *Pipeline) enrichMetadata(movie *model.Movie) {
 	// 1. Try TMDb enrichment
@@ -337,6 +366,9 @@ func (p *Pipeline) enrichMetadata(movie *model.Movie) {
 			if tmdbMovie.Synopsis != "" && len(tmdbMovie.Synopsis) > len(movie.Synopsis) {
 				movie.Synopsis = tmdbMovie.Synopsis
 			}
+			if tmdbMovie.SynopsisEN != "" {
+				movie.SynopsisEN = tmdbMovie.SynopsisEN
+			}
 			if len(tmdbMovie.Genres) > 0 {
 				movie.Genres = tmdbMovie.Genres
 			}
@@ -352,6 +384,9 @@ func (p *Pipeline) enrichMetadata(movie *model.Movie) {
 
 	// 2. Try OMDb enrichment
 	_ = p.omdbCli.EnrichMovie(movie)
+
+	// 3. Auto-translate sinopsis dwibahasa (Indonesia & English)
+	ProcessMovieSynopses(movie)
 }
 
 // IngestAnime fetches top popular and/or latest seasonal anime from MyAnimeList/Jikan and TMDb and saves to DB
@@ -866,6 +901,59 @@ func (p *Pipeline) FixNonLatinTitlesAndSynopses(db *gorm.DB) (int, error) {
 		time.Sleep(80 * time.Millisecond) // Rate limiting
 	}
 
+	return updatedCount, nil
+}
+
+// TranslateAllExistingSynopses sweeps all movies in the database and ensures both
+// Indonesian (synopsis) and English (synopsis_en) versions exist.
+func TranslateAllExistingSynopses(db *gorm.DB) (int, error) {
+	var movies []model.Movie
+	// Ambil film yang synopsis_en nya kosong atau synopsis nya belum diterjemahkan
+	err := db.Where("synopsis <> '' AND (synopsis_en IS NULL OR synopsis_en = '' OR synopsis = synopsis_en)").
+		Order("id desc").
+		Find(&movies).Error
+	if err != nil {
+		return 0, err
+	}
+
+	if len(movies) == 0 {
+		log.Println("[TRANSLATE] Semua sinopsis film di database sudah memiliki versi dwibahasa (ID & EN) lengkap!")
+		return 0, nil
+	}
+
+	log.Printf("[TRANSLATE] 🌐 Ditemukan %d judul film yang membutuhkan sinkronisasi sinopsis dwibahasa...\n", len(movies))
+	updatedCount := 0
+
+	for i := range movies {
+		movie := &movies[i]
+		raw := strings.TrimSpace(movie.Synopsis)
+		if raw == "" && strings.TrimSpace(movie.SynopsisEN) != "" {
+			raw = strings.TrimSpace(movie.SynopsisEN)
+		}
+		if raw == "" {
+			continue
+		}
+
+		synID, synEN, err := translator.TranslateBilingual(raw)
+		if err != nil || synID == "" {
+			continue
+		}
+
+		updates := map[string]interface{}{
+			"synopsis":    synID,
+			"synopsis_en": synEN,
+		}
+
+		if err := db.Model(movie).Updates(updates).Error; err == nil {
+			updatedCount++
+			log.Printf("  -> [%d/%d] 🌐 Sukses Terjemahkan '%s' (%d) [ID: %d char, EN: %d char]\n",
+				updatedCount, len(movies), movie.Title, movie.Year, len(synID), len(synEN))
+		}
+
+		time.Sleep(100 * time.Millisecond) // Rate limiting ramah
+	}
+
+	log.Printf("[TRANSLATE] ✅ Selesai! Sebanyak %d sinopsis film berhasil disinkronkan dwibahasa (ID & EN).\n", updatedCount)
 	return updatedCount, nil
 }
 

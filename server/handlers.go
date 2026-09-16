@@ -13,7 +13,9 @@ import (
 	"cinembrot/i18n"
 	"cinembrot/model"
 	"cinembrot/provider/embed"
+	"cinembrot/provider/subtitles"
 	"cinembrot/scraper"
+	"cinembrot/validator"
 	"gorm.io/gorm"
 )
 
@@ -147,7 +149,9 @@ func (s *Server) HandleHome(w http.ResponseWriter, r *http.Request) {
 	lang := i18n.GetLang(r)
 	if lang == "en" {
 		for i := range slides {
-			if enSyn := s.tmdbCli.GetEnglishSynopsis(slides[i].SourceURL, slides[i].Title, slides[i].Type); enSyn != "" {
+			if strings.TrimSpace(slides[i].SynopsisEN) != "" {
+				slides[i].Synopsis = slides[i].SynopsisEN
+			} else if enSyn := s.tmdbCli.GetEnglishSynopsis(slides[i].SourceURL, slides[i].Title, slides[i].Type); enSyn != "" {
 				slides[i].Synopsis = enSyn
 			}
 		}
@@ -688,10 +692,12 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 	// Update view counter
 	s.db.Model(&movie).UpdateColumn("views", movie.Views+1)
 
-	// Jika bahasa aktif adalah English (en), berikan sinopsis resmi English dari TMDb
+	// Jika bahasa aktif adalah English (en), gunakan sinopsis resmi English
 	lang := i18n.GetLang(r)
 	if lang == "en" {
-		if enSynopsis := s.tmdbCli.GetEnglishSynopsis(movie.SourceURL, movie.Title, movie.Type); enSynopsis != "" {
+		if strings.TrimSpace(movie.SynopsisEN) != "" {
+			movie.Synopsis = movie.SynopsisEN
+		} else if enSynopsis := s.tmdbCli.GetEnglishSynopsis(movie.SourceURL, movie.Title, movie.Type); enSynopsis != "" {
 			movie.Synopsis = enSynopsis
 		}
 	}
@@ -926,5 +932,135 @@ func (s *Server) HandleAPIMovies(w http.ResponseWriter, r *http.Request) {
 	var movies []model.Movie
 	s.db.Preload("Genres").Preload("DownloadLinks").Preload("StreamLinks").Limit(50).Find(&movies)
 	json.NewEncoder(w).Encode(movies)
+}
+
+// HandleRefreshDownloadLink rescrapes or validates download links for a specific movie
+func (s *Server) HandleRefreshDownloadLink(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"success":false,"message":"Metode HTTP harus POST"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse Movie ID from URL path: /api/movie/{id}/refresh-download
+	pathTrimmed := strings.Trim(r.URL.Path, "/")
+	parts := strings.Split(pathTrimmed, "/")
+	var movieID int
+	for i, part := range parts {
+		if part == "movie" && i+1 < len(parts) {
+			if id, err := strconv.Atoi(parts[i+1]); err == nil {
+				movieID = id
+				break
+			}
+		}
+	}
+	if movieID == 0 {
+		if id, err := strconv.Atoi(r.URL.Query().Get("id")); err == nil {
+			movieID = id
+		}
+	}
+
+	if movieID <= 0 {
+		http.Error(w, `{"success":false,"message":"ID Film tidak valid"}`, http.StatusBadRequest)
+		return
+	}
+
+	var movie model.Movie
+	if err := s.db.Preload("DownloadLinks").First(&movie, movieID).Error; err != nil {
+		http.Error(w, `{"success":false,"message":"Film tidak ditemukan di database"}`, http.StatusNotFound)
+		return
+	}
+
+	// Kumpulkan link yang saat ini tersimpan
+	existingURLs := make(map[string]bool)
+	hasBroken := false
+	for i := range movie.DownloadLinks {
+		cleanU := strings.TrimSpace(movie.DownloadLinks[i].URL)
+		if cleanU != "" {
+			existingURLs[cleanU] = true
+		}
+		// Validasi apakah link yang ada masih aktif
+		isValid, _, _, _ := validator.ValidateURL(movie.DownloadLinks[i].URL, s.cfg.ScraperUserAgent)
+		if !isValid {
+			hasBroken = true
+			s.db.Model(&movie.DownloadLinks[i]).Updates(map[string]interface{}{
+				"is_valid": false,
+				"status":   "DEAD",
+			})
+		}
+	}
+
+	// Scraper mandiri untuk mencari URL download baru dari website sumber
+	var newLinksFound []model.DownloadLink
+
+	// 1. Jika sumber dari Internet Archive
+	if strings.Contains(movie.SourceURL, "archive.org") && s.archiveCli != nil {
+		parts := strings.Split(movie.SourceURL, "/")
+		identifier := parts[len(parts)-1]
+		if identifier != "" {
+			freshMovie, err := s.archiveCli.FetchMovieByIdentifier(identifier)
+			if err == nil && freshMovie != nil {
+				for _, dl := range freshMovie.DownloadLinks {
+					cleanU := strings.TrimSpace(dl.URL)
+					if cleanU != "" && !existingURLs[cleanU] {
+						dl.MovieID = movie.ID
+						newLinksFound = append(newLinksFound, dl)
+					}
+				}
+			}
+		}
+	}
+
+	// 2. Jika sumber dari YTS
+	if (strings.Contains(movie.SourceURL, "yts") || strings.Contains(movie.SourceWebsite, "yts")) && s.ytsCli != nil {
+		freshMovies, err := s.ytsCli.SearchMovies(movie.Title, 5, 1)
+		if err == nil && len(freshMovies) > 0 {
+			for _, freshMovie := range freshMovies {
+				for _, dl := range freshMovie.DownloadLinks {
+					cleanU := strings.TrimSpace(dl.URL)
+					if cleanU != "" && !existingURLs[cleanU] {
+						dl.MovieID = movie.ID
+						newLinksFound = append(newLinksFound, dl)
+					}
+				}
+			}
+		}
+	}
+
+	// 3. Jika belum ada link / broken, generate link subtitle / mirror baru
+	if len(newLinksFound) == 0 && (len(movie.DownloadLinks) == 0 || hasBroken) {
+		subLinks := subtitles.GenerateSubtitleDownloadLinks(movie.Title, movie.Year)
+		for _, sl := range subLinks {
+			cleanU := strings.TrimSpace(sl.URL)
+			if cleanU != "" && !existingURLs[cleanU] {
+				sl.MovieID = movie.ID
+				newLinksFound = append(newLinksFound, sl)
+			}
+		}
+	}
+
+	// Evaluasi hasil: Jika ada URL baru
+	if len(newLinksFound) > 0 {
+		for i := range newLinksFound {
+			s.db.Create(&newLinksFound[i])
+		}
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success":     true,
+			"status":      "updated",
+			"message":     "Berhasil mendapatkan URL link download baru dari website sumber!",
+			"new_url":     newLinksFound[0].URL,
+			"provider":    newLinksFound[0].Provider,
+			"quality":     newLinksFound[0].Quality,
+			"added_count": len(newLinksFound),
+		})
+		return
+	}
+
+	// Jika ternyata URL sama persis (tidak ada link baru dari website sumber)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"status":  "same",
+		"message": "Link download sudah versi terbaru dari website sumber (tidak ada URL baru).",
+	})
 }
 
