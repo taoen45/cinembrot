@@ -56,7 +56,7 @@ type AdminPageData struct {
 
 // HandleAdminLogin displays and processes the login form
 func (s *Server) HandleAdminLogin(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
+	if r.Method == http.MethodGet || r.Method == http.MethodHead {
 		// If already logged in, redirect to dashboard
 		if user := s.GetLoggedInUser(r); user != nil {
 			http.Redirect(w, r, "/admin", http.StatusSeeOther)

@@ -69,9 +69,33 @@
 
       {{if ne (index .Settings "turnstile_enabled") "false"}}
       <!-- CLOUDFLARE TURNSTILE CAPTCHA -->
-      <div class="pt-2 flex justify-center">
-        <div class="cf-turnstile" data-sitekey="{{index .Settings "turnstile_site_key"}}" data-theme="dark"></div>
+      <div class="pt-2 flex flex-col items-center">
+        <div class="cf-turnstile" 
+             data-sitekey="{{index .Settings "turnstile_site_key"}}" 
+             data-theme="dark"
+             data-error-callback="onTurnstileError"></div>
+        <div id="turnstile-diag" class="hidden mt-2.5 p-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl text-xs text-left w-full space-y-1"></div>
       </div>
+      <script>
+        function onTurnstileError(errorCode) {
+          console.error("Cloudflare Turnstile Error:", errorCode);
+          var diag = document.getElementById("turnstile-diag");
+          if (diag) {
+            diag.classList.remove("hidden");
+            var desc = "Verifikasi Turnstile gagal (Kode: <strong>" + errorCode + "</strong>).";
+            if (errorCode == "110200") {
+              desc += "<br><strong>Domain belum diizinkan:</strong> Pastikan domain <code>" + window.location.hostname + "</code> sudah ditambahkan di Cloudflare Dashboard → Turnstile → Widget Settings (tanpa https://).";
+            } else if (errorCode == "110100" || errorCode == "110110") {
+              desc += "<br><strong>Site Key tidak valid:</strong> Periksa kembali Site Key di Cloudflare Dashboard.";
+            } else if (errorCode == "200500" || errorCode == "300030") {
+              desc += "<br><strong>Akses diblokir:</strong> Script/iframe terblokir oleh ekstensi browser (AdBlock, 2Captcha/Solver, Brave Shield) atau VPN. Coba matikan ekstensi atau gunakan Incognito / Jendela Penyamaran.";
+            } else {
+              desc += "<br>Jika Anda menggunakan ekstensi AdBlock atau Auto-Captcha Solver (seperti 2Captcha), coba matikan sementara atau uji coba di Jendela Penyamaran (Incognito).";
+            }
+            diag.innerHTML = "<div class='flex items-start gap-2'><i class='fa-solid fa-circle-exclamation text-base mt-0.5 text-red-400 shrink-0'></i><div>" + desc + "</div></div>";
+          }
+        }
+      </script>
       {{end}}
 
       <button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-3.5 rounded-xl transition duration-200 shadow-lg shadow-brand-500/25 flex items-center justify-center gap-2 mt-6">
