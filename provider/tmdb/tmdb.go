@@ -15,6 +15,7 @@ import (
 	"cinembrot/model"
 	"cinembrot/provider/subtitles"
 	"cinembrot/scraper"
+	"cinembrot/translator"
 )
 
 const BaseURL = "https://api.themoviedb.org/3"
@@ -377,12 +378,17 @@ func (c *Client) GetMovieDetails(tmdbID int) (*model.Movie, error) {
 	enTitle, enOverview := extractEnglishInfo(res.Translations)
 
 	if scraper.ContainsNonLatin(title) {
-		if enTitle != "" {
+		if enTitle != "" && !scraper.ContainsNonLatin(enTitle) {
 			alternativeTitles = title
 			title = enTitle
 		} else if !scraper.ContainsNonLatin(originalTitle) && originalTitle != "" {
 			alternativeTitles = title
 			title = originalTitle
+		} else {
+			if transTitle, _, err := translator.Translate(title, "en", "auto"); err == nil && transTitle != "" && !scraper.ContainsNonLatin(transTitle) {
+				alternativeTitles = title
+				title = strings.TrimSpace(transTitle)
+			}
 		}
 	} else if originalTitle != "" && originalTitle != title {
 		alternativeTitles = originalTitle
@@ -734,12 +740,17 @@ func (c *Client) GetTVDetails(tvID int) (*model.Movie, error) {
 	enTitle, enOverview := extractEnglishInfo(res.Translations)
 
 	if scraper.ContainsNonLatin(title) {
-		if enTitle != "" {
+		if enTitle != "" && !scraper.ContainsNonLatin(enTitle) {
 			alternativeTitles = title
 			title = enTitle
 		} else if !scraper.ContainsNonLatin(originalTitle) && originalTitle != "" {
 			alternativeTitles = title
 			title = originalTitle
+		} else {
+			if transTitle, _, err := translator.Translate(title, "en", "auto"); err == nil && transTitle != "" && !scraper.ContainsNonLatin(transTitle) {
+				alternativeTitles = title
+				title = strings.TrimSpace(transTitle)
+			}
 		}
 	} else if originalTitle != "" && originalTitle != title {
 		alternativeTitles = originalTitle

@@ -911,6 +911,25 @@ func (p *Pipeline) FixNonLatinTitlesAndSynopses(db *gorm.DB) (int, error) {
 			}
 		}
 
+		// Fallback Penerjemah Cerdas: Jika judul masih berhuruf Korea (Hangul) / CJK, terjemahkan ke English Latin
+		if isNonLatin && updates["title"] == nil {
+			transTitle, _, tErr := translator.Translate(movie.Title, "en", "auto")
+			if tErr == nil && transTitle != "" && !scraper.ContainsNonLatin(transTitle) {
+				cleanTitle := strings.TrimSpace(transTitle)
+				updates["title"] = cleanTitle
+				slugBase := scraper.Slugify(cleanTitle)
+				if slugBase == "" {
+					slugBase = fmt.Sprintf("drama-%d", movie.ID)
+				}
+				updates["slug"] = fmt.Sprintf("%s-%d", slugBase, movie.Year)
+				if movie.OriginalTitle == "" {
+					updates["original_title"] = movie.Title
+				}
+				updates["alternative_titles"] = movie.Title
+				needUpdate = true
+			}
+		}
+
 		if needUpdate {
 			if err := db.Model(movie).Updates(updates).Error; err == nil {
 				updatedCount++

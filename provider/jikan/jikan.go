@@ -12,6 +12,7 @@ import (
 	"cinembrot/config"
 	"cinembrot/model"
 	"cinembrot/scraper"
+	"cinembrot/translator"
 )
 
 const BaseURL = "https://api.jikan.moe/v4"
@@ -194,6 +195,10 @@ func (c *Client) convertAnimeToMovie(a JikanAnime) model.Movie {
 			title = a.TitleEnglish
 		} else if !scraper.ContainsNonLatin(a.Title) {
 			title = a.Title
+		} else {
+			if transTitle, _, err := translator.Translate(title, "en", "auto"); err == nil && transTitle != "" && !scraper.ContainsNonLatin(transTitle) {
+				title = strings.TrimSpace(transTitle)
+			}
 		}
 	}
 
