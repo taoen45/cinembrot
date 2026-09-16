@@ -63,11 +63,16 @@ func (s *Server) HandleAdminLogin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		settings := database.GetAllSettings(s.db)
+
 		data := AdminPageData{
-			Title: "Login CMS Admin - CINEMBROT",
+			Title:    "Login CMS Admin - CINEMBROT",
+			Settings: settings,
 		}
 		if r.URL.Query().Get("error") == "invalid" {
 			data.ErrorMsg = "Username atau password salah!"
+		} else if r.URL.Query().Get("error") == "turnstile" {
+			data.ErrorMsg = "Verifikasi Cloudflare Turnstile gagal atau belum dicentang! Silakan coba lagi."
 		}
 		s.RenderHTML(w, "admin_login.html", "", data)
 		return
@@ -80,6 +85,27 @@ func (s *Server) HandleAdminLogin(w http.ResponseWriter, r *http.Request) {
 	redirectTo := r.FormValue("redirect")
 	if redirectTo == "" {
 		redirectTo = "/admin"
+	}
+
+	// 1. Verifikasi Cloudflare Turnstile jika diaktifkan
+	turnstileEnabled := database.GetSetting(s.db, "turnstile_enabled", "true") == "true"
+	turnstileSecretKey := database.GetSetting(s.db, "turnstile_secret_key", "0x4AAAAAAAE4maSz0Gah94IJ72HChDjUsDyc")
+
+	if turnstileEnabled && turnstileSecretKey != "" {
+		turnstileToken := r.FormValue("cf-turnstile-response")
+		clientIP := r.Header.Get("CF-Connecting-IP")
+		if clientIP == "" {
+			clientIP = strings.TrimSpace(strings.Split(r.Header.Get("X-Forwarded-For"), ",")[0])
+		}
+		if clientIP == "" {
+			clientIP = r.RemoteAddr
+		}
+		valid, err := VerifyTurnstile(turnstileSecretKey, turnstileToken, clientIP)
+		if err != nil || !valid {
+			log.Printf("[ADMIN AUTH] ⚠️ Verifikasi Cloudflare Turnstile gagal untuk IP %s: %v\n", clientIP, err)
+			http.Redirect(w, r, "/admin/login?error=turnstile", http.StatusSeeOther)
+			return
+		}
 	}
 
 	var user model.User

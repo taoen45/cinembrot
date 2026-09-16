@@ -10,6 +10,9 @@
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  {{if ne (index .Settings "turnstile_enabled") "false"}}
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  {{end}}
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -63,6 +66,13 @@
             class="w-full bg-dark-950 border border-dark-700 text-white text-sm rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:border-brand-500 transition">
         </div>
       </div>
+
+      {{if ne (index .Settings "turnstile_enabled") "false"}}
+      <!-- CLOUDFLARE TURNSTILE CAPTCHA -->
+      <div class="pt-2 flex justify-center">
+        <div class="cf-turnstile" data-sitekey="{{index .Settings "turnstile_site_key"}}" data-theme="dark"></div>
+      </div>
+      {{end}}
 
       <button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-3.5 rounded-xl transition duration-200 shadow-lg shadow-brand-500/25 flex items-center justify-center gap-2 mt-6">
         <i class="fa-solid fa-right-to-bracket"></i> Masuk ke Dashboard

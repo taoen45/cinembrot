@@ -83,6 +83,11 @@ func (s *Server) HandleAdminSaveSettings(w http.ResponseWriter, r *http.Request)
 	bingVerification := strings.TrimSpace(r.FormValue("bing_site_verification"))
 	yandexVerification := strings.TrimSpace(r.FormValue("yandex_verification"))
 
+	// 6. Keamanan & Cloudflare Turnstile
+	turnstileEnabled := checkboxVal("turnstile_enabled")
+	turnstileSiteKey := strings.TrimSpace(r.FormValue("turnstile_site_key"))
+	turnstileSecretKey := strings.TrimSpace(r.FormValue("turnstile_secret_key"))
+
 	// Save all to MariaDB system_settings table
 	_ = database.SaveSetting(s.db, "ads_enabled", adsEnabled, "Saklar Master ON/OFF Iklan di Website")
 	_ = database.SaveSetting(s.db, "adsterra_popunder_code", popunderCode, "Kode Script Iklan Adsterra Popunder")
@@ -113,7 +118,15 @@ func (s *Server) HandleAdminSaveSettings(w http.ResponseWriter, r *http.Request)
 	_ = database.SaveSetting(s.db, "bing_site_verification", bingVerification, "Kode Verifikasi Bing Webmaster Tools")
 	_ = database.SaveSetting(s.db, "yandex_verification", yandexVerification, "Kode Verifikasi Yandex Webmaster")
 
-	log.Printf("[CMS SETTINGS] ⚙️ Pengaturan website & SEO berhasil diperbarui oleh admin '%s'\n", s.GetLoggedInUser(r).Username)
+	_ = database.SaveSetting(s.db, "turnstile_enabled", turnstileEnabled, "Saklar ON/OFF Cloudflare Turnstile CAPTCHA saat Login Admin")
+	if turnstileSiteKey != "" {
+		_ = database.SaveSetting(s.db, "turnstile_site_key", turnstileSiteKey, "Cloudflare Turnstile Site Key")
+	}
+	if turnstileSecretKey != "" {
+		_ = database.SaveSetting(s.db, "turnstile_secret_key", turnstileSecretKey, "Cloudflare Turnstile Secret Key")
+	}
+
+	log.Printf("[CMS SETTINGS] ⚙️ Pengaturan website, SEO & Turnstile berhasil diperbarui oleh admin '%s'\n", s.GetLoggedInUser(r).Username)
 
 	http.Redirect(w, r, "/admin/settings?saved=1", http.StatusSeeOther)
 }

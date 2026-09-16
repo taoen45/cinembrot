@@ -409,6 +409,48 @@
 
     </div>
 
+    <!-- ==================== 6. KEAMANAN & CLOUDFLARE TURNSTILE CAPTCHA ==================== -->
+    <div class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-6 shadow-sm space-y-6">
+      <div class="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-dark-800">
+        <div class="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Keamanan & Cloudflare Turnstile CAPTCHA</h3>
+          <p class="text-xs text-slate-400">Proteksi halaman login CMS Admin (/admin/login) dari bot, brute-force, dan serangan siber</p>
+        </div>
+      </div>
+
+      <!-- SAKLAR TURNSTILE -->
+      <div class="p-4 bg-slate-50 dark:bg-dark-950 rounded-2xl border border-slate-200 dark:border-dark-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-800 dark:text-slate-200">Aktifkan Cloudflare Turnstile pada Login Admin</label>
+          <p class="text-[11px] text-slate-400">Wajibkan verifikasi Cloudflare Turnstile sebelum admin dapat login ke dashboard.</p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer select-none shrink-0">
+          <input type="checkbox" name="turnstile_enabled" value="true" class="sr-only peer" {{if ne (index .Settings "turnstile_enabled") "false"}}checked{{end}}>
+          <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-dark-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+          <span class="ml-3 text-xs font-bold text-slate-700 dark:text-slate-300">
+            {{if ne (index .Settings "turnstile_enabled") "false"}}Aktif (ON){{else}}Mati (OFF){{end}}
+          </span>
+        </label>
+      </div>
+
+      <!-- INPUT KEYS -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Turnstile Site Key (Client-Side)</label>
+          <p class="text-[11px] text-slate-400 mb-2">Digunakan pada widget form di halaman login admin</p>
+          <input type="text" name="turnstile_site_key" value="{{index .Settings "turnstile_site_key"}}" class="w-full text-xs font-mono bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="0x4AAAAAAAE4maYm7wAdHyX_j">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Turnstile Secret Key (Server-Side)</label>
+          <p class="text-[11px] text-slate-400 mb-2">Digunakan untuk validasi token ke API verifikasi Cloudflare</p>
+          <input type="password" name="turnstile_secret_key" value="{{index .Settings "turnstile_secret_key"}}" class="w-full text-xs font-mono bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="0x4AAAAAAAE4maSz0Gah94IJ72HChDjUsDyc">
+        </div>
+      </div>
+    </div>
+
     <!-- TOMBOL SIMPAN PENGATURAN -->
     <div class="flex items-center justify-end gap-3 sticky bottom-4 bg-white/95 dark:bg-dark-900/95 backdrop-blur p-4 rounded-2xl border border-slate-200 dark:border-dark-800 shadow-xl z-20">
       <button type="reset" class="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-dark-800 transition">
