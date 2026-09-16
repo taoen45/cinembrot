@@ -196,6 +196,12 @@ go run . -check-links
 # Sinkronisasi & isi server streaming embed (VidSrc, AutoEmbed, 2Embed, VidLink) untuk semua judul di database
 go run . -populate-streams
 
+# Sinkronisasi & lengkapi URL link download file / torrent / subtitle secara massal
+go run . -populate-downloads
+
+# Terjemahkan sinopsis seluruh database ke dwibahasa (ID & EN)
+go run . -translate-synopsis
+
 # Jalankan 1 siklus auto-scraper semua tahun
 go run . -auto-scrape
 ```
@@ -314,6 +320,7 @@ Tambah folder lain (contoh `blog`): buat `~/docker/html/blog/`, copy pola `/test
 | 2026-09-16 | **Fitur Baru: Film Hollywood / Box Office & Scraper Resmi TMDb Movie API:** (1) Halaman katalog publik baru `/hollywood` (dan alias `/box-office`) dengan template modern `server/views/hollywood.html` (Hero banner, filter genre, tahun rilis, rating, dan pengurutan). (2) Navigasi menu Hollywood terpasang di navbar desktop dan sub-navbar pill mobile (`server/views/layout.html`). (3) Integrasi scraper Film Hollywood resmi via TMDb Movie API (`DiscoverHollywoodMovies` di `provider/tmdb/tmdb.go` dan `IngestHollywoodMovies` di `pipeline/pipeline.go`) lengkap dengan pembuatan poster WebP lokal, link subtitle dwibahasa (ID/EN), dan 5 server streaming video embed (VidSrc, AutoEmbed, 2Embed, VidLink, SuperEmbed). (4) Perintah CLI terminal baru `-scrape-hollywood` dengan opsi `-hollywood-cat`, `-hollywood-pages`, dan `-year` di `main.go`. (5) Integrasi CMS Admin: menu sidebar "Kelola Hollywood" (`/admin/hollywood`) dan kartu eksekusi scraper Hollywood di `/admin/tools` (`POST /admin/tools/scrape-hollywood`). (6) Terdaftar resmi di Dynamic XML Sitemap (`/sitemap.xml`) dengan prioritas 0.9. |
 | 2026-09-16 | **Peningkatan Halaman Katalog & Filter Lengkap (/filter) & Analisis Command Operasional:** (1) Penambahan input pencarian multi-kolom kata kunci (`q`/`keyword`) yang memeriksa judul film (`title`), judul asli (`original_title`), nama alias/alternatif (`alternative_titles`), dan sinopsis. (2) Penambahan filter Jenis Film/Tipe Konten (`type`: Hollywood/Box Office, Anime, Drama Pendek, Bioskop/Movie, Series) dan filter Rating Minimal (`rating`: 8.0+, 7.0+, 6.0+, 5.0+). (3) Perbaruan antarmuka `server/views/list.html` dan `server/views/home.html` dengan tata letak grid modern yang responsif serta perbaikan pagination link yang mempertahankan seluruh query filter (`/filter?p=...&q=...&type=...&rating=...`). (4) Klarifikasi dokumentasi CLI terminal di `README.md` mengenai status perintah operasional web server (`-serve`), scheduler worker (`-daemon`), dan legacy cycle (`-auto-scrape`). |
 | 2026-09-16 | **Auto-Translate Sinopsis Dwibahasa (Opsi A: synopsis_en) & Scraper Refresh Broken Download Link:** (1) Penambahan field & kolom baru `synopsis_en` (`LONGTEXT`) di tabel `movies` MariaDB dengan persetujuan user (Opsi A). (2) Modul baru `translator/translator.go` yang otomatis mendeteksi bahasa sumber dan menerjemahkan sinopsis ke Bahasa Indonesia (`synopsis`) dan Bahasa Inggris (`synopsis_en`) menggunakan Chrome Client translator. (3) Integrasi auto-translate pada seluruh pipeline scraping (Anime, Drama Asia, Hollywood) dan perintah CLI baru `.\cinembrot.exe -translate-synopsis` untuk menyisir film yang sudah ada di database. (4) Fitur scraper link download mandiri & endpoint `POST /api/movie/{id}/refresh-download`: tombol interaktif di `detail.html` untuk memeriksa kesehatan link download dan melakukan rescrape otomatis ke website sumber jika link mati, serta auto-disable jika URL dari sumber sama persis. |
+| 2026-09-16 | **Integrasi URL Link Download Otomatis pada Seluruh Scraper & Perintah Massal (-populate-downloads):** (1) Menjamin bahwa seluruh command scraping (`-scrape-anime`, `-scrape-drama`, `-scrape-hollywood`) 100% meng-include URL link download dan subtitle dwibahasa secara otomatis saat scraping film baru. (2) Penambahan fitur CLI terminal `.\cinembrot.exe -populate-downloads` (`pipeline.PopulateAllExistingDownloadLinks`) untuk menyisir seluruh film di MariaDB yang belum memiliki link download dan otomatis melengkapinya dari sumber torrent resmi (YTS 720p/1080p/4K) dan subtitle (SubDL/Subsource). |
 
 
 

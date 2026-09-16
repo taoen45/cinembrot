@@ -13,6 +13,7 @@ import (
 	"cinembrot/database"
 	"cinembrot/model"
 	"cinembrot/pipeline"
+	"cinembrot/provider/yts"
 	"cinembrot/scheduler"
 	"cinembrot/scraper"
 	"cinembrot/server"
@@ -62,6 +63,9 @@ func main() {
 
 	// CLI Sinkronisasi Terjemahan Sinopsis Dwibahasa (ID & EN)
 	translateSynopsis := flag.Bool("translate-synopsis", false, "Terjemahkan seluruh sinopsis film di database ke Bahasa Indonesia (ID) & English (EN)")
+
+	// CLI Sinkronisasi Link Download File / Subtitle
+	populateDownloads := flag.Bool("populate-downloads", false, "Isi dan perbarui URL link download secara massal untuk semua film di database")
 
 	flag.Parse()
 
@@ -275,8 +279,21 @@ func main() {
 		return
 	}
 
+	if *populateDownloads {
+		fmt.Println("\n[ACTION] 📥 Memulai sinkronisasi dan pengisian URL link download secara massal...")
+		ytsCli := yts.NewClient(cfg)
+		count, err := pipeline.PopulateAllExistingDownloadLinks(db, ytsCli)
+		if err != nil {
+			log.Printf("[ERROR] Sinkronisasi link download gagal: %v\n", err)
+		} else {
+			fmt.Printf("\n[SUCCESS] Berhasil melengkapi link download untuk %d judul film di MariaDB!\n", count)
+		}
+		printDatabaseStats(db)
+		return
+	}
+
 	// 6. Start Web Server with background Auto-Scraper enabled
-	if *serveWeb || (!*fetchArchive && !*fetchOpenMovies && !*syncAll && *tmdbQuery == "" && *scrapeURL == "" && *byYear == 0 && !*convertImages && !*checkLinks && !*scrapeAnime && !*scrapeDrama && !*scrapeHollywood && !*populateStreams && !*fixTitles && !*translateSynopsis) {
+	if *serveWeb || (!*fetchArchive && !*fetchOpenMovies && !*syncAll && *tmdbQuery == "" && *scrapeURL == "" && *byYear == 0 && !*convertImages && !*checkLinks && !*scrapeAnime && !*scrapeDrama && !*scrapeHollywood && !*populateStreams && !*fixTitles && !*translateSynopsis && !*populateDownloads) {
 		// Launch background polite auto-scraper
 		autoScraper.Start()
 
@@ -301,6 +318,7 @@ func main() {
 	fmt.Println("  go run . -scrape-hollywood -year 2026 # 🎬 Scrape SEMUA halaman film Hollywood/Box Office tahun 2026")
 	fmt.Println("  go run . -scrape-anime -year 2026     # 🎌 Scrape SEMUA halaman anime rilis tahun 2026")
 	fmt.Println("  go run . -scrape-drama -year 2026     # 🎭 Scrape SEMUA halaman drama Asia rilis tahun 2026")
+	fmt.Println("  go run . -populate-downloads          # 📥 Isi dan perbarui URL link download massal di database")
 	fmt.Println("  go run . -fix-titles                  # 🛠️ Perbaiki judul Kanji ke English QWERTY & isi sinopsis kosong")
 	fmt.Println("  go run . -translate-synopsis          # 🌐 Sinkronisasi terjemahan sinopsis dwibahasa (ID & EN)")
 	fmt.Println("  go run . -populate-streams            # 🎬 Isi/perbarui server streaming embed untuk semua judul")

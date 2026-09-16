@@ -15,6 +15,7 @@ import (
 	"cinembrot/provider/jikan"
 	"cinembrot/provider/omdb"
 	"cinembrot/provider/openmovies"
+	"cinembrot/provider/subtitles"
 	"cinembrot/provider/tmdb"
 	"cinembrot/provider/yts"
 	"cinembrot/scraper"
@@ -387,6 +388,23 @@ func (p *Pipeline) enrichMetadata(movie *model.Movie) {
 
 	// 3. Auto-translate sinopsis dwibahasa (Indonesia & English)
 	ProcessMovieSynopses(movie)
+
+	// 4. Pastikan DownloadLinks selalu terisi otomatis (YTS download & candidates subtitle ID/EN)
+	if len(movie.DownloadLinks) == 0 {
+		if (movie.Type == "hollywood" || movie.Type == "movie") && p.ytsCli != nil {
+			if ytsMovies, err := p.ytsCli.SearchMovies(movie.Title, 3, 1); err == nil && len(ytsMovies) > 0 {
+				for _, ym := range ytsMovies {
+					if ym.Year == movie.Year || movie.Year == 0 {
+						movie.DownloadLinks = append(movie.DownloadLinks, ym.DownloadLinks...)
+						break
+					}
+				}
+			}
+		}
+		if len(movie.DownloadLinks) == 0 {
+			movie.DownloadLinks = subtitles.GenerateSubtitleDownloadLinks(movie.Title, movie.Year)
+		}
+	}
 }
 
 // IngestAnime fetches top popular and/or latest seasonal anime from MyAnimeList/Jikan and TMDb and saves to DB
@@ -955,5 +973,68 @@ func TranslateAllExistingSynopses(db *gorm.DB) (int, error) {
 
 	log.Printf("[TRANSLATE] ✅ Selesai! Sebanyak %d sinopsis film berhasil disinkronkan dwibahasa (ID & EN).\n", updatedCount)
 	return updatedCount, nil
+}
+
+// PopulateAllExistingDownloadLinks sweeps all movies in the database that don't have download links
+// and generates direct torrent/mirror/subtitle download links for them.
+func PopulateAllExistingDownloadLinks(db *gorm.DB, ytsCli *yts.Client) (int, error) {
+	var movies []model.Movie
+	// Ambil film yang belum memiliki download link
+	err := db.Preload("DownloadLinks").
+		Order("id desc").
+		Find(&movies).Error
+	if err != nil {
+		return 0, err
+	}
+
+	log.Printf("[POPULATE-DOWNLOADS] 📥 Memeriksa kelengkapan URL link download untuk %d judul film di database...\n", len(movies))
+	populatedCount := 0
+
+	for i := range movies {
+		movie := &movies[i]
+		if len(movie.DownloadLinks) > 0 {
+			continue
+		}
+
+		var newLinks []model.DownloadLink
+
+		// Jika film Hollywood / Bioskop: coba cari torrent dari YTS
+		if (movie.Type == "hollywood" || movie.Type == "movie") && ytsCli != nil {
+			if ytsMovies, err := ytsCli.SearchMovies(movie.Title, 3, 1); err == nil && len(ytsMovies) > 0 {
+				for _, ym := range ytsMovies {
+					if ym.Year == movie.Year || movie.Year == 0 {
+						for _, dl := range ym.DownloadLinks {
+							dl.MovieID = movie.ID
+							newLinks = append(newLinks, dl)
+						}
+						break
+					}
+				}
+			}
+		}
+
+		// Jika belum ada, tambahkan link unduhan subtitle dwibahasa resmi
+		if len(newLinks) == 0 {
+			subLinks := subtitles.GenerateSubtitleDownloadLinks(movie.Title, movie.Year)
+			for _, sl := range subLinks {
+				sl.MovieID = movie.ID
+				newLinks = append(newLinks, sl)
+			}
+		}
+
+		if len(newLinks) > 0 {
+			for j := range newLinks {
+				db.Create(&newLinks[j])
+			}
+			populatedCount++
+			log.Printf("  -> [%d] 📥 Sukses Menambahkan %d Link Download untuk '%s' (%d)\n",
+				populatedCount, len(newLinks), movie.Title, movie.Year)
+		}
+
+		time.Sleep(50 * time.Millisecond) // Rate limiting
+	}
+
+	log.Printf("[POPULATE-DOWNLOADS] ✅ Selesai! Berhasil melengkapi URL link download untuk %d film di database.\n", populatedCount)
+	return populatedCount, nil
 }
 

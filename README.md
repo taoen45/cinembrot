@@ -167,8 +167,11 @@ Aplikasi menyediakan berbagai opsi CLI terminal (setara *Artisan* pada Laravel) 
 .\cinembrot.exe -scrape-drama -drama-lang th -drama-pages 1
 ```
 
-### 4. Pemeliharaan, Perbaikan Data & Sinkronisasi Streaming
+### 4. Pemeliharaan, Perbaikan Data, Download Link & Sinkronisasi Streaming
 ```powershell
+# 📥 Isi dan perbarui URL link download (Torrent YTS 720p/1080p/4K & Subtitle Resmi ID/EN) secara massal di DB
+.\cinembrot.exe -populate-downloads
+
 # 🌐 Sinkronisasi terjemahan sinopsis dwibahasa (terjemahkan sinopsis Inggris ke Indonesia & isi synopsis_en)
 .\cinembrot.exe -translate-synopsis
 

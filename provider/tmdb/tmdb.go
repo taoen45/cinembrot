@@ -434,6 +434,9 @@ func (c *Client) GetMovieDetails(tmdbID int) (*model.Movie, error) {
 		RawMetadata:       string(body),
 	}
 
+	// Subtitle Candidates & Download Links (Indonesian & English)
+	movie.DownloadLinks = subtitles.GenerateSubtitleDownloadLinks(title, year)
+
 	return movie, nil
 }
 
