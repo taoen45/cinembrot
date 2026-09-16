@@ -33,3 +33,5 @@ storage/
 temp/
 cache/
 *.log
+*.zip
+*.tar.gz
