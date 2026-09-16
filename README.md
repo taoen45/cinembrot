@@ -212,14 +212,22 @@ Aplikasi menyediakan berbagai opsi CLI terminal (setara *Artisan* pada Laravel) 
 .\cinembrot.exe -convert-images
 ```
 
-### 5. Fitur Mandiri Tombol Segarkan Link (Broken Link & Cooldown 24 Jam)
-Pada halaman detail film (`/movie/{slug}`), pengunjung dan pengelola disediakan 2 tombol interaktif:
-1. **Tombol "🔄 Cek / Segarkan Server"** (di atas player video streaming):
-   - Jika video error/broken/buffering, klik tombol ini untuk melakukan scraping mandiri mencari server streaming video terbaru dari sumber.
-   - **Aturan Cooldown 24 Jam**: Jika hasil pengecekan menunjukkan server streaming yang didapat sama persis dengan yang tersimpan, tombol otomatis di-*disabled* selama **1 hari (24 jam)** dengan tampilan hitung mundur jam (misal: *Versi Terbaru (24j)*) untuk mencegah spam request ke sumber.
-2. **Tombol "🔄 Cek / Segarkan Link"** (di samping daftar File Download):
-   - Jika link download mati/broken, klik tombol ini untuk re-scrape tautan file dan subtitle terbaru dari sumber.
-   - **Aturan Cooldown 24 Jam**: Jika URL dari sumber sama persis, tombol otomatis di-*disabled* selama **1 hari (24 jam)** secara persisten di browser.
+### 5. Pemisahan Blok Download (Video MP4, Subtitle SRT & Torrent) dan Tombol Mandiri
+Pada halaman detail film (`/movie/{slug}`), tautan unduhan ditata secara presisi dan dipisahkan menjadi 3 blok transparan agar tidak membingungkan pengguna:
+1. **File Video Siap Nonton (Direct MP4 / Hardsub)**:
+   - Tombol hijau terang: **"Download Video MP4"**.
+   - Hanya menampilkan file video nyata (MP4/MKV) yang siap ditonton langsung di HP, PC, atau TV.
+2. **File Subtitle Terpisah (SRT / VTT)**:
+   - Tombol indigo: **"Download Subtitle"** lengkap dengan badge resmi SubDL / OpenSubtitles.
+   - Mengatasi kerancuan sebelumnya di mana tautan subtitle sempat berlabel "Download MP4".
+3. **File Torrent & Magnet Link (Video HD / 4K)**:
+   - Tombol biru: **"Unduh Torrent"** yang terhubung langsung ke mesin pencari dan scraper torrent terverifikasi:
+     - **Anime**: Nyaa.si (kategori anime HD batch) & AnimeTosho (Direct Torrents & DDL).
+     - **Drama Asia / TV Series**: EZTV & 1337x.
+     - **Hollywood / Movies**: 1337x & TorrentGalaxy (TGx).
+4. **Tombol Mandiri "🔄 Cek / Segarkan Link" & "🔄 Cek / Segarkan Server"**:
+   - Didesain presisi, menyatu rapi dengan header Pusat Unduhan dan bilah player streaming.
+   - **Aturan Cooldown 24 Jam**: Jika URL dari sumber sama persis (sudah versi paling baru), tombol otomatis terkunci (*disabled*) selama **1 hari (24 jam)** secara persisten di browser (`localStorage`) untuk mencegah spam request ke sumber.
 
 ### 6. Scraping Film Barat & Domain Publik
 ```powershell

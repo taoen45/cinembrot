@@ -17,6 +17,7 @@ import (
 	"cinembrot/provider/openmovies"
 	"cinembrot/provider/subtitles"
 	"cinembrot/provider/tmdb"
+	"cinembrot/provider/torrents"
 	"cinembrot/provider/yts"
 	"cinembrot/scraper"
 	"cinembrot/translator"
@@ -389,7 +390,7 @@ func (p *Pipeline) enrichMetadata(movie *model.Movie) {
 	// 3. Auto-translate sinopsis dwibahasa (Indonesia & English)
 	ProcessMovieSynopses(movie)
 
-	// 4. Pastikan DownloadLinks selalu terisi otomatis (YTS download & candidates subtitle ID/EN)
+	// 4. Pastikan DownloadLinks selalu terisi otomatis (Torrent YTS / Nyaa & Subtitle ID/EN)
 	if len(movie.DownloadLinks) == 0 {
 		if (movie.Type == "hollywood" || movie.Type == "movie") && p.ytsCli != nil {
 			if ytsMovies, err := p.ytsCli.SearchMovies(movie.Title, 3, 1); err == nil && len(ytsMovies) > 0 {
@@ -401,9 +402,10 @@ func (p *Pipeline) enrichMetadata(movie *model.Movie) {
 				}
 			}
 		}
-		if len(movie.DownloadLinks) == 0 {
-			movie.DownloadLinks = subtitles.GenerateSubtitleDownloadLinks(movie.Title, movie.Year)
-		}
+		// Selalu sediakan link torrent resmi (Nyaa.si untuk anime, 1337x/EZTV/TGx untuk movie/series)
+		movie.DownloadLinks = append(movie.DownloadLinks, torrents.GenerateTorrentLinks(movie)...)
+		// Selalu sediakan link subtitle dwibahasa resmi
+		movie.DownloadLinks = append(movie.DownloadLinks, subtitles.GenerateSubtitleDownloadLinks(movie.Title, movie.Year)...)
 	}
 }
 
@@ -1013,13 +1015,18 @@ func PopulateAllExistingDownloadLinks(db *gorm.DB, ytsCli *yts.Client) (int, err
 			}
 		}
 
-		// Jika belum ada, tambahkan link unduhan subtitle dwibahasa resmi
-		if len(newLinks) == 0 {
-			subLinks := subtitles.GenerateSubtitleDownloadLinks(movie.Title, movie.Year)
-			for _, sl := range subLinks {
-				sl.MovieID = movie.ID
-				newLinks = append(newLinks, sl)
-			}
+		// Tambahkan link unduhan subtitle dwibahasa resmi
+		subLinks := subtitles.GenerateSubtitleDownloadLinks(movie.Title, movie.Year)
+		for _, sl := range subLinks {
+			sl.MovieID = movie.ID
+			newLinks = append(newLinks, sl)
+		}
+
+		// Selalu tambahkan juga link torrent resmi (Nyaa.si untuk anime, 1337x/EZTV/TGx untuk movie/series)
+		torLinks := torrents.GenerateTorrentLinks(movie)
+		for _, tl := range torLinks {
+			tl.MovieID = movie.ID
+			newLinks = append(newLinks, tl)
 		}
 
 		if len(newLinks) > 0 {

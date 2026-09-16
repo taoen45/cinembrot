@@ -14,6 +14,7 @@ import (
 	"cinembrot/model"
 	"cinembrot/provider/embed"
 	"cinembrot/provider/subtitles"
+	"cinembrot/provider/torrents"
 	"cinembrot/scraper"
 	"cinembrot/validator"
 	"gorm.io/gorm"
@@ -730,6 +731,10 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 		movie.StreamLinks = embed.GenerateMultiServerStreams(&movie, tmdbID, 1, 1)
 	}
 
+	if len(movie.TorrentDownloads()) == 0 {
+		movie.DownloadLinks = append(movie.DownloadLinks, torrents.GenerateTorrentLinks(&movie)...)
+	}
+
 	// Generate Episode List for anime, drama pendek, and TV series
 	var episodesList []int
 	if movie.Type == "anime" || movie.Type == "drama_pendek" || movie.Type == "series" {
@@ -1035,6 +1040,15 @@ func (s *Server) HandleRefreshDownloadLink(w http.ResponseWriter, r *http.Reques
 			if cleanU != "" && !existingURLs[cleanU] {
 				sl.MovieID = movie.ID
 				newLinksFound = append(newLinksFound, sl)
+			}
+		}
+		// Tambahkan juga kandidat torrent resmi jika belum ada
+		torLinks := torrents.GenerateTorrentLinks(&movie)
+		for _, tl := range torLinks {
+			cleanU := strings.TrimSpace(tl.URL)
+			if cleanU != "" && !existingURLs[cleanU] {
+				tl.MovieID = movie.ID
+				newLinksFound = append(newLinksFound, tl)
 			}
 		}
 	}

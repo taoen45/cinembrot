@@ -202,123 +202,179 @@
   </div>
   {{end}}
 
-  <!-- DOWNLOAD LINKS SECTION (FILE MATANG HARDSUB INDO & TORRENT) -->
+  <!-- DOWNLOAD LINKS SECTION (FILE VIDEO, SUBTITLE TERPISAH & TORRENT) -->
   <div id="download" class="space-y-6">
 
-    <!-- 1. FILE DOWNLOAD SUDAH MATANG (HARDSUB INDONESIA) - UTAMA -->
-    <div class="bg-white dark:bg-dark-900 border-2 border-emerald-500/30 dark:border-emerald-500/20 rounded-2xl p-6 shadow-sm relative overflow-hidden">
-      <div class="absolute top-0 right-0 bg-gradient-to-l from-emerald-500 to-green-600 text-white font-black text-[10px] uppercase tracking-wider px-4 py-1 rounded-bl-xl shadow-xs">
-        <i class="fa-solid fa-fire mr-1"></i> Rekomendasi Utama
-      </div>
-
-      <div class="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <!-- HEADER DOWNLOAD UTAMA DENGAN TOMBOL SEGAR DIBUAT PRESISI -->
+    <div class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-5 sm:p-6 shadow-sm">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-dark-800">
         <div>
-          <h2 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
-            <i class="fa-solid fa-circle-check text-emerald-500 text-2xl"></i> File Download Siap Nonton (Hardsub Indonesia)
-          </h2>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            File video matang berformat MP4 dengan <b>Subtitle Bahasa Indonesia sudah menempel permanen</b>. Langsung tonton di HP, PC, atau Smart TV tanpa perlu cari subtitle lagi!
+          <div class="flex items-center gap-2 mb-1">
+            <span class="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md border border-emerald-500/20">
+              <i class="fa-solid fa-download mr-1"></i> Pusat Unduhan
+            </span>
+            <span class="text-xs font-semibold text-slate-400">Total {{len .Movie.DownloadLinks}} Link Tersedia</span>
+          </div>
+          <h2 class="text-xl font-black text-slate-900 dark:text-white">Pilihan Download Film, Subtitle & Torrent</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Pilih tautan sesuai kebutuhan Anda: File video MP4, subtitle terpisah (SRT), atau file torrent/magnet.
           </p>
         </div>
 
-        <!-- TOMBOL REFRESH / CEK LINK DOWNLOAD MANDIRI KE SUMBER -->
-        <button type="button" id="btn-refresh-dl" onclick="refreshMovieDownload({{.Movie.ID}})" class="inline-flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-700 dark:text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition border border-slate-200 dark:border-dark-700 shadow-sm shrink-0 self-start sm:self-auto cursor-pointer" title="Periksa dan cari URL link download baru dari website sumber jika link broken">
-          <i id="icon-refresh-dl" class="fa-solid fa-arrows-rotate text-brand-500"></i>
+        <!-- TOMBOL REFRESH / CEK LINK DOWNLOAD MANDIRI KE SUMBER (PRESISI & RAPI) -->
+        <button type="button" id="btn-refresh-dl" onclick="refreshMovieDownload({{.Movie.ID}})" class="inline-flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-700 dark:text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition border border-slate-200 dark:border-dark-700 shadow-xs shrink-0 cursor-pointer self-start sm:self-auto" title="Periksa dan cari URL download/subtitle baru jika broken">
+          <i id="icon-refresh-dl" class="fa-solid fa-arrows-rotate text-emerald-500"></i>
           <span id="text-refresh-dl">Cek / Segarkan Link</span>
         </button>
       </div>
 
-      {{if .Movie.MatangDownloads}}
-      <div class="space-y-3">
-        {{range .Movie.MatangDownloads}}
-        <div class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 hover:border-emerald-500/50 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition shadow-xs">
-          <!-- INFO FILE -->
-          <div class="flex items-center gap-3.5 min-w-0">
-            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 text-xl">
-              <i class="fa-solid fa-circle-play"></i>
-            </div>
-            <div class="min-w-0">
-              <div class="flex flex-wrap items-center gap-2 mb-1">
-                <h4 class="text-sm font-bold text-slate-900 dark:text-white">
-                  {{cleanProvider .Provider}}
-                </h4>
-                <span class="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[11px] font-black px-2.5 py-0.5 rounded-md border border-emerald-500/20 uppercase tracking-wide">
-                  {{cleanQuality .Quality}}
-                </span>
-                <span class="bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[11px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
-                  <i class="fa-solid fa-closed-captioning"></i> Hardsub Indo
-                </span>
-              </div>
-              <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-                <span><i class="fa-solid fa-tv mr-1 text-[11px] text-slate-400"></i>{{.Resolution}}</span>
-                <span>•</span>
-                <span><i class="fa-solid fa-hard-drive mr-1 text-[11px] text-slate-400"></i>{{if .FileSize}}{{.FileSize}}{{else}}Format MP4{{end}}</span>
-                <span>•</span>
-                <span class="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                  <i class="fa-solid fa-circle-check text-[11px]"></i> Siap Nonton Langsung
-                </span>
-              </div>
-            </div>
-          </div>
+      <!-- 1. FILE DOWNLOAD VIDEO SIAP NONTON (DIRECT MP4 / HARDSUB) -->
+      <div class="mt-6 space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <i class="fa-solid fa-circle-play text-emerald-500"></i> File Video Siap Nonton (Direct MP4 / Hardsub)
+          </h3>
+          {{if .Movie.VideoDownloads}}
+          <span class="text-[11px] font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-md">
+            {{len .Movie.VideoDownloads}} Video Siap
+          </span>
+          {{end}}
+        </div>
 
-          <!-- TOMBOL DOWNLOAD (RESPONSIVE FULL-WIDTH DI SMARTPHONE) -->
-          <a href="{{safeURL .URL}}" download target="_blank" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold px-6 py-3 rounded-xl transition shadow-md hover:shadow-emerald-600/25 flex items-center justify-center gap-2 shrink-0 group">
-            <i class="fa-solid fa-cloud-arrow-down text-sm group-hover:translate-y-0.5 transition-transform"></i>
-            <span>Download MP4</span>
-          </a>
+        {{if .Movie.VideoDownloads}}
+        <div class="space-y-3">
+          {{range .Movie.VideoDownloads}}
+          <div class="bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-800 hover:border-emerald-500/50 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition shadow-xs">
+            <div class="flex items-center gap-3.5 min-w-0">
+              <div class="w-11 h-11 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 text-lg">
+                <i class="fa-solid fa-film"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2 mb-1">
+                  <h4 class="text-sm font-bold text-slate-900 dark:text-white">
+                    {{cleanProvider .Provider}}
+                  </h4>
+                  <span class="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[11px] font-black px-2 py-0.5 rounded-md border border-emerald-500/20 uppercase tracking-wide">
+                    {{cleanQuality .Quality}}
+                  </span>
+                  <span class="bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[11px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
+                    <i class="fa-solid fa-circle-check"></i> Siap Nonton
+                  </span>
+                </div>
+                <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                  <span><i class="fa-solid fa-tv mr-1 text-[11px] text-slate-400"></i>{{.Resolution}}</span>
+                  <span>•</span>
+                  <span><i class="fa-solid fa-hard-drive mr-1 text-[11px] text-slate-400"></i>{{if .FileSize}}{{.FileSize}}{{else}}Video MP4{{end}}</span>
+                </div>
+              </div>
+            </div>
+
+            <a href="{{safeURL .URL}}" download target="_blank" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold px-6 py-2.5 rounded-xl transition shadow-md hover:shadow-emerald-600/25 flex items-center justify-center gap-2 shrink-0 group">
+              <i class="fa-solid fa-cloud-arrow-down text-sm group-hover:translate-y-0.5 transition-transform"></i>
+              <span>Download Video MP4</span>
+            </a>
+          </div>
+          {{end}}
+        </div>
+        {{else}}
+        <div class="p-4 bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-800 rounded-xl flex items-center gap-3 text-xs text-slate-600 dark:text-slate-400">
+          <i class="fa-solid fa-circle-info text-xl text-brand-500 shrink-0"></i>
+          <div>
+            <span class="font-bold text-slate-800 dark:text-slate-200">File Video Direct MP4 Sedang Diproses Admin.</span>
+            <p class="text-[11px] mt-0.5">Anda dapat menonton langsung melalui player streaming di atas, atau mengunduh subtitle dan torrent di bawah.</p>
+          </div>
         </div>
         {{end}}
       </div>
-      {{else}}
-      <div class="p-5 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-3.5 text-xs text-amber-800 dark:text-amber-300">
-        <i class="fa-solid fa-clock-rotate-left text-2xl text-amber-500 shrink-0"></i>
-        <div>
-          <h4 class="font-bold text-sm">File Download Matang (Hardsub Indonesia) Sedang Diproses</h4>
-          <p class="text-slate-600 dark:text-slate-400 mt-0.5">
-            Admin sedang merender rilisan Hardsub subtitle Indonesia untuk judul ini.{{if .ShowTorrentPublic}} Sementara waktu, Anda dapat mengunduh file torrent mentah pada pilihan di bawah.{{else}} Silakan kunjungi kembali beberapa saat lagi.{{end}}
-          </p>
+
+      <!-- 2. FILE SUBTITLE TERPISAH (SUBDL / OPENSUBTITLES / SRT) -->
+      {{if .Movie.SubtitleDownloads}}
+      <div class="mt-8 pt-6 border-t border-slate-100 dark:border-dark-800 space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <i class="fa-solid fa-closed-captioning text-indigo-500"></i> File Subtitle Terpisah (SRT / VTT)
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              File teks terjemahan resmi. Pasang di media player Anda (VLC, MX Player, Smart TV).
+            </p>
+          </div>
+          <span class="text-[11px] font-bold text-indigo-600 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-0.5 rounded-md">
+            {{len .Movie.SubtitleDownloads}} Subtitle
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {{range .Movie.SubtitleDownloads}}
+          <div class="bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-800 hover:border-indigo-500/50 p-4 rounded-xl flex items-center justify-between gap-3 transition shadow-xs">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 text-base">
+                <i class="fa-solid fa-closed-captioning"></i>
+              </div>
+              <div class="min-w-0">
+                <h4 class="text-xs font-bold text-slate-900 dark:text-white truncate">
+                  {{.Provider}}
+                </h4>
+                <div class="flex items-center gap-2 mt-0.5">
+                  <span class="bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 text-[10px] font-black px-2 py-0.5 rounded uppercase">
+                    {{.Format}}
+                  </span>
+                  <span class="text-[11px] text-slate-400">Subtitle Resmi</span>
+                </div>
+              </div>
+            </div>
+
+            <a href="{{safeURL .URL}}" target="_blank" class="shrink-0 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-xl transition shadow-sm hover:shadow-indigo-600/25 flex items-center gap-1.5 group">
+              <i class="fa-solid fa-file-arrow-down text-xs group-hover:translate-y-0.5 transition-transform"></i>
+              <span>Download Subtitle</span>
+            </a>
+          </div>
+          {{end}}
         </div>
       </div>
       {{end}}
-    </div>
 
-    <!-- 2. OPSI UNDUHAN TORRENT (BAHAN BAKU / MENTAH) -->
-    {{if and .ShowTorrentPublic .Movie.TorrentDownloads}}
-    <div class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-6 shadow-sm space-y-4">
-      <div class="flex items-center justify-between">
-        <div>
-          <h3 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
-            <i class="fa-solid fa-magnet text-blue-500"></i> Unduh File Torrent Asli (Bahan Baku / Mentah)
-          </h3>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Khusus pengguna yang memiliki aplikasi torrent (uTorrent / BitTorrent / qBittorrent). Belum termasuk subtitle permanen.
-          </p>
-        </div>
-        <span class="text-xs font-bold text-slate-500 bg-slate-100 dark:bg-dark-800 px-2.5 py-1 rounded-lg">
-          {{len .Movie.TorrentDownloads}} Link Torrent
-        </span>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-        {{range .Movie.TorrentDownloads}}
-        <a href="{{safeURL .URL}}" target="_blank" class="bg-slate-50 hover:bg-slate-100 dark:bg-dark-950 dark:hover:bg-dark-800 border border-slate-200 dark:border-dark-800 hover:border-blue-500 p-3 rounded-xl flex items-center justify-between group transition">
-          <div class="flex items-center gap-2.5">
-            <div class="bg-blue-500/10 text-blue-600 dark:text-blue-400 p-2.5 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition">
-              <i class="fa-solid fa-download"></i>
-            </div>
-            <div>
-              <h4 class="text-xs font-bold text-slate-800 dark:text-white group-hover:text-blue-600 transition">{{.Provider}} - {{.Quality}}</h4>
-              <p class="text-[11px] text-slate-500">{{.Resolution}} • {{if .FileSize}}{{.FileSize}}{{else}}Torrent Swarm{{end}}</p>
-            </div>
+      <!-- 3. FILE TORRENT & MAGNET SWARM (BAHAN BAKU VIDEO HD / 4K) -->
+      {{if .Movie.TorrentDownloads}}
+      <div class="mt-8 pt-6 border-t border-slate-100 dark:border-dark-800 space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <i class="fa-solid fa-magnet text-blue-500"></i> Unduh File Torrent & Magnet Link (Video HD / 4K)
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Khusus diunduh menggunakan aplikasi Torrent (uTorrent / BitTorrent / qBittorrent / IDM).
+            </p>
           </div>
-          <span class="text-xs text-slate-600 dark:text-slate-300 font-bold px-3 py-1.5 bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-lg group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition flex items-center gap-1">
-            Unduh <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+          <span class="text-[11px] font-bold text-blue-600 bg-blue-500/10 border border-blue-500/20 px-2.5 py-0.5 rounded-md">
+            {{len .Movie.TorrentDownloads}} Link Torrent
           </span>
-        </a>
-        {{end}}
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {{range .Movie.TorrentDownloads}}
+          <a href="{{safeURL .URL}}" target="_blank" class="bg-slate-50 hover:bg-slate-100 dark:bg-dark-950 dark:hover:bg-dark-800 border border-slate-200 dark:border-dark-800 hover:border-blue-500 p-3.5 rounded-xl flex items-center justify-between group transition">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition text-base">
+                <i class="fa-solid fa-download"></i>
+              </div>
+              <div class="min-w-0">
+                <h4 class="text-xs font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition truncate">
+                  {{.Provider}}
+                </h4>
+                <p class="text-[11px] text-slate-500 truncate">{{.Quality}} • {{.Resolution}}</p>
+              </div>
+            </div>
+            <span class="shrink-0 text-xs text-blue-600 dark:text-blue-400 font-bold px-3 py-1.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-lg group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition flex items-center gap-1">
+              Unduh Torrent <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+            </span>
+          </a>
+          {{end}}
+        </div>
       </div>
+      {{end}}
+
     </div>
-    {{end}}
 
   </div>
 

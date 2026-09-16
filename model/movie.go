@@ -156,29 +156,61 @@ type DownloadLink struct {
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
+// IsSubtitle checks if a download link is a subtitle file (.srt, .vtt, .ass or SubDL/OpenSubtitles)
+func (d DownloadLink) IsSubtitle() bool {
+	u := strings.ToLower(strings.TrimSpace(d.URL))
+	p := strings.ToLower(strings.TrimSpace(d.Provider))
+	f := strings.ToLower(strings.TrimSpace(d.Format))
+	return f == "srt" || f == "vtt" || f == "ass" || f == "sub" ||
+		strings.Contains(p, "subtitle") || strings.Contains(p, "subdl") || strings.Contains(p, "opensubtitles") ||
+		strings.Contains(u, "subdl.com") || strings.Contains(u, "opensubtitles.org") || strings.Contains(u, "subsource.net")
+}
+
 // IsTorrent checks if a download link is a raw torrent or magnet link
 func (d DownloadLink) IsTorrent() bool {
 	u := strings.ToLower(strings.TrimSpace(d.URL))
 	p := strings.ToLower(strings.TrimSpace(d.Provider))
 	return strings.HasPrefix(u, "magnet:") || strings.HasSuffix(u, ".torrent") ||
 		strings.Contains(u, "/torrent/download/") ||
-		strings.Contains(p, "torrent") || strings.Contains(p, "magnet") || strings.Contains(p, "yts")
+		strings.Contains(u, "nyaa.si") || strings.Contains(u, "animetosho") ||
+		strings.Contains(p, "torrent") || strings.Contains(p, "magnet") || strings.Contains(p, "yts") || strings.Contains(p, "nyaa")
 }
 
-// IsMatang checks if a download link is a processed video file (Hardsub Indonesia / Direct Video MP4)
+// IsVideo checks if a download link is a direct playable video file (MP4, MKV, WebM, etc.)
+func (d DownloadLink) IsVideo() bool {
+	return !d.IsTorrent() && !d.IsSubtitle()
+}
+
+// IsMatang checks if a download link is a processed video file (Direct Video MP4 / Hardsub)
 func (d DownloadLink) IsMatang() bool {
-	return !d.IsTorrent()
+	return d.IsVideo()
 }
 
-// MatangDownloads returns only the completed / direct / hardsubbed download links
-func (m Movie) MatangDownloads() []DownloadLink {
+// VideoDownloads returns only direct playable video links (Internet Archive MP4, Blender Open Movies, Direct MP4)
+func (m Movie) VideoDownloads() []DownloadLink {
 	var list []DownloadLink
 	for _, dl := range m.DownloadLinks {
-		if dl.IsMatang() {
+		if dl.IsVideo() {
 			list = append(list, dl)
 		}
 	}
 	return list
+}
+
+// SubtitleDownloads returns only subtitle links (SubDL, OpenSubtitles, SRT, VTT)
+func (m Movie) SubtitleDownloads() []DownloadLink {
+	var list []DownloadLink
+	for _, dl := range m.DownloadLinks {
+		if dl.IsSubtitle() {
+			list = append(list, dl)
+		}
+	}
+	return list
+}
+
+// MatangDownloads returns only the completed / direct / hardsubbed video download links
+func (m Movie) MatangDownloads() []DownloadLink {
+	return m.VideoDownloads()
 }
 
 // TorrentDownloads returns only raw torrent and magnet links
