@@ -931,7 +931,18 @@ func (p *Pipeline) FixNonLatinTitlesAndSynopses(db *gorm.DB) (int, error) {
 		}
 
 		if needUpdate {
-			if err := db.Model(movie).Updates(updates).Error; err == nil {
+			if err := db.Model(movie).Updates(updates).Error; err != nil {
+				// Jika terjadi duplicate slug, tambahkan ID film ke slug agar unik
+				if strings.Contains(err.Error(), "Duplicate entry") || strings.Contains(err.Error(), "1062") {
+					if origSlug, ok := updates["slug"].(string); ok {
+						updates["slug"] = fmt.Sprintf("%s-%d", origSlug, movie.ID)
+						if retryErr := db.Model(movie).Updates(updates).Error; retryErr == nil {
+							updatedCount++
+							log.Printf("  -> [FIX %d (Retry)] '%s' -> Title: '%v', Slug: '%v'\n", updatedCount, movie.Title, updates["title"], updates["slug"])
+						}
+					}
+				}
+			} else {
 				updatedCount++
 				log.Printf("  -> [FIX %d] '%s' -> Title: '%v', Slug: '%v', Sinopsis: %d karakter\n",
 					updatedCount, movie.Title, updates["title"], updates["slug"], len(fmt.Sprintf("%v", updates["synopsis"])))
