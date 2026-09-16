@@ -205,7 +205,7 @@ func (s *Server) loadTemplates() {
 	layoutPath := filepath.Join(viewsDir, "layout.html")
 
 	// Public Pages
-	pages := []string{"home.html", "detail.html", "list.html", "anime.html", "drama_pendek.html"}
+	pages := []string{"home.html", "detail.html", "list.html", "anime.html", "drama_pendek.html", "hollywood.html"}
 	for _, page := range pages {
 		pagePath := filepath.Join(viewsDir, page)
 		tmpl := template.Must(template.New("layout.html").Funcs(funcMap).ParseFiles(layoutPath, pagePath))
@@ -273,6 +273,8 @@ func (s *Server) Start() error {
 
 	// Route Public Web Endpoints
 	mux.HandleFunc("GET /", s.HandleHome)
+	mux.HandleFunc("GET /hollywood", s.HandleHollywood)
+	mux.HandleFunc("GET /box-office", s.HandleHollywood)
 	mux.HandleFunc("GET /anime", s.HandleAnime)
 	mux.HandleFunc("GET /drama-pendek", s.HandleDramaPendek)
 	mux.HandleFunc("GET /filter", s.HandleFilter)
@@ -297,6 +299,7 @@ func (s *Server) Start() error {
 	// Protected CMS Routes (Guarded by RequireAdmin)
 	mux.HandleFunc("GET /admin", s.RequireAdmin(s.HandleAdminDashboard))
 	mux.HandleFunc("GET /admin/movies", s.RequireAdmin(s.HandleAdminMovies))
+	mux.HandleFunc("GET /admin/hollywood", s.RequireAdmin(s.HandleAdminHollywood))
 	mux.HandleFunc("GET /admin/anime", s.RequireAdmin(s.HandleAdminAnime))
 	mux.HandleFunc("GET /admin/drama-pendek", s.RequireAdmin(s.HandleAdminDramaPendek))
 	mux.HandleFunc("GET /admin/movies/new", s.RequireAdmin(s.HandleAdminMovieNew))
@@ -323,6 +326,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("GET /admin/tools", s.RequireAdmin(s.HandleAdminTools))
 	mux.HandleFunc("POST /admin/tools/scheduler-settings", s.RequireAdmin(s.HandleAdminSaveSchedulerSettings))
 	mux.HandleFunc("POST /admin/tools/scrape", s.RequireAdmin(s.HandleAdminTriggerScrape))
+	mux.HandleFunc("POST /admin/tools/scrape-hollywood", s.RequireAdmin(s.HandleAdminTriggerScrapeHollywood))
 	mux.HandleFunc("POST /admin/tools/scrape-anime", s.RequireAdmin(s.HandleAdminTriggerScrapeAnime))
 	mux.HandleFunc("POST /admin/tools/scrape-drama", s.RequireAdmin(s.HandleAdminTriggerScrapeDrama))
 	mux.HandleFunc("POST /admin/tools/check-links", s.RequireAdmin(s.HandleAdminTriggerCheckLinks))

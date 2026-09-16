@@ -36,6 +36,11 @@
   - Slider hero beranda mendukung gesture **Touch Swipe** jempol (`touchstart`, `touchend`).
   - Bebas horizontal scroll overflow di smartphone berkat penyembunyian banner lebar responsif.
   - Bantalan safe area bawah (`pb-24`) agar floating sticky ad tidak menutupi tombol konten.
+- 🌟 **Katalog Khusus Film Hollywood & Box Office**:
+  - Halaman khusus `/hollywood` (dan `/box-office`) bernuansa cinematic amber/emas dengan Hero Banner, filter genre lengkap, tahun rilis, rating, dan sorting cerdas.
+  - Scraper resmi TMDb Movie API untuk kategori *Box Office*, *Popular*, *Top Rated*, dan *Now Playing*.
+  - Pemrosesan gambar WebP lokal otomatis, link subtitle dwibahasa (ID/EN), dan auto-embed 5 player streaming.
+  - Manajemen di CMS Admin (`/admin/hollywood`) dan tombol scraping instan di `/admin/tools`.
 - 🎌 **Katalog Khusus Anime & Drama Pendek**:
   - Halaman khusus `/anime` dan `/drama-pendek` dengan Hero Banner, filter genre, dan status rilis.
   - Scraping anime resmi via MyAnimeList / Jikan API v4 dengan fallback TMDb.
@@ -107,7 +112,22 @@ Aplikasi menyediakan berbagai opsi CLI terminal (setara *Artisan* pada Laravel) 
 .\cinembrot.exe -auto-scrape
 ```
 
-### 2. Scraper Anime & Drama Asia (Berdasarkan Tahun & Kategori)
+### 2. Scraper Film Hollywood & Box Office (TMDb Movie API)
+```powershell
+# Scrape film Box Office terpopuler / rilis terbaru (otomatis unduh poster WebP, subtitle dwibahasa & 5 player streaming)
+.\cinembrot.exe -scrape-hollywood -hollywood-cat boxoffice -hollywood-pages 1
+
+# Scrape film Hollywood berdasarkan tahun rilis tertentu (contoh: tahun 2024 atau 2026)
+.\cinembrot.exe -scrape-hollywood -year 2024 -hollywood-pages 1
+
+# Scrape film Hollywood kategori rating tertinggi (Top Rated)
+.\cinembrot.exe -scrape-hollywood -hollywood-cat top_rated -hollywood-pages 1
+
+# Scrape film Hollywood yang sedang tayang di bioskop (Now Playing)
+.\cinembrot.exe -scrape-hollywood -hollywood-cat now_playing -hollywood-pages 1
+```
+
+### 3. Scraper Anime & Drama Asia (Berdasarkan Tahun & Kategori)
 ```powershell
 # Scrape anime yang rilis pada tahun tertentu (contoh: tahun 2026)
 .\cinembrot.exe -scrape-anime -year 2026 -anime-limit 15
@@ -132,7 +152,7 @@ Aplikasi menyediakan berbagai opsi CLI terminal (setara *Artisan* pada Laravel) 
 .\cinembrot.exe -scrape-drama -drama-lang th -drama-pages 1
 ```
 
-### 3. Pemeliharaan, Perbaikan Data & Sinkronisasi Streaming
+### 4. Pemeliharaan, Perbaikan Data & Sinkronisasi Streaming
 ```powershell
 # 🛠️ Perbaiki judul non-Latin (Kanji/CJK) ke English QWERTY, slug bersih & isi sinopsis kosong di DB
 .\cinembrot.exe -fix-titles
@@ -147,7 +167,7 @@ Aplikasi menyediakan berbagai opsi CLI terminal (setara *Artisan* pada Laravel) 
 .\cinembrot.exe -convert-images
 ```
 
-### 4. Scraping Film Barat & Domain Publik
+### 5. Scraping Film Barat & Domain Publik
 ```powershell
 # Scrape film rilis tahun tertentu dari provider (tmdb / archive / yts / all)
 .\cinembrot.exe -by-year 2024 -pages 1 -source yts

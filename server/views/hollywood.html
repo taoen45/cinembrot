@@ -1,0 +1,158 @@
+{{define "content"}}
+<!-- ==================== 1. HOLLYWOOD & BOX OFFICE HERO BANNER ==================== -->
+<div class="mb-8 relative rounded-2xl overflow-hidden bg-gradient-to-r from-amber-950 via-stone-900 to-slate-950 border border-amber-600/30 p-6 md:p-10 shadow-2xl">
+  <div class="relative z-10 max-w-2xl">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold mb-3">
+      <i class="fa-solid fa-clapperboard text-amber-400"></i> {{if eq $.Lang "en"}}HOLLYWOOD BLOCKBUSTER{{else}}BOX OFFICE CINEMA{{end}}
+    </div>
+    <h1 class="text-2xl md:text-4xl font-black text-white tracking-tight mb-2 flex items-center gap-3">
+      <span>🎬 {{if eq $.Lang "en"}}Hollywood & Box Office Movies{{else}}Film Hollywood & Box Office Bioskop{{end}}</span>
+    </h1>
+    <p class="text-slate-300 text-xs md:text-sm font-medium leading-relaxed mb-4">
+      {{if eq $.Lang "en"}}Watch top-rated Hollywood movies, blockbusters, and award-winning cinema with Indonesian & English subtitles in ultra HD quality.{{else}}Koleksi film bioskop Hollywood terlaris, box office blockbuster, dan film barat pemenang penghargaan dengan subtitle Indonesia dan kualitas Ultra HD.{{end}}
+    </p>
+    <div class="flex flex-wrap items-center gap-2.5 sm:gap-4 text-xs font-semibold text-amber-200">
+      <span class="flex items-center gap-1.5"><i class="fa-solid fa-layer-group text-amber-400"></i> Total {{.TotalCount}} Film</span>
+      <span class="flex items-center gap-1.5"><i class="fa-solid fa-film text-yellow-400"></i> 1080p / 4K UHD</span>
+      <span class="flex items-center gap-1.5"><i class="fa-solid fa-closed-captioning text-emerald-400"></i> Hardsub & Softsub ID/EN</span>
+      <span class="flex items-center gap-1.5"><i class="fa-solid fa-circle-play text-blue-400"></i> 5 Server Streaming</span>
+    </div>
+  </div>
+
+  <!-- Ambient Cinematic Glow Elements -->
+  <div class="absolute -right-12 -top-12 w-64 h-64 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="absolute right-12 bottom-0 w-48 h-48 bg-red-600/15 rounded-full blur-2xl pointer-events-none"></div>
+</div>
+
+<!-- ==================== 2. FILTER BAR ==================== -->
+<div class="mb-8 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-5 shadow-sm transition-colors">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+      <i class="fa-solid fa-sliders text-amber-500"></i> {{t $.Lang "filter.title"}}
+    </h2>
+    <span class="text-xs text-slate-400 font-medium">{{.TotalCount}} film Hollywood</span>
+  </div>
+
+  <form action="/hollywood" method="GET" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+    <!-- DROPDOWN 1: TAHUN -->
+    <div>
+      <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">📅 {{t $.Lang "filter.year"}}</label>
+      <select name="year" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-amber-500 transition">
+        <option value="">{{t $.Lang "filter.all_years"}}</option>
+        {{range .Years}}
+        <option value="{{.}}" {{if eq $.CurrentYear .}}selected{{end}}>{{.}}</option>
+        {{end}}
+      </select>
+    </div>
+
+    <!-- DROPDOWN 2: GENRE -->
+    <div>
+      <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">🎭 {{t $.Lang "filter.genre"}}</label>
+      <select name="genre" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-amber-500 transition">
+        <option value="">{{t $.Lang "filter.all_genres"}}</option>
+        {{range .Genres}}
+        <option value="{{.Slug}}" {{if eq $.CurrentGenre .Slug}}selected{{end}}>{{.Name}}</option>
+        {{end}}
+      </select>
+    </div>
+
+    <!-- DROPDOWN 3: NEGARA / ASAL -->
+    <div>
+      <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">🌍 {{t $.Lang "filter.country"}}</label>
+      <select name="country" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-amber-500 transition">
+        <option value="">{{t $.Lang "filter.all_country"}}</option>
+        {{range .Countries}}
+        <option value="{{.}}" {{if eq $.CurrentCountry .}}selected{{end}}>{{.}}</option>
+        {{end}}
+      </select>
+    </div>
+
+    <!-- DROPDOWN 4: URUTKAN -->
+    <div>
+      <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">⚡ {{t $.Lang "filter.sort"}}</label>
+      <select name="sort" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-amber-500 transition">
+        <option value="year_desc" {{if eq $.CurrentSort "year_desc"}}selected{{end}}>{{t $.Lang "filter.sort_newest"}}</option>
+        <option value="rating_desc" {{if eq $.CurrentSort "rating_desc"}}selected{{end}}>{{t $.Lang "filter.sort_rating"}} ★</option>
+        <option value="views_desc" {{if eq $.CurrentSort "views_desc"}}selected{{end}}>{{t $.Lang "filter.sort_popular"}} (Box Office)</option>
+        <option value="title_asc" {{if eq $.CurrentSort "title_asc"}}selected{{end}}>{{t $.Lang "filter.sort_title"}}</option>
+      </select>
+    </div>
+
+    <!-- TOMBOL SUBMIT & RESET -->
+    <div class="col-span-2 sm:col-span-2 md:col-span-4 lg:col-span-1 flex items-end gap-2">
+      <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-md">
+        <i class="fa-solid fa-filter"></i> {{t $.Lang "filter.btn_apply"}}
+      </button>
+      <a href="/hollywood" class="bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-600 dark:text-slate-300 p-2.5 rounded-xl text-xs transition flex items-center justify-center border border-slate-200 dark:border-dark-700" title="Reset Filter">
+        <i class="fa-solid fa-rotate-left"></i>
+      </a>
+    </div>
+  </form>
+</div>
+
+<!-- ==================== 3. HOLLYWOOD MOVIES GRID ==================== -->
+{{if .Movies}}
+<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+  {{range .Movies}}
+  <a href="/movie/{{.Slug}}" class="group bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-xl overflow-hidden hover:border-amber-500 hover:shadow-lg dark:hover:border-amber-500 transition duration-300 flex flex-col shadow-sm">
+    <div class="relative aspect-[2/3] overflow-hidden bg-slate-200 dark:bg-dark-800">
+      {{if .PosterThumbURL}}
+      <img src="{{.PosterThumbURL}}" alt="{{.Title}}" data-fallback="{{if .ThumbnailURL}}{{.ThumbnailURL}}{{else if .PosterURL}}{{.PosterURL}}{{end}}" onerror="if (this.dataset.fallback && this.src !== this.dataset.fallback) { this.src = this.dataset.fallback; } else { this.onerror=null; this.src='/img/poster-placeholder.svg'; }" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" loading="lazy">
+      {{else if .PosterURL}}
+      <img src="{{.PosterURL}}" alt="{{.Title}}" data-fallback="{{.ThumbnailURL}}" onerror="if (this.dataset.fallback && this.src !== this.dataset.fallback) { this.src = this.dataset.fallback; } else { this.onerror=null; this.src='/img/poster-placeholder.svg'; }" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" loading="lazy">
+      {{else}}
+      <img src="/img/poster-placeholder.svg" alt="{{.Title}}" class="w-full h-full object-cover" loading="lazy">
+      {{end}}
+
+      <!-- Top Overlay Badges -->
+      <div class="absolute top-2 left-2 flex flex-col gap-1 items-start">
+        <span class="bg-amber-500 text-slate-950 font-black text-[10px] px-1.5 py-0.5 rounded shadow">BOX OFFICE</span>
+        <span class="bg-black/75 backdrop-blur-xs text-white text-[10px] px-1.5 py-0.5 rounded font-bold border border-white/10">
+          {{if .Quality}}{{.Quality}}{{else}}1080p HD{{end}}
+        </span>
+      </div>
+
+      <!-- Rating Badge -->
+      <div class="absolute bottom-2 right-2 bg-black/85 backdrop-blur-xs text-yellow-400 text-xs font-bold px-2 py-0.5 rounded flex items-center gap-1 border border-yellow-500/20">
+        <i class="fa-solid fa-star text-[10px]"></i>
+        <span>{{if gt .Rating 0.0}}{{.Rating}}{{else}}8.0{{end}}</span>
+      </div>
+    </div>
+
+    <!-- Info Block -->
+    <div class="p-3 flex-1 flex flex-col justify-between">
+      <div>
+        <h3 class="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-100 group-hover:text-amber-500 transition line-clamp-1" title="{{.Title}}">
+          {{.Title}}
+        </h3>
+        {{if and .OriginalTitle (ne .OriginalTitle .Title)}}
+        <p class="text-[11px] text-slate-400 line-clamp-1 italic mt-0.5" title="{{.OriginalTitle}}">
+          {{.OriginalTitle}}
+        </p>
+        {{end}}
+      </div>
+      <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-dark-800 text-[11px] text-slate-400">
+        <span class="font-medium text-amber-600 dark:text-amber-400">{{.Year}}</span>
+        <span class="truncate max-w-[80px]">{{.Country}}</span>
+      </div>
+    </div>
+  </a>
+  {{end}}
+</div>
+{{else}}
+<!-- Empty State -->
+<div class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-12 text-center my-6">
+  <div class="w-16 h-16 bg-amber-500/10 text-amber-500 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4">
+    <i class="fa-solid fa-film"></i>
+  </div>
+  <h3 class="text-base font-bold text-slate-800 dark:text-slate-200 mb-1">Belum Ada Film Hollywood yang Ditemukan</h3>
+  <p class="text-xs text-slate-400 max-w-md mx-auto mb-6">
+    Coba sesuaikan filter tahun atau genre Anda, atau jalankan scraper Hollywood dari CMS Admin untuk mengimpor judul-judul box office bioskop terbaru.
+  </p>
+  <a href="/hollywood" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-black rounded-xl transition">
+    <i class="fa-solid fa-rotate-left"></i> Reset Filter
+  </a>
+</div>
+{{end}}
+
+{{end}}

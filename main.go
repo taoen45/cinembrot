@@ -48,6 +48,11 @@ func main() {
 	dramaLang := flag.String("drama-lang", "ko", "Bahasa drama: 'ko' (Korea), 'zh' (China), 'ja' (Jepang), 'th' (Thailand), atau 'all'")
 	dramaPages := flag.Int("drama-pages", 1, "Jumlah halaman drama yang diambil (1 hal = 20 judul)")
 
+	// CLI Scraper Khusus Film Hollywood / Box Office
+	scrapeHollywood := flag.Bool("scrape-hollywood", false, "Scrape film Hollywood / Box Office resmi dari TMDb API (WebP + Subtitle + Multi-Server Stream)")
+	hollywoodCat := flag.String("hollywood-cat", "boxoffice", "Kategori Hollywood: 'boxoffice' (pendapatan tertinggi), 'popular' (terpopuler), 'top_rated' (rating tertinggi), 'now_playing' (rilis bioskop terbaru)")
+	hollywoodPages := flag.Int("hollywood-pages", 1, "Jumlah halaman Hollywood yang diambil (1 hal = 20 film)")
+
 	// CLI Sinkronisasi Multi-Server Streaming Video
 	populateStreams := flag.Bool("populate-streams", false, "Isi dan perbarui server streaming embed (VidSrc, AutoEmbed, 2Embed, VidLink) untuk semua judul di database")
 
@@ -196,6 +201,22 @@ func main() {
 		return
 	}
 
+	if *scrapeHollywood {
+		yearInfo := ""
+		if *tmdbYear > 0 {
+			yearInfo = fmt.Sprintf(", Tahun: %d", *tmdbYear)
+		}
+		fmt.Printf("\n[ACTION] 🎬 Memulai scraping Film Hollywood / Box Office resmi TMDb (Kategori: %s, Halaman: %d%s)...\n", *hollywoodCat, *hollywoodPages, yearInfo)
+		count, err := pipe.IngestHollywoodMovies(*hollywoodCat, *hollywoodPages, *tmdbYear)
+		if err != nil {
+			log.Printf("[ERROR] Scraping Hollywood gagal: %v\n", err)
+		} else {
+			fmt.Printf("\n[SUCCESS] Berhasil scrape dan simpan %d film Hollywood / Box Office (WebP + Subtitle + Streaming) ke MariaDB!\n", count)
+		}
+		printDatabaseStats(db)
+		return
+	}
+
 	if *populateStreams {
 		fmt.Println("\n[ACTION] 🎬 Memulai sinkronisasi server streaming embed (VidSrc, AutoEmbed, 2Embed, VidLink) untuk semua judul di database...")
 		count, err := pipe.PopulateMissingStreamLinks(db)
@@ -221,7 +242,7 @@ func main() {
 	}
 
 	// 6. Start Web Server with background Auto-Scraper enabled
-	if *serveWeb || (!*fetchArchive && !*fetchOpenMovies && !*syncAll && *tmdbQuery == "" && *scrapeURL == "" && *byYear == 0 && !*convertImages && !*checkLinks && !*scrapeAnime && !*scrapeDrama && !*populateStreams && !*fixTitles) {
+	if *serveWeb || (!*fetchArchive && !*fetchOpenMovies && !*syncAll && *tmdbQuery == "" && *scrapeURL == "" && *byYear == 0 && !*convertImages && !*checkLinks && !*scrapeAnime && !*scrapeDrama && !*scrapeHollywood && !*populateStreams && !*fixTitles) {
 		// Launch background polite auto-scraper
 		autoScraper.Start()
 
@@ -243,6 +264,7 @@ func main() {
 
 	fmt.Println("\n[INFO] Perintah CLI (Terminal) yang dapat digunakan:")
 	fmt.Println("  go run . -serve                      # 🚀 JALANKAN WEB SERVER & AUTO-SCRAPER BACKGROUND")
+	fmt.Println("  go run . -scrape-hollywood -year 2024 # 🎬 Scrape film Hollywood/Box Office (-year 2024, -hollywood-cat boxoffice/popular, -hollywood-pages 1)")
 	fmt.Println("  go run . -scrape-anime -year 2026    # 🎌 Scrape anime resmi (-year 2026, -anime-cat top/seasonal, -anime-limit 15)")
 	fmt.Println("  go run . -scrape-drama -year 2026    # 🎭 Scrape drama Asia TMDb (-year 2026, -drama-lang ko/zh/ja/th/all, -drama-pages 1)")
 	fmt.Println("  go run . -fix-titles                 # 🛠️ Perbaiki judul Kanji ke English QWERTY & isi sinopsis kosong")

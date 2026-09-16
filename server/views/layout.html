@@ -110,6 +110,9 @@
           <a href="/drama-pendek" class="hover:text-amber-500 transition flex items-center gap-1.5 {{if eq .ActiveMenu "drama_pendek"}}text-amber-500 font-bold{{else}}text-slate-600 dark:text-slate-300{{end}}">
             <i class="fa-solid fa-masks-theater text-amber-500"></i> {{t $.Lang "nav.drama_pendek"}}
           </a>
+          <a href="/hollywood" class="hover:text-amber-500 transition flex items-center gap-1.5 {{if eq .ActiveMenu "hollywood"}}text-amber-500 font-bold{{else}}text-slate-600 dark:text-slate-300{{end}}">
+            <i class="fa-solid fa-clapperboard text-amber-500"></i> Hollywood
+          </a>
           <a href="/filter?sort=rating_desc" class="hover:text-brand-500 transition flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
             <i class="fa-solid fa-fire text-amber-500"></i> {{t $.Lang "nav.popular"}}
           </a>
@@ -177,6 +180,9 @@
       </a>
       <a href="/drama-pendek" class="shrink-0 px-3 py-1.5 rounded-full transition {{if eq .ActiveMenu "drama_pendek"}}bg-amber-600 text-white shadow{{else}}bg-slate-100 dark:bg-dark-800 text-slate-700 dark:text-slate-300{{end}}">
         <i class="fa-solid fa-masks-theater text-amber-400 mr-1"></i> {{t $.Lang "nav.drama_pendek"}}
+      </a>
+      <a href="/hollywood" class="shrink-0 px-3 py-1.5 rounded-full transition {{if eq .ActiveMenu "hollywood"}}bg-amber-500 text-slate-950 font-black shadow{{else}}bg-slate-100 dark:bg-dark-800 text-slate-700 dark:text-slate-300{{end}}">
+        <i class="fa-solid fa-clapperboard text-amber-500 mr-1"></i> Hollywood
       </a>
       <a href="/filter?sort=rating_desc" class="shrink-0 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-dark-800 text-slate-700 dark:text-slate-300 hover:text-brand-500 transition">
         <i class="fa-solid fa-fire text-amber-500 mr-1"></i> {{t $.Lang "nav.popular"}}

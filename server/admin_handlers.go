@@ -193,6 +193,103 @@ func (s *Server) HandleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 	s.RenderHTML(w, "admin_dashboard.html", "admin_layout.html", data)
 }
 
+// HandleAdminHollywood menampilkan daftar konten bertipe 'hollywood' di CMS
+func (s *Server) HandleAdminHollywood(w http.ResponseWriter, r *http.Request) {
+	user := s.GetLoggedInUser(r)
+	queryStr := strings.TrimSpace(r.URL.Query().Get("q"))
+	filterStr := strings.TrimSpace(r.URL.Query().Get("filter"))
+	yearStr := strings.TrimSpace(r.URL.Query().Get("year"))
+	pageStr := r.URL.Query().Get("p")
+
+	page := 1
+	if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+		page = p
+	}
+	pageSize := 20
+	offset := (page - 1) * pageSize
+
+	hCond := "type = 'hollywood' OR (type = 'movie' AND (country LIKE '%United States%' OR country LIKE '%USA%' OR country LIKE '%UK%' OR country LIKE '%Amerika%' OR language LIKE '%English%' OR language = 'en'))"
+
+	query := s.db.Model(&model.Movie{}).Preload("Genres").Preload("DownloadLinks").Preload("StreamLinks").
+		Where(hCond)
+
+	if queryStr != "" {
+		query = query.Where("title LIKE ? OR original_title LIKE ? OR slug LIKE ?",
+			"%"+queryStr+"%", "%"+queryStr+"%", "%"+queryStr+"%")
+	}
+
+	currentYear := 0
+	if yearStr != "" {
+		if y, err := strconv.Atoi(yearStr); err == nil && y > 0 {
+			query = query.Where("year = ?", y)
+			currentYear = y
+		}
+	}
+
+	// Status Filters
+	switch filterStr {
+	case "no_download":
+		query = query.Where("NOT EXISTS (SELECT 1 FROM download_links WHERE download_links.movie_id = movies.id AND download_links.deleted_at IS NULL)")
+	case "has_download":
+		query = query.Where("EXISTS (SELECT 1 FROM download_links WHERE download_links.movie_id = movies.id AND download_links.deleted_at IS NULL)")
+	case "no_synopsis":
+		query = query.Where("synopsis IS NULL OR synopsis = '' OR TRIM(synopsis) = ''")
+	case "has_synopsis":
+		query = query.Where("synopsis IS NOT NULL AND synopsis <> ''")
+	case "no_stream":
+		query = query.Where("NOT EXISTS (SELECT 1 FROM stream_links WHERE stream_links.movie_id = movies.id AND stream_links.deleted_at IS NULL)")
+	case "manual_edit":
+		query = query.Where("is_manual_edit = ?", true)
+	}
+
+	var totalCount int64
+	query.Count(&totalCount)
+
+	var movies []model.Movie
+	query.Order("id desc").Offset(offset).Limit(pageSize).Find(&movies)
+
+	totalPages := int((totalCount + int64(pageSize) - 1) / int64(pageSize))
+	if totalPages == 0 {
+		totalPages = 1
+	}
+
+	// Filter Stats
+	filterStats := make(map[string]int64)
+	var countAll, countNoDL, countNoSyn, countNoStream, countManual int64
+	s.db.Model(&model.Movie{}).Where(hCond).Count(&countAll)
+	s.db.Model(&model.Movie{}).Where("("+hCond+") AND NOT EXISTS (SELECT 1 FROM download_links WHERE download_links.movie_id = movies.id AND download_links.deleted_at IS NULL)").Count(&countNoDL)
+	s.db.Model(&model.Movie{}).Where("("+hCond+") AND (synopsis IS NULL OR synopsis = '' OR TRIM(synopsis) = '')").Count(&countNoSyn)
+	s.db.Model(&model.Movie{}).Where("("+hCond+") AND NOT EXISTS (SELECT 1 FROM stream_links WHERE stream_links.movie_id = movies.id AND stream_links.deleted_at IS NULL)").Count(&countNoStream)
+	s.db.Model(&model.Movie{}).Where("("+hCond+") AND is_manual_edit = ?", true).Count(&countManual)
+	filterStats["all"] = countAll
+	filterStats["no_download"] = countNoDL
+	filterStats["no_synopsis"] = countNoSyn
+	filterStats["no_stream"] = countNoStream
+	filterStats["manual_edit"] = countManual
+
+	var years []int
+	s.db.Model(&model.Movie{}).Where(hCond).Distinct().Order("year desc").Pluck("year", &years)
+
+	data := AdminPageData{
+		Title:         "Kelola Hollywood & Box Office - CMS CINEMBROT",
+		ActiveMenu:    "hollywood",
+		User:          user,
+		Movies:        movies,
+		SearchQuery:   queryStr,
+		CurrentFilter: filterStr,
+		CurrentYear:   currentYear,
+		FilterStats:   filterStats,
+		Years:         years,
+		CurrentPage:   page,
+		TotalPages:    totalPages,
+		TotalCount:    totalCount,
+		SuccessMsg:    r.URL.Query().Get("success"),
+		TypeContext:   "hollywood",
+	}
+
+	s.RenderHTML(w, "admin_movies.html", "admin_layout.html", data)
+}
+
 // HandleAdminAnime menampilkan daftar konten bertipe 'anime' di CMS
 func (s *Server) HandleAdminAnime(w http.ResponseWriter, r *http.Request) {
 	user := s.GetLoggedInUser(r)
@@ -1157,6 +1254,32 @@ func (s *Server) HandleAdminTriggerScrapeDrama(w http.ResponseWriter, r *http.Re
 	}()
 
 	http.Redirect(w, r, "/admin/tools?success=Scraping+Drama+Asia+resmi+(TMDb+TV)+berhasil+dimulai+di+latar+belakang!", http.StatusSeeOther)
+}
+
+// HandleAdminTriggerScrapeHollywood triggers Hollywood / Box Office scraping via TMDb Movie API
+func (s *Server) HandleAdminTriggerScrapeHollywood(w http.ResponseWriter, r *http.Request) {
+	_ = r.ParseForm()
+	category := strings.TrimSpace(r.FormValue("category"))
+	if category == "" {
+		category = "boxoffice"
+	}
+	pageStr := r.FormValue("page")
+	page, _ := strconv.Atoi(pageStr)
+	if page <= 0 {
+		page = 1
+	}
+	yearStr := r.FormValue("year")
+	year, _ := strconv.Atoi(yearStr)
+
+	repo := scraper.NewRepository(s.db)
+	pipe := pipeline.NewPipeline(s.cfg, repo)
+
+	go func() {
+		log.Printf("[CMS TOOL] 🎬 Menjalankan scraping Hollywood TMDb (Kategori: %s, Hal: %d, Tahun: %d)...\n", category, page, year)
+		_, _ = pipe.IngestHollywoodMovies(category, page, year)
+	}()
+
+	http.Redirect(w, r, "/admin/tools?success=Scraping+Film+Hollywood+resmi+(TMDb)+berhasil+dimulai+di+latar+belakang!", http.StatusSeeOther)
 }
 
 // HandleAdminSources renders the website sources list from MariaDB

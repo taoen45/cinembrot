@@ -508,6 +508,47 @@ func (p *Pipeline) IngestAsianDramas(lang string, page int, year ...int) (int, e
 	return savedCount, nil
 }
 
+// IngestHollywoodMovies fetches top blockbuster Hollywood / Box Office movies from TMDb and saves to DB
+func (p *Pipeline) IngestHollywoodMovies(category string, pages int, year ...int) (int, error) {
+	startTime := time.Now()
+	if pages <= 0 {
+		pages = 1
+	}
+
+	savedCount := 0
+	for pg := 1; pg <= pages; pg++ {
+		movies, err := p.tmdbCli.DiscoverHollywoodMovies(category, pg, year...)
+		if err != nil {
+			_ = p.repo.LogScrape("TMDb-Hollywood", fmt.Sprintf("category=%s&page=%d", category, pg), "FAILED", savedCount, err.Error(), time.Since(startTime))
+			return savedCount, err
+		}
+
+		for i := range movies {
+			movie := &movies[i]
+			p.enrichMetadata(movie)
+
+			// Download & Convert Images to WebP (Original & Thumbnail)
+			imageprocessor.ProcessMovieImages(movie, p.cfg.ScraperUserAgent)
+
+			// Generate multi-server streaming embed links if empty
+			if len(movie.StreamLinks) == 0 {
+				movie.StreamLinks = embed.GenerateMultiServerStreams(movie, 0, 1, 1)
+			}
+
+			if err := p.repo.UpsertMovie(movie); err != nil {
+				log.Printf("[ERROR] Failed to upsert Hollywood movie '%s': %v\n", movie.Title, err)
+				continue
+			}
+			log.Printf("[SUCCESS] Saved Hollywood Movie: '%s' (%d) [WebP Ready, Links: %d, Rating: %.1f]\n",
+				movie.Title, movie.Year, len(movie.DownloadLinks), movie.Rating)
+			savedCount++
+		}
+	}
+
+	_ = p.repo.LogScrape("TMDb-Hollywood", fmt.Sprintf("category=%s&pages=%d", category, pages), "SUCCESS", savedCount, "", time.Since(startTime))
+	return savedCount, nil
+}
+
 // PopulateMissingStreamLinks updates existing movies/anime/drama in database that lack streaming links
 func (p *Pipeline) PopulateMissingStreamLinks(db *gorm.DB) (int, error) {
 	var movies []model.Movie

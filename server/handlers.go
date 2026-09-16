@@ -320,6 +320,101 @@ func (s *Server) HandleFilter(w http.ResponseWriter, r *http.Request) {
 	s.RenderHTML(w, "list.html", "layout.html", data)
 }
 
+// HandleHollywood displays the dedicated Hollywood & Box Office movies catalog with multi-parameter filtering
+func (s *Server) HandleHollywood(w http.ResponseWriter, r *http.Request) {
+	yearStr := strings.TrimSpace(r.URL.Query().Get("year"))
+	genreStr := strings.TrimSpace(r.URL.Query().Get("genre"))
+	countryStr := strings.TrimSpace(r.URL.Query().Get("country"))
+	sortStr := strings.TrimSpace(r.URL.Query().Get("sort"))
+
+	query := s.db.Model(&model.Movie{}).
+		Where("type = ? OR (type = 'movie' AND (country LIKE '%United States%' OR country LIKE '%USA%' OR country LIKE '%UK%' OR country LIKE '%Amerika%' OR language LIKE '%English%' OR language = 'en'))", "hollywood").
+		Preload("Genres")
+
+	if yearStr != "" {
+		if y, err := strconv.Atoi(yearStr); err == nil && y > 0 {
+			query = query.Where("year = ?", y)
+		}
+	}
+
+	if genreStr != "" {
+		var genre model.Genre
+		if err := s.db.Where("slug = ? OR name = ?", genreStr, genreStr).First(&genre).Error; err == nil {
+			query = query.Joins("JOIN movie_genres ON movie_genres.movie_id = movies.id").
+				Where("movie_genres.genre_id = ?", genre.ID)
+		}
+	}
+
+	if countryStr != "" {
+		query = query.Where("country LIKE ?", "%"+countryStr+"%")
+	}
+
+	// Sorting
+	switch sortStr {
+	case "rating_desc":
+		query = query.Order("rating desc, id desc")
+	case "rating_asc":
+		query = query.Order("rating asc, id desc")
+	case "year_asc":
+		query = query.Order("year asc, id desc")
+	case "title_asc":
+		query = query.Order("title asc")
+	case "views_desc":
+		query = query.Order("views desc, id desc")
+	default:
+		query = query.Order("id desc") // Default: Terbaru ditambahkan
+	}
+
+	var totalCount int64
+	query.Count(&totalCount)
+
+	var movies []model.Movie
+	query.Limit(60).Find(&movies)
+
+	var genres []model.Genre
+	s.db.Order("name asc").Find(&genres)
+
+	var years []int
+	s.db.Model(&model.Movie{}).Distinct().
+		Where("(type = ? OR (type = 'movie' AND (country LIKE '%United States%' OR country LIKE '%USA%' OR country LIKE '%UK%' OR country LIKE '%Amerika%' OR language LIKE '%English%' OR language = 'en'))) AND year > 0", "hollywood").
+		Order("year desc").Pluck("year", &years)
+	if len(years) == 0 {
+		years = []int{2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2015, 2010}
+	}
+
+	var countries []string
+	s.db.Model(&model.Movie{}).Distinct().
+		Where("(type = ? OR (type = 'movie' AND (country LIKE '%United States%' OR country LIKE '%USA%' OR country LIKE '%UK%' OR country LIKE '%Amerika%' OR language LIKE '%English%' OR language = 'en'))) AND country <> ''", "hollywood").
+		Order("country asc").Pluck("country", &countries)
+	if len(countries) == 0 {
+		countries = []string{"United States", "United Kingdom", "Canada", "Australia"}
+	}
+
+	data := PageData{
+		Lang:            i18n.GetLang(r),
+		Title:           "Nonton Film Hollywood & Box Office Subtitle Indonesia HD",
+		SiteName:        "CINEMBROT",
+		ActiveMenu:      "hollywood",
+		Movies:          movies,
+		Genres:          genres,
+		Years:           years,
+		Countries:       countries,
+		CurrentGenre:    genreStr,
+		CurrentCountry:  countryStr,
+		CurrentSort:     sortStr,
+		TotalCount:      totalCount,
+		EnableAds:       s.cfg.EnableAds,
+		MetaDescription: "Koleksi film bioskop Hollywood terlaris, box office blockbuster, dan film barat terbaru subtitle Indonesia gratis kualitas HD di CINEMBROT.",
+		MetaKeywords:    "nonton film hollywood, box office sub indo, film barat terbaru, streaming film bioskop barat, download film hollywood, cinembrot box office",
+	}
+	if y, err := strconv.Atoi(yearStr); err == nil {
+		data.CurrentYear = y
+	}
+
+	s.PopulateSEO(r, &data)
+	s.RenderHTML(w, "hollywood.html", "layout.html", data)
+}
+
 // HandleAnime displays the dedicated Anime catalog with multi-parameter filtering
 func (s *Server) HandleAnime(w http.ResponseWriter, r *http.Request) {
 	yearStr := strings.TrimSpace(r.URL.Query().Get("year"))

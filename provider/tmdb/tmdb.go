@@ -908,6 +908,73 @@ func (c *Client) DiscoverAnime(limit int, page int, year int, sortBy ...string) 
 	return animes, nil
 }
 
+// DiscoverHollywoodMovies retrieves top blockbuster Hollywood / Box Office movies from TMDb
+func (c *Client) DiscoverHollywoodMovies(category string, page int, year ...int) ([]model.Movie, error) {
+	apiKey := c.GetAPIKey()
+
+	if page <= 0 {
+		page = 1
+	}
+
+	sortParam := "revenue.desc"
+	minVotes := 100
+	switch category {
+	case "popular":
+		sortParam = "popularity.desc"
+		minVotes = 50
+	case "top_rated":
+		sortParam = "vote_average.desc"
+		minVotes = 300
+	case "now_playing":
+		sortParam = "popularity.desc"
+		minVotes = 20
+	default:
+		// "boxoffice"
+		sortParam = "revenue.desc"
+		minVotes = 100
+	}
+
+	yearFilter := ""
+	if len(year) > 0 && year[0] > 0 {
+		yearFilter = fmt.Sprintf("&primary_release_year=%d", year[0])
+	}
+
+	discoverURL := fmt.Sprintf("%s/discover/movie?api_key=%s&with_original_language=en&sort_by=%s&vote_count.gte=%d&page=%d&language=%s%s",
+		BaseURL, apiKey, sortParam, minVotes, page, c.cfg.TMDBLanguage, yearFilter)
+
+	req, err := http.NewRequest("GET", discoverURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("TMDb Discover Movie API returned status %d", resp.StatusCode)
+	}
+
+	var searchRes SearchMovieResponse
+	if err := json.NewDecoder(resp.Body).Decode(&searchRes); err != nil {
+		return nil, err
+	}
+
+	var movies []model.Movie
+	for _, item := range searchRes.Results {
+		movie, err := c.GetMovieDetails(item.ID)
+		if err != nil {
+			continue
+		}
+		movie.Type = "hollywood"
+		movies = append(movies, *movie)
+	}
+
+	return movies, nil
+}
+
 var (
 	synopsisCache   = make(map[string]string)
 	synopsisCacheMu sync.RWMutex

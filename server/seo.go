@@ -284,6 +284,12 @@ func (s *Server) HandleSitemapXML(w http.ResponseWriter, r *http.Request) {
 			Priority:   "0.9",
 		},
 		{
+			Loc:        siteURL + "/hollywood",
+			LastMod:    nowStr,
+			ChangeFreq: "daily",
+			Priority:   "0.9",
+		},
+		{
 			Loc:        siteURL + "/filter",
 			LastMod:    nowStr,
 			ChangeFreq: "daily",
