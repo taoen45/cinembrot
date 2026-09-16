@@ -102,13 +102,17 @@ Aplikasi menyediakan berbagai opsi CLI terminal (setara *Artisan* pada Laravel) 
 
 ### 1. Operasional Web Server & Scheduler
 ```powershell
-# Jalankan web server di port :8080 beserta auto-scraper background
+# [UTAMA & WAJIB] Jalankan web server di port :8080 beserta auto-scraper background
+# Menghandle seluruh routing web, CMS admin, API, dan cron otomatis di background.
 .\cinembrot.exe -serve
 
-# Jalankan daemon scheduler otomatis mandiri (tanpa web server)
+# [OPSIONAL / WORKER MANDIRI] Jalankan daemon scheduler otomatis tanpa web server
+# Berguna jika ingin memisahkan proses cron/worker di background container atau systemd terpisah.
 .\cinembrot.exe -daemon
 
-# Jalankan 1 siklus scraping ramah server (polite mode) untuk seluruh rentang tahun
+# [LEGACY SCRAPER] Jalankan 1 siklus scraping ramah server (polite mode) untuk seluruh rentang tahun
+# Catatan: Untuk scraping yang jauh lebih cepat, terarah, dan otomatis cek seluruh page,
+# disarankan memakai command spesifik di bagian 2 & 3 (-scrape-hollywood, -scrape-anime, -scrape-drama).
 .\cinembrot.exe -auto-scrape
 ```
 

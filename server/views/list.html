@@ -10,60 +10,103 @@
     </div>
   </div>
 
-  <form action="/filter" method="GET" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-    
-    <!-- DROPDOWN 1: TAHUN -->
-    <div>
-      <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">📅 {{t $.Lang "filter.year"}}</label>
-      <select name="year" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition">
-        <option value="">{{t $.Lang "filter.all_years"}}</option>
-        {{range .Years}}
-        <option value="{{.}}" {{if eq $.CurrentYear .}}selected{{end}}>{{.}}</option>
-        {{end}}
-      </select>
+  <form action="/filter" method="GET" class="space-y-3">
+    <!-- BARIS 1: PENCARIAN KATA KUNCI (JUDUL / ALIAS / NAMA ASLI) & JENIS FILM -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <!-- INPUT PENCARIAN KATA KUNCI & ALIAS -->
+      <div class="md:col-span-2">
+        <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+          <i class="fa-solid fa-magnifying-glass text-brand-500 mr-1"></i> Kata Kunci / Judul / Name Alias
+        </label>
+        <div class="relative">
+          <input type="text" name="q" value="{{.SearchQuery}}" placeholder="Cari nama inggris, alias, judul kanji/romaji, atau sinopsis..." class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl pl-9 pr-3 py-2.5 focus:outline-none focus:border-brand-500 transition">
+          <i class="fa-solid fa-font text-slate-400 absolute left-3 top-3 text-xs"></i>
+        </div>
+      </div>
+
+      <!-- DROPDOWN JENIS FILM / TIPE KONTEN -->
+      <div>
+        <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+          <i class="fa-solid fa-clapperboard text-brand-500 mr-1"></i> Jenis / Kategori Film
+        </label>
+        <select name="type" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition font-medium">
+          <option value="">Semua Jenis Film</option>
+          <option value="hollywood" {{if eq $.CurrentType "hollywood"}}selected{{end}}>🎬 Hollywood / Box Office</option>
+          <option value="anime" {{if eq $.CurrentType "anime"}}selected{{end}}>🎌 Anime & Animasi</option>
+          <option value="drama_pendek" {{if eq $.CurrentType "drama_pendek"}}selected{{end}}>🎭 Drama Pendek Asia</option>
+          <option value="movie" {{if eq $.CurrentType "movie"}}selected{{end}}>🎥 Film Bioskop (Movie)</option>
+          <option value="series" {{if eq $.CurrentType "series"}}selected{{end}}>📺 Serial TV / Series</option>
+        </select>
+      </div>
     </div>
 
-    <!-- DROPDOWN 2: GENRE -->
-    <div>
-      <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">🎭 {{t $.Lang "filter.genre"}}</label>
-      <select name="genre" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition">
-        <option value="">{{t $.Lang "filter.all_genres"}}</option>
-        {{range .Genres}}
-        <option value="{{.Slug}}" {{if eq $.CurrentGenre .Slug}}selected{{end}}>{{.Name}}</option>
-        {{end}}
-      </select>
-    </div>
+    <!-- BARIS 2: FILTER MULTI-KRITERIA (TAHUN, GENRE, NEGARA, RATING, URUTAN & TOMBOL) -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+      <!-- DROPDOWN TAHUN -->
+      <div>
+        <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">📅 {{t $.Lang "filter.year"}}</label>
+        <select name="year" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition">
+          <option value="">{{t $.Lang "filter.all_years"}}</option>
+          {{range .Years}}
+          <option value="{{.}}" {{if eq $.CurrentYear .}}selected{{end}}>{{.}}</option>
+          {{end}}
+        </select>
+      </div>
 
-    <!-- DROPDOWN 3: NEGARA -->
-    <div>
-      <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">🌍 {{t $.Lang "filter.country"}}</label>
-      <select name="country" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition">
-        <option value="">{{t $.Lang "filter.all_country"}}</option>
-        {{range .Countries}}
-        <option value="{{.}}" {{if eq $.CurrentCountry .}}selected{{end}}>{{.}}</option>
-        {{end}}
-      </select>
-    </div>
+      <!-- DROPDOWN GENRE -->
+      <div>
+        <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">🎭 {{t $.Lang "filter.genre"}}</label>
+        <select name="genre" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition">
+          <option value="">{{t $.Lang "filter.all_genres"}}</option>
+          {{range .Genres}}
+          <option value="{{.Slug}}" {{if eq $.CurrentGenre .Slug}}selected{{end}}>{{.Name}}</option>
+          {{end}}
+        </select>
+      </div>
 
-    <!-- DROPDOWN 4: URUTKAN -->
-    <div>
-      <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">⚡ {{t $.Lang "filter.sort"}}</label>
-      <select name="sort" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition">
-        <option value="year_desc" {{if eq $.CurrentSort "year_desc"}}selected{{end}}>{{t $.Lang "filter.sort_newest"}}</option>
-        <option value="rating_desc" {{if eq $.CurrentSort "rating_desc"}}selected{{end}}>{{t $.Lang "filter.sort_rating"}} ★</option>
-        <option value="views_desc" {{if eq $.CurrentSort "views_desc"}}selected{{end}}>{{t $.Lang "filter.sort_popular"}}</option>
-        <option value="title_asc" {{if eq $.CurrentSort "title_asc"}}selected{{end}}>{{t $.Lang "filter.sort_title"}}</option>
-      </select>
-    </div>
+      <!-- DROPDOWN NEGARA -->
+      <div>
+        <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">🌍 {{t $.Lang "filter.country"}}</label>
+        <select name="country" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition">
+          <option value="">{{t $.Lang "filter.all_country"}}</option>
+          {{range .Countries}}
+          <option value="{{.}}" {{if eq $.CurrentCountry .}}selected{{end}}>{{.}}</option>
+          {{end}}
+        </select>
+      </div>
 
-    <!-- TOMBOL SUBMIT & RESET -->
-    <div class="col-span-2 sm:col-span-2 md:col-span-4 lg:col-span-1 flex items-end gap-2">
-      <button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-md">
-        <i class="fa-solid fa-filter"></i> {{t $.Lang "filter.btn_apply"}}
-      </button>
-      <a href="/" class="bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-600 dark:text-slate-300 p-2.5 rounded-xl text-xs transition flex items-center justify-center border border-slate-200 dark:border-dark-700" title="Reset Filter">
-        <i class="fa-solid fa-rotate-left"></i>
-      </a>
+      <!-- DROPDOWN RATING MINIMAL -->
+      <div>
+        <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">⭐ Rating Minimal</label>
+        <select name="rating" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition">
+          <option value="">Semua Rating</option>
+          <option value="8" {{if eq $.CurrentMinRating "8"}}selected{{end}}>⭐ 8.0+ Ke Atas</option>
+          <option value="7" {{if eq $.CurrentMinRating "7"}}selected{{end}}>⭐ 7.0+ Ke Atas</option>
+          <option value="6" {{if eq $.CurrentMinRating "6"}}selected{{end}}>⭐ 6.0+ Ke Atas</option>
+          <option value="5" {{if eq $.CurrentMinRating "5"}}selected{{end}}>⭐ 5.0+ Ke Atas</option>
+        </select>
+      </div>
+
+      <!-- DROPDOWN URUTKAN -->
+      <div>
+        <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">⚡ {{t $.Lang "filter.sort"}}</label>
+        <select name="sort" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition">
+          <option value="year_desc" {{if or (eq $.CurrentSort "year_desc") (eq $.CurrentSort "")}}selected{{end}}>{{t $.Lang "filter.sort_newest"}}</option>
+          <option value="rating_desc" {{if eq $.CurrentSort "rating_desc"}}selected{{end}}>{{t $.Lang "filter.sort_rating"}} ★</option>
+          <option value="views_desc" {{if eq $.CurrentSort "views_desc"}}selected{{end}}>{{t $.Lang "filter.sort_popular"}}</option>
+          <option value="title_asc" {{if eq $.CurrentSort "title_asc"}}selected{{end}}>{{t $.Lang "filter.sort_title"}} (A-Z)</option>
+        </select>
+      </div>
+
+      <!-- TOMBOL SUBMIT & RESET -->
+      <div class="flex items-end gap-2">
+        <button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-md">
+          <i class="fa-solid fa-filter"></i> {{t $.Lang "filter.btn_apply"}}
+        </button>
+        <a href="/filter" class="bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-600 dark:text-slate-300 p-2.5 rounded-xl text-xs transition flex items-center justify-center border border-slate-200 dark:border-dark-700" title="Reset Semua Filter">
+          <i class="fa-solid fa-rotate-left"></i>
+        </a>
+      </div>
     </div>
   </form>
 </div>
@@ -121,10 +164,10 @@
   </span>
   <div class="flex items-center gap-1.5 flex-wrap justify-center">
     {{if gt .CurrentPage 1}}
-    <a href="/?p=1&q={{$.SearchQuery}}&genre={{$.CurrentGenre}}&year={{$.CurrentYear}}&country={{$.CurrentCountry}}&license={{$.CurrentLicense}}&sort={{$.CurrentSort}}" class="w-8 h-8 flex items-center justify-center bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition" title="Halaman Pertama">
+    <a href="/filter?p=1&q={{$.SearchQuery}}&type={{$.CurrentType}}&genre={{$.CurrentGenre}}&year={{$.CurrentYear}}&country={{$.CurrentCountry}}&category={{$.CurrentCategory}}&rating={{$.CurrentMinRating}}&sort={{$.CurrentSort}}" class="w-8 h-8 flex items-center justify-center bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition" title="Halaman Pertama">
       <i class="fa-solid fa-angles-left"></i>
     </a>
-    <a href="/?p={{sub .CurrentPage 1}}&q={{$.SearchQuery}}&genre={{$.CurrentGenre}}&year={{$.CurrentYear}}&country={{$.CurrentCountry}}&license={{$.CurrentLicense}}&sort={{$.CurrentSort}}" class="px-3 h-8 flex items-center gap-1 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition">
+    <a href="/filter?p={{sub .CurrentPage 1}}&q={{$.SearchQuery}}&type={{$.CurrentType}}&genre={{$.CurrentGenre}}&year={{$.CurrentYear}}&country={{$.CurrentCountry}}&category={{$.CurrentCategory}}&rating={{$.CurrentMinRating}}&sort={{$.CurrentSort}}" class="px-3 h-8 flex items-center gap-1 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition">
       <i class="fa-solid fa-chevron-left text-[10px]"></i> Prev
     </a>
     {{end}}
@@ -137,17 +180,17 @@
         {{.Number}}
       </span>
       {{else}}
-      <a href="/?p={{.Number}}&q={{$.SearchQuery}}&genre={{$.CurrentGenre}}&year={{$.CurrentYear}}&country={{$.CurrentCountry}}&license={{$.CurrentLicense}}&sort={{$.CurrentSort}}" class="w-8 h-8 flex items-center justify-center bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition">
+      <a href="/filter?p={{.Number}}&q={{$.SearchQuery}}&type={{$.CurrentType}}&genre={{$.CurrentGenre}}&year={{$.CurrentYear}}&country={{$.CurrentCountry}}&category={{$.CurrentCategory}}&rating={{$.CurrentMinRating}}&sort={{$.CurrentSort}}" class="w-8 h-8 flex items-center justify-center bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition">
         {{.Number}}
       </a>
       {{end}}
     {{end}}
 
     {{if lt .CurrentPage .TotalPages}}
-    <a href="/?p={{add .CurrentPage 1}}&q={{$.SearchQuery}}&genre={{$.CurrentGenre}}&year={{$.CurrentYear}}&country={{$.CurrentCountry}}&license={{$.CurrentLicense}}&sort={{$.CurrentSort}}" class="px-3 h-8 flex items-center gap-1 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition">
+    <a href="/filter?p={{add .CurrentPage 1}}&q={{$.SearchQuery}}&type={{$.CurrentType}}&genre={{$.CurrentGenre}}&year={{$.CurrentYear}}&country={{$.CurrentCountry}}&category={{$.CurrentCategory}}&rating={{$.CurrentMinRating}}&sort={{$.CurrentSort}}" class="px-3 h-8 flex items-center gap-1 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition">
       Next <i class="fa-solid fa-chevron-right text-[10px]"></i>
     </a>
-    <a href="/?p={{.TotalPages}}&q={{$.SearchQuery}}&genre={{$.CurrentGenre}}&year={{$.CurrentYear}}&country={{$.CurrentCountry}}&license={{$.CurrentLicense}}&sort={{$.CurrentSort}}" class="w-8 h-8 flex items-center justify-center bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition" title="Halaman Terakhir ({{.TotalPages}})">
+    <a href="/filter?p={{.TotalPages}}&q={{$.SearchQuery}}&type={{$.CurrentType}}&genre={{$.CurrentGenre}}&year={{$.CurrentYear}}&country={{$.CurrentCountry}}&category={{$.CurrentCategory}}&rating={{$.CurrentMinRating}}&sort={{$.CurrentSort}}" class="w-8 h-8 flex items-center justify-center bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition" title="Halaman Terakhir ({{.TotalPages}})">
       <i class="fa-solid fa-angles-right"></i>
     </a>
     {{end}}

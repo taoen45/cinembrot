@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -38,7 +39,11 @@ type PageData struct {
 	CurrentGenre           string
 	CurrentCountry         string
 	CurrentCategory        string
+	CurrentType            string
+	CurrentMinRating       string
 	CurrentSort            string
+	CurrentPage            int
+	TotalPages             int
 	SearchQuery            string
 	TotalCount             int64
 	EnableAds              bool
@@ -215,22 +220,53 @@ func (s *Server) HandleHome(w http.ResponseWriter, r *http.Request) {
 	s.RenderHTML(w, "home.html", "layout.html", data)
 }
 
-// HandleFilter handles dynamic multi-parameter filtering (Year, Genre, Country, Category, Sort)
+// HandleFilter handles dynamic multi-parameter filtering (Keyword/Alias, Type, Year, Genre, Country, Category, Rating, Sort, Page)
 func (s *Server) HandleFilter(w http.ResponseWriter, r *http.Request) {
+	keyword := strings.TrimSpace(r.URL.Query().Get("q"))
+	if keyword == "" {
+		keyword = strings.TrimSpace(r.URL.Query().Get("keyword"))
+	}
+	typeStr := strings.TrimSpace(r.URL.Query().Get("type"))
 	yearStr := strings.TrimSpace(r.URL.Query().Get("year"))
 	genreStr := strings.TrimSpace(r.URL.Query().Get("genre"))
 	countryStr := strings.TrimSpace(r.URL.Query().Get("country"))
 	catStr := strings.TrimSpace(r.URL.Query().Get("category"))
+	ratingStr := strings.TrimSpace(r.URL.Query().Get("rating"))
 	sortStr := strings.TrimSpace(r.URL.Query().Get("sort"))
+	pageStr := strings.TrimSpace(r.URL.Query().Get("p"))
+
+	page := 1
+	if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+		page = p
+	}
+	pageSize := 24
 
 	query := s.db.Model(&model.Movie{}).Preload("Genres")
 
+	// 1. Filter Kata Kunci (Judul, Original Title, Name Alias, Sinopsis)
+	if keyword != "" {
+		kwPattern := "%" + keyword + "%"
+		query = query.Where("title LIKE ? OR original_title LIKE ? OR alternative_titles LIKE ? OR synopsis LIKE ?",
+			kwPattern, kwPattern, kwPattern, kwPattern)
+	}
+
+	// 2. Filter Jenis Film / Tipe Konten
+	if typeStr != "" && typeStr != "all" {
+		if typeStr == "hollywood" {
+			query = query.Where("type = ? OR (type = 'movie' AND (country LIKE '%United States%' OR country LIKE '%USA%' OR country LIKE '%UK%' OR country LIKE '%Amerika%' OR language LIKE '%English%' OR language = 'en'))", "hollywood")
+		} else {
+			query = query.Where("type = ?", typeStr)
+		}
+	}
+
+	// 3. Filter Tahun Rilis
 	if yearStr != "" {
 		if y, err := strconv.Atoi(yearStr); err == nil && y > 0 {
 			query = query.Where("year = ?", y)
 		}
 	}
 
+	// 4. Filter Genre
 	if genreStr != "" {
 		var genre model.Genre
 		if err := s.db.Where("slug = ? OR name = ?", genreStr, genreStr).First(&genre).Error; err == nil {
@@ -239,10 +275,12 @@ func (s *Server) HandleFilter(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// 5. Filter Negara Asal
 	if countryStr != "" {
 		query = query.Where("country LIKE ?", "%"+countryStr+"%")
 	}
 
+	// 6. Filter Kategori / Lisensi
 	if catStr != "" {
 		switch catStr {
 		case "free", "100% Gratis & Legal":
@@ -256,7 +294,18 @@ func (s *Server) HandleFilter(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Sorting
+	// 7. Filter Rating Minimal
+	if ratingStr != "" {
+		if minR, err := strconv.ParseFloat(ratingStr, 64); err == nil && minR > 0 {
+			query = query.Where("rating >= ?", minR)
+		}
+	}
+
+	// Hitung total data yang cocok untuk statistik dan pagination
+	var totalCount int64
+	query.Count(&totalCount)
+
+	// 8. Sorting
 	switch sortStr {
 	case "rating_desc":
 		query = query.Order("rating desc, id desc")
@@ -269,11 +318,21 @@ func (s *Server) HandleFilter(w http.ResponseWriter, r *http.Request) {
 	case "views_desc":
 		query = query.Order("views desc, id desc")
 	default:
-		query = query.Order("year desc, id desc") // Default: Terbaru
+		query = query.Order("year desc, id desc") // Default: Rilis Terbaru
 	}
 
+	// Paginasi
+	totalPages := int(math.Ceil(float64(totalCount) / float64(pageSize)))
+	if totalPages < 1 {
+		totalPages = 1
+	}
+	if page > totalPages {
+		page = totalPages
+	}
+	offset := (page - 1) * pageSize
+
 	var movies []model.Movie
-	query.Limit(60).Find(&movies)
+	query.Offset(offset).Limit(pageSize).Find(&movies)
 
 	var genres []model.Genre
 	s.db.Order("name asc").Find(&genres)
@@ -287,7 +346,9 @@ func (s *Server) HandleFilter(w http.ResponseWriter, r *http.Request) {
 	categories := []string{"100% Gratis & Legal", "Public Domain", "Creative Commons", "Berlisensi Komersil"}
 
 	title := "Katalog & Filter Film"
-	if genreStr != "" {
+	if keyword != "" {
+		title = fmt.Sprintf("Pencarian: \"%s\"", keyword)
+	} else if genreStr != "" {
 		title += " - Genre: " + genreStr
 	}
 	if yearStr != "" {
@@ -295,22 +356,27 @@ func (s *Server) HandleFilter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := PageData{
-		Lang:            i18n.GetLang(r),
-		Title:           title,
-		SiteName:        "CINEMBROT",
-		ActiveMenu:      "filter",
-		Movies:          movies,
-		Genres:          genres,
-		Years:           years,
-		Countries:       countries,
-		Categories:      categories,
-		CurrentYear:     0,
-		CurrentGenre:    genreStr,
-		CurrentCountry:  countryStr,
-		CurrentCategory: catStr,
-		CurrentSort:     sortStr,
-		TotalCount:      int64(len(movies)),
-		EnableAds:       s.cfg.EnableAds,
+		Lang:             i18n.GetLang(r),
+		Title:            title,
+		SiteName:         "CINEMBROT",
+		ActiveMenu:       "filter",
+		Movies:           movies,
+		Genres:           genres,
+		Years:            years,
+		Countries:        countries,
+		Categories:       categories,
+		CurrentYear:      0,
+		CurrentGenre:     genreStr,
+		CurrentCountry:   countryStr,
+		CurrentCategory:  catStr,
+		CurrentType:      typeStr,
+		CurrentMinRating: ratingStr,
+		CurrentSort:      sortStr,
+		SearchQuery:      keyword,
+		CurrentPage:      page,
+		TotalPages:       totalPages,
+		TotalCount:       totalCount,
+		EnableAds:        s.cfg.EnableAds,
 	}
 	if y, err := strconv.Atoi(yearStr); err == nil {
 		data.CurrentYear = y
