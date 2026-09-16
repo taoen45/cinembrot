@@ -17,12 +17,15 @@
 - 🔤 **Resolusi Judul English Standar QWERTY & Alias Name**: Judul berbahasa non-Latin (Kanji Jepang, Hanzi Mandarin, Hangeul Korea) secara otomatis dikonversi ke versi **English resmi standar keyboard QWERTY** via TMDb Translations API (`iso_639_1 == "en"`) dan Jikan. Judul asli tetap dipertahankan pada kolom `original_title` dan `alternative_titles` (*alias name*), serta URL slug selalu bersih (contoh: `異世界かるてっと` $\rightarrow$ **`Isekai Quartet`** / `/movie/isekai-quartet-2019`).
 - 📝 **Auto-Fill Sinopsis Kosong**: Pengecekan otomatis saat proses generate/scraping; jika sinopsis berbahasa Indonesia kosong, sistem otomatis melengkapinya dari sinopsis resmi bahasa Inggris sehingga tidak ada lagi film/anime bersinopsis kosong.
 - 📅 **Scraper Berdasarkan Tahun Rilis**: Kemampuan menyaring dan mengumpulkan seluruh anime atau drama Asia yang rilis pada tahun tertentu (misal: `-year 2026`) secara akurat.
-- 🚀 **Arsitektur SEO Terbaik & Fast-Indexing Mesin Pencari**:
-  - **Dynamic XML Sitemap (`/sitemap.xml`)**: Otomatis menghasilkan sitemap XML standar protokol Sitemaps.org 0.9 dengan ekstensi Google Image (`xmlns:image`) untuk homepage, katalog utama, dan ribuan film dengan tag `<lastmod>`, `<changefreq>`, dan `<image:image>`.
+- 🚀 **Arsitektur SEO Tingkat Tinggi & Fast-Indexing Mesin Pencari**:
+  - **Dynamic XML Sitemap (`/sitemap.xml`)**: Otomatis menghasilkan sitemap XML standar protokol Sitemaps.org 0.9 dengan ekstensi Google Image (`xmlns:image`) untuk homepage, katalog utama, **seluruh 40 kategori genre film** (`/genre/{slug}`), filter tahun rilis, dan ribuan film dengan tag `<lastmod>`, `<changefreq>`, dan `<image:image>`.
+  - **File Verifikasi Publisher Iklan (`/ads.txt`)**: Menyajikan deklarasi resmi otorisasi publisher (Adsterra, Google AdSense, DSP) yang disajikan secara instan dan dapat diedit dinamis langsung dari CMS Admin Settings.
   - **Crawler Directive (`/robots.txt`)**: Standar kontrol akses perayap bot yang bersih, ramah crawler, dan mengarahkan otomatis ke sitemap resmi.
+  - **Schema.org Rich Snippets (JSON-LD)**: Format `Movie` dan `TVSeries` dengan `AggregateRating` agar bintang kuning rating film muncul di hasil pencarian Google SERP, schema `WebSite` dengan `SearchAction` (Sitelinks Searchbox), dan schema `BreadcrumbList` lengkap dengan navigasi visual breadcrumb di halaman detail.
+  - **Optimasi Google Core Web Vitals (LCP)**: Pemasangan tag DNS Preconnect dan DNS Prefetch ke `https://image.tmdb.org` serta CDN library untuk mempercepat rendering gambar poster.
+  - **Internasionalisasi & Hreflang Multi-Bahasa**: Tag `<link rel="alternate" hreflang="id">`, `hreflang="en"`, dan `hreflang="x-default"` untuk sinyal pengindeksan mesin pencari global.
   - **Meta Tags Lengkap**: Dynamic meta description, dynamic meta keywords kaya kata kunci pencarian, canonical URL otomatis, dan tag robots `index, follow, max-image-preview:large, max-snippet:-1`.
   - **OpenGraph & Twitter Cards**: Tampilan preview visual saat link dibagikan ke WhatsApp, Telegram, Facebook, dan Twitter/X.
-  - **Schema.org Rich Snippets (JSON-LD)**: Format `Movie` dan `TVSeries` dengan `AggregateRating` agar bintang kuning rating film muncul di hasil pencarian Google SERP, serta schema `WebSite` dengan `SearchAction` (Sitelinks Searchbox) di beranda.
   - **CMS Webmaster Verifications**: Kontrol setting di `/admin/settings` untuk memasukkan kode verifikasi Google Search Console, Bing Webmaster, dan Yandex tanpa edit kode HTML.
 - 🌐 **Fitur Terjemahan Dwibahasa (ID / EN) & Auto-Translate Sinopsis**:
   - Bahasa Indonesia sebagai bahasa utama (*default*) dan English sebagai bahasa kedua.
@@ -34,7 +37,11 @@
   - Link download video matang langsung disiapkan dari sumber scraper (Archive MP4, Open Movies, Torrent, dan Subtitle).
   - Tombol **"🔄 Cek / Segarkan Link"** di halaman detail film: jika link download broken, sistem secara mandiri melakukan rescrape ke website sumber untuk mencari URL download baru.
   - Jika URL download dari website sumber sama persis (tidak ada link baru), tombol otomatis **disabled** untuk menjaga efisiensi server.
-- 📢 **Manajemen Iklan Adsterra & CMS Pengaturan Dinamis (`/admin/settings`)**:
+- 📢 **Manajemen Iklan Adsterra & Monetisasi Lanjutan (`/admin/settings`)**:
+  - **ads.txt Editor**: Form editor langsung untuk mendeklarasikan jaringan iklan resmi Adsterra dan DSP partner.
+  - **Injeksi Script Kustom**: Slot bebas injeksi tag script tracking (Google Analytics GA4, Google Tag Manager, Meta Pixel) di `<head>` dan script counter (Histats) sebelum `</body>`.
+  - **Notifikasi Anti-AdBlocker Ramah**: Banner notifikasi sopan yang meminta pengunjung menonaktifkan adblocker atau melakukan whitelist domain demi mendukung kelangsungan server gratis.
+  - **Buffer Sponsor Interstitial (Smartlink 3 Detik)**: Modal jeda hitung mundur 3 detik dengan tombol sponsor Smartlink Adsterra saat penonton mengklik tombol "Download Video MP4" atau "Download Subtitle".
   - Kontrol fleksibel saklar ON/OFF dan input script untuk 10 unit iklan: Popunder, Social Bar, Banner 728x90 Header, Native Banner Rekomendasi, Direct Smartlink, Floating Sticky Skyscraper Samping (160x600 & 160x300), Mobile Sticky Bottom 320x50, Pre-footer 468x60, dan Medium Rectangle 300x250.
   - Pengaturan branding situs (Nama Situs, Tagline, Saklar Bahasa, Saklar Komentar) langsung dari antarmuka web admin tanpa perlu restart server.
 - 📱 **Desain Mobile Smartphone Matang & Ramah Sentuhan**:

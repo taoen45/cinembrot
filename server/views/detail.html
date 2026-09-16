@@ -1,6 +1,49 @@
 {{define "content"}}
 <div class="space-y-6">
 
+  <!-- ==================== BREADCRUMB SCHEMA (JSON-LD) ==================== -->
+  {{if .BreadcrumbJSONLD}}
+  <script type="application/ld+json">
+{{.BreadcrumbJSONLD}}
+  </script>
+  {{end}}
+
+  <!-- ==================== VISUAL BREADCRUMB NAVIGATION ==================== -->
+  <nav aria-label="Breadcrumb" class="flex items-center text-xs font-medium text-slate-500 dark:text-slate-400 py-1 overflow-x-auto whitespace-nowrap">
+    <ol class="inline-flex items-center space-x-1 sm:space-x-2">
+      <li class="inline-flex items-center">
+        <a href="/" class="hover:text-brand-500 inline-flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-house text-[11px]"></i>
+          <span>Beranda</span>
+        </a>
+      </li>
+      <li class="flex items-center">
+        <i class="fa-solid fa-chevron-right text-[9px] text-slate-400 mx-1"></i>
+        <a href="{{.MovieTypeURL}}" class="hover:text-brand-500 transition">
+          {{.MovieTypeLabel}}
+        </a>
+      </li>
+      {{if .Movie.Genres}}
+      {{range $i, $g := .Movie.Genres}}
+      {{if eq $i 0}}
+      <li class="flex items-center">
+        <i class="fa-solid fa-chevron-right text-[9px] text-slate-400 mx-1"></i>
+        <a href="/genre/{{$g.Slug}}" class="hover:text-brand-500 transition">
+          {{$g.Name}}
+        </a>
+      </li>
+      {{end}}
+      {{end}}
+      {{end}}
+      <li class="flex items-center">
+        <i class="fa-solid fa-chevron-right text-[9px] text-slate-400 mx-1"></i>
+        <span class="text-slate-800 dark:text-slate-200 font-semibold truncate max-w-[200px] sm:max-w-md" aria-current="page">
+          {{.Movie.Title}}
+        </span>
+      </li>
+    </ol>
+  </nav>
+
   <!-- BACKDROP & TITLE HEADER -->
   <div class="flex flex-col md:flex-row gap-6 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-6 shadow-sm transition-colors duration-200">
     <div class="w-full md:w-64 flex-shrink-0">
@@ -264,7 +307,7 @@
               </div>
             </div>
 
-            <a href="{{safeURL .URL}}" download target="_blank" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold px-6 py-2.5 rounded-xl transition shadow-md hover:shadow-emerald-600/25 flex items-center justify-center gap-2 shrink-0 group">
+            <a href="{{safeURL .URL}}" download target="_blank" onclick="return handleDownloadClick(event, this.href, '{{if $.AdsterraSmartlink}}{{$.AdsterraSmartlink}}{{end}}', '{{$.Movie.Title}}')" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold px-6 py-2.5 rounded-xl transition shadow-md hover:shadow-emerald-600/25 flex items-center justify-center gap-2 shrink-0 group">
               <i class="fa-solid fa-cloud-arrow-down text-sm group-hover:translate-y-0.5 transition-transform"></i>
               <span>Download Video MP4</span>
             </a>
@@ -319,7 +362,7 @@
               </div>
             </div>
 
-            <a href="{{safeURL .URL}}" target="_blank" class="shrink-0 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-xl transition shadow-sm hover:shadow-indigo-600/25 flex items-center gap-1.5 group">
+            <a href="{{safeURL .URL}}" target="_blank" onclick="return handleDownloadClick(event, this.href, '{{if $.AdsterraSmartlink}}{{$.AdsterraSmartlink}}{{end}}', '{{$.Movie.Title}} - Subtitle')" class="shrink-0 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-xl transition shadow-sm hover:shadow-indigo-600/25 flex items-center gap-1.5 group">
               <i class="fa-solid fa-file-arrow-down text-xs group-hover:translate-y-0.5 transition-transform"></i>
               <span>Download Subtitle</span>
             </a>
@@ -773,6 +816,135 @@
       checkButtonCooldown('stream', movieId, 'btn-refresh-stream', 'icon-refresh-stream', 'text-refresh-stream', 'Cek / Segarkan Server');
       checkButtonCooldown('stream', movieId, 'btn-refresh-stream-empty', 'icon-refresh-stream-empty', 'text-refresh-stream-empty', 'Cari / Hubungkan Server Streaming');
     });
+
+    // ==================== GLOBAL DOWNLOAD BUFFER INTERSTITIAL ====================
+    var pendingDownloadURL = '';
+    var interstitialCountdown = null;
+    var isInterstitialEnabled = {{if and .EnableAds .EnableDownloadInterstitial}}true{{else}}false{{end}};
+
+    function handleDownloadClick(event, targetURL, sponsorURL, itemName) {
+      if (!isInterstitialEnabled || !sponsorURL) {
+        return true;
+      }
+      if (event) event.preventDefault();
+      openDownloadInterstitial(targetURL, sponsorURL, itemName);
+      return false;
+    }
+
+    function openDownloadInterstitial(targetURL, sponsorURL, itemName) {
+      pendingDownloadURL = targetURL;
+      var modal = document.getElementById('download-interstitial-modal');
+      var nameEl = document.getElementById('interstitial-filename');
+      var counterEl = document.getElementById('interstitial-counter');
+      var actionBtn = document.getElementById('interstitial-action-btn');
+      var actionText = document.getElementById('interstitial-action-text');
+
+      if (!modal) {
+        window.open(targetURL, '_blank');
+        return;
+      }
+
+      if (nameEl) nameEl.textContent = itemName || 'Video Media File';
+      if (counterEl) counterEl.textContent = '3';
+
+      if (actionBtn) {
+        actionBtn.disabled = true;
+        actionBtn.className = 'flex-1 bg-slate-200 dark:bg-dark-800 text-slate-400 dark:text-slate-500 text-xs font-bold py-3 px-4 rounded-xl transition cursor-not-allowed flex items-center justify-center gap-2';
+      }
+      if (actionText) actionText.textContent = 'Menyiapkan File (3s)...';
+
+      modal.classList.remove('hidden');
+
+      var timeLeft = 3;
+      if (interstitialCountdown) clearInterval(interstitialCountdown);
+
+      interstitialCountdown = setInterval(function() {
+        timeLeft -= 1;
+        if (counterEl) counterEl.textContent = timeLeft > 0 ? timeLeft : '0';
+        if (actionText && timeLeft > 0) actionText.textContent = 'Menyiapkan File (' + timeLeft + 's)...';
+
+        if (timeLeft <= 0) {
+          clearInterval(interstitialCountdown);
+          interstitialCountdown = null;
+          if (counterEl) counterEl.textContent = 'Siap!';
+          if (actionBtn) {
+            actionBtn.disabled = false;
+            actionBtn.className = 'flex-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold py-3 px-4 rounded-xl shadow-lg hover:shadow-emerald-600/30 transition cursor-pointer flex items-center justify-center gap-2';
+          }
+          if (actionText) actionText.innerHTML = '<i class="fa-solid fa-download"></i> Unduh Sekarang';
+
+          executePendingDownload();
+        }
+      }, 1000);
+    }
+
+    function executePendingDownload() {
+      if (!pendingDownloadURL) return;
+      var url = pendingDownloadURL;
+      var a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      a.setAttribute('download', '');
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function() {
+        closeDownloadInterstitial();
+      }, 1000);
+    }
+
+    function closeDownloadInterstitial() {
+      if (interstitialCountdown) {
+        clearInterval(interstitialCountdown);
+        interstitialCountdown = null;
+      }
+      var modal = document.getElementById('download-interstitial-modal');
+      if (modal) modal.classList.add('hidden');
+    }
   </script>
+
+  <!-- ==================== MODAL BUFFER DOWNLOAD INTERSTITIAL ==================== -->
+  {{if and .EnableAds .EnableDownloadInterstitial}}
+  <div id="download-interstitial-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-opacity duration-200">
+    <div class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 text-center relative">
+      <button type="button" onclick="closeDownloadInterstitial()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition text-lg w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-dark-800" title="Tutup Modal">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="w-16 h-16 mx-auto rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-2xl">
+        <i class="fa-solid fa-cloud-arrow-down animate-bounce"></i>
+      </div>
+
+      <div>
+        <h3 class="text-base font-black text-slate-900 dark:text-white">Menyiapkan Tautan Unduhan...</h3>
+        <p id="interstitial-filename" class="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate px-4 font-medium"></p>
+      </div>
+
+      <div class="p-3.5 bg-slate-50 dark:bg-dark-950 rounded-xl border border-slate-200 dark:border-dark-800 text-xs text-slate-600 dark:text-slate-300 space-y-1">
+        <div>Link unduhan langsung akan siap dalam:</div>
+        <div class="text-2xl font-black text-brand-500" id="interstitial-counter">3</div>
+        <div class="text-[11px] text-slate-400">Terima kasih telah mendukung server streaming CINEMBROT!</div>
+      </div>
+
+      {{if .AdsterraSmartlink}}
+      <div class="pt-1">
+        <a id="interstitial-sponsor-btn" href="{{.AdsterraSmartlink}}" target="_blank" class="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-md hover:shadow-orange-500/25 transition">
+          <i class="fa-solid fa-bolt"></i>
+          <span>Kunjungi Sponsor (Kecepatan Unduh Maksimal)</span>
+          <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+        </a>
+      </div>
+      {{end}}
+
+      <div class="flex items-center gap-3 pt-2">
+        <button type="button" id="interstitial-action-btn" onclick="executePendingDownload()" disabled class="flex-1 bg-slate-200 dark:bg-dark-800 text-slate-400 dark:text-slate-500 text-xs font-bold py-3 px-4 rounded-xl transition cursor-not-allowed flex items-center justify-center gap-2">
+          <i class="fa-solid fa-hourglass-half"></i>
+          <span id="interstitial-action-text">Menyiapkan File (3s)...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  {{end}}
+
 </div>
 {{end}}

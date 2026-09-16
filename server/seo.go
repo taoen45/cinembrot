@@ -258,7 +258,52 @@ func (s *Server) GenerateJSONLDWebSite(siteURL string, siteName string) template
 	return template.HTML(string(b))
 }
 
-// HandleSitemapXML generates an automated XML Sitemap indexing all pages and movies
+// GenerateJSONLDBreadcrumb creates Schema.org JSON-LD BreadcrumbList for rich snippets in Google SERP
+func (s *Server) GenerateJSONLDBreadcrumb(siteURL string, m *model.Movie, typeLabel, typeURL string) template.HTML {
+	if m == nil {
+		return ""
+	}
+
+	if typeLabel == "" {
+		typeLabel = "Katalog"
+		typeURL = "/filter"
+	}
+
+	items := []map[string]interface{}{
+		{
+			"@type":    "ListItem",
+			"position": 1,
+			"name":     "Beranda",
+			"item":     siteURL + "/",
+		},
+		{
+			"@type":    "ListItem",
+			"position": 2,
+			"name":     typeLabel,
+			"item":     siteURL + typeURL,
+		},
+		{
+			"@type":    "ListItem",
+			"position": 3,
+			"name":     m.Title,
+			"item":     fmt.Sprintf("%s/movie/%s", siteURL, m.Slug),
+		},
+	}
+
+	obj := map[string]interface{}{
+		"@context":        "https://schema.org",
+		"@type":           "BreadcrumbList",
+		"itemListElement": items,
+	}
+
+	b, err := json.MarshalIndent(obj, "", "  ")
+	if err != nil {
+		return ""
+	}
+	return template.HTML(string(b))
+}
+
+// HandleSitemapXML generates an automated XML Sitemap indexing all pages, genres, and movies
 func (s *Server) HandleSitemapXML(w http.ResponseWriter, r *http.Request) {
 	siteURL := s.GetSiteURL(r)
 	nowStr := time.Now().Format("2006-01-02T15:04:05Z07:00")
@@ -303,7 +348,31 @@ func (s *Server) HandleSitemapXML(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	// Fetch all movies from MariaDB
+	// 2. Fetch all 40 Active Genres from MariaDB and append to Sitemap (Money Keywords)
+	var genres []model.Genre
+	s.db.Order("name asc").Find(&genres)
+	for _, g := range genres {
+		if g.Slug != "" {
+			urls = append(urls, SitemapURL{
+				Loc:        fmt.Sprintf("%s/genre/%s", siteURL, g.Slug),
+				LastMod:    nowStr,
+				ChangeFreq: "weekly",
+				Priority:   "0.8",
+			})
+		}
+	}
+
+	// 3. Year Catalog Filters
+	for _, y := range []int{2026, 2025, 2024, 2023, 2022} {
+		urls = append(urls, SitemapURL{
+			Loc:        fmt.Sprintf("%s/filter?year=%d", siteURL, y),
+			LastMod:    nowStr,
+			ChangeFreq: "weekly",
+			Priority:   "0.7",
+		})
+	}
+
+	// 4. Fetch all movies from MariaDB
 	type MovieSummary struct {
 		Slug      string
 		Title     string
@@ -380,4 +449,14 @@ Sitemap: %s/sitemap.xml
 `, siteURL, siteURL)
 
 	w.Write([]byte(robotsContent))
+}
+
+// HandleAdsTXT serves the official ads.txt file dynamically from MariaDB settings
+func (s *Server) HandleAdsTXT(w http.ResponseWriter, r *http.Request) {
+	defaultAdsTxt := "# ads.txt resmi untuk CINEMBROT (cinembrot.my.id)\n# Tambahkan baris otorisasi Adsterra / Google AdSense / partner DSP Anda di CMS Admin Settings (/admin/settings)\n"
+	content := database.GetSetting(s.db, "ads_txt_content", defaultAdsTxt)
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Cache-Control", "public, max-age=3600")
+	w.Write([]byte(content))
 }

@@ -81,6 +81,15 @@ type PageData struct {
 	BingVerification   string
 	YandexVerification string
 	JSONLD             template.HTML
+	BreadcrumbJSONLD   template.HTML
+	MovieTypeLabel     string
+	MovieTypeURL       string
+
+	// Custom Script Injection & Revenue Protection
+	CustomHeadCode             template.HTML
+	CustomFooterCode           template.HTML
+	EnableAdblockNotice        bool
+	EnableDownloadInterstitial bool
 }
 
 // PopulatePageData automatically sets dynamic settings from database into PageData
@@ -129,6 +138,15 @@ func (s *Server) PopulatePageData(r *http.Request, data *PageData) {
 
 	torVal := settings["show_torrent_public"]
 	data.ShowTorrentPublic = torVal == "true" || torVal == "1"
+
+	data.CustomHeadCode = template.HTML(settings["custom_head_code"])
+	data.CustomFooterCode = template.HTML(settings["custom_footer_code"])
+
+	adblockVal := settings["adblock_notice_enabled"]
+	data.EnableAdblockNotice = adblockVal == "true" || adblockVal == "1"
+
+	interVal := settings["download_interstitial_enabled"]
+	data.EnableDownloadInterstitial = interVal != "false" && interVal != "0"
 }
 
 // HandleHome displays home page with top 10 movies slider & multi-filter dropdown bar
@@ -791,6 +809,16 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 		metaImg = movie.BackdropURL
 	}
 
+	typeLabel := "Film"
+	typeURL := "/hollywood"
+	if movie.Type == "anime" {
+		typeLabel = "Anime"
+		typeURL = "/anime"
+	} else if movie.Type == "short_drama" {
+		typeLabel = "Drama Pendek"
+		typeURL = "/drama-pendek"
+	}
+
 	data := PageData{
 		Lang:              lang,
 		Title:             fmt.Sprintf("Nonton %s (%d) Sub Indo HD - Streaming & Download", movie.Title, movie.Year),
@@ -811,6 +839,9 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 		MetaImage:         metaImg,
 		OGType:            "video.movie",
 		JSONLD:            s.GenerateJSONLDMovie(s.GetSiteURL(r), &movie),
+		BreadcrumbJSONLD:  s.GenerateJSONLDBreadcrumb(s.GetSiteURL(r), &movie, typeLabel, typeURL),
+		MovieTypeLabel:    typeLabel,
+		MovieTypeURL:      typeURL,
 	}
 
 	s.PopulateSEO(r, &data)

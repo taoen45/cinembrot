@@ -13,10 +13,17 @@
   <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
   <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
   
+  <!-- Preconnect & DNS-Prefetch untuk Optimasi Google Core Web Vitals (LCP) -->
+  <link rel="preconnect" href="https://image.tmdb.org" crossorigin>
+  <link rel="dns-prefetch" href="https://image.tmdb.org">
+  <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
+  <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+
   <!-- Canonical & Alternate Links -->
   {{if .CanonicalURL}}<link rel="canonical" href="{{.CanonicalURL}}">{{end}}
   {{if .CanonicalURL}}
   <link rel="alternate" hreflang="id" href="{{.CanonicalURL}}">
+  <link rel="alternate" hreflang="en" href="{{.CanonicalURL}}?lang=en">
   <link rel="alternate" hreflang="x-default" href="{{.CanonicalURL}}">
   {{end}}
 
@@ -91,6 +98,9 @@
   {{if .AdsterraPopunder}}{{.AdsterraPopunder}}{{end}}
   {{if .AdsterraSocialBar}}{{.AdsterraSocialBar}}{{end}}
   {{end}}
+
+  <!-- ==================== CUSTOM HEAD INJECTED SCRIPTS ==================== -->
+  {{if .CustomHeadCode}}{{safeHTML .CustomHeadCode}}{{end}}
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-dark-950 dark:text-slate-100 min-h-screen flex flex-col font-sans antialiased transition-colors duration-200">
 
@@ -373,6 +383,57 @@
     }
   </script>
   {{end}}
+  {{end}}
+
+  <!-- ==================== CUSTOM FOOTER INJECTED SCRIPTS ==================== -->
+  {{if .CustomFooterCode}}{{safeHTML .CustomFooterCode}}{{end}}
+
+  <!-- ==================== ANTI-ADBLOCK NOTICE BANNER ==================== -->
+  {{if .EnableAdblockNotice}}
+  <div id="cinembrot-adblock-notice" class="hidden fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-50 bg-slate-900/95 backdrop-blur text-white p-4 rounded-2xl shadow-2xl border border-slate-700/80 transition-all duration-300">
+    <div class="flex items-start gap-3">
+      <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg shrink-0 mt-0.5">
+        <i class="fa-solid fa-heart"></i>
+      </div>
+      <div class="flex-1 text-xs">
+        <h4 class="font-bold text-slate-100 text-sm mb-1">Dukung CINEMBROT Tetap Gratis</h4>
+        <p class="text-slate-300 leading-relaxed">
+          Kami mendeteksi Anda menggunakan pemblokir iklan (AdBlock). CINEMBROT sepenuhnya gratis tanpa biaya langganan, server kami bergantung pada iklan sponsor. Mohon pertimbangkan untuk menonaktifkan AdBlock demi kelangsungan situs ini.
+        </p>
+        <div class="mt-3 flex items-center justify-end gap-2">
+          <button type="button" onclick="dismissAdblockNotice()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition border border-slate-700">
+            Saya Mengerti
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function() {
+      if (sessionStorage.getItem('cinembrot_adblock_dismissed')) return;
+      var testAd = document.createElement('div');
+      testAd.innerHTML = '&nbsp;';
+      testAd.className = 'adsbox ad-placement pub_300x250 pub_300x250m pub_728x90 text-ad sponsor-ad';
+      testAd.style.position = 'absolute';
+      testAd.style.top = '-9999px';
+      testAd.style.left = '-9999px';
+      testAd.style.height = '1px';
+      testAd.style.width = '1px';
+      document.body.appendChild(testAd);
+      window.setTimeout(function() {
+        if (testAd.offsetHeight === 0 || testAd.style.display === 'none' || window.getComputedStyle(testAd).display === 'none') {
+          var banner = document.getElementById('cinembrot-adblock-notice');
+          if (banner) banner.classList.remove('hidden');
+        }
+        testAd.remove();
+      }, 600);
+    })();
+    function dismissAdblockNotice() {
+      sessionStorage.setItem('cinembrot_adblock_dismissed', '1');
+      var banner = document.getElementById('cinembrot-adblock-notice');
+      if (banner) banner.classList.add('hidden');
+    }
+  </script>
   {{end}}
 </body>
 </html>

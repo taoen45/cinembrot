@@ -449,6 +449,84 @@
           <input type="password" name="turnstile_secret_key" value="{{index .Settings "turnstile_secret_key"}}" class="w-full text-xs font-mono bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="0x4AAAAAAAE4maSz0Gah94IJ72HChDjUsDyc">
         </div>
       </div>
+    <!-- ==================== 7. ADS.TXT, SCRIPT KUSTOM & OPTIMALISASI ADS ==================== -->
+    <div class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-6 shadow-sm space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-dark-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-code"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white">ads.txt, Script Kustom & Optimasi Ads</h3>
+            <p class="text-xs text-slate-400">Verifikasi ads.txt resmi, injeksi tag script tracking (GA4/Histats), dan fitur buffer sponsor</p>
+          </div>
+        </div>
+        <a href="/ads.txt" target="_blank" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka /ads.txt
+        </a>
+      </div>
+
+      <!-- TOGGLES: ANTI-ADBLOCK & DOWNLOAD INTERSTITIAL -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- ANTI-ADBLOCK NOTICE -->
+        <div class="p-4 bg-slate-50 dark:bg-dark-950 rounded-2xl border border-slate-200 dark:border-dark-800 flex items-center justify-between gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-800 dark:text-slate-200">Notifikasi Anti-AdBlocker Ramah</label>
+            <p class="text-[11px] text-slate-400">Tampilkan banner sopan bagi penonton yang mengaktifkan AdBlock untuk mendukung server.</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer select-none shrink-0">
+            <input type="checkbox" name="adblock_notice_enabled" value="true" class="sr-only peer" {{if eq (index .Settings "adblock_notice_enabled") "true"}}checked{{end}}>
+            <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-dark-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
+          </label>
+        </div>
+
+        <!-- DOWNLOAD BUFFER INTERSTITIAL -->
+        <div class="p-4 bg-slate-50 dark:bg-dark-950 rounded-2xl border border-slate-200 dark:border-dark-800 flex items-center justify-between gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-800 dark:text-slate-200">Buffer Sponsor Download (3 Detik)</label>
+            <p class="text-[11px] text-slate-400">Hitung mundur 3 detik + tombol Smartlink Adsterra saat penonton klik tombol download.</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer select-none shrink-0">
+            <input type="checkbox" name="download_interstitial_enabled" value="true" class="sr-only peer" {{if ne (index .Settings "download_interstitial_enabled") "false"}}checked{{end}}>
+            <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-dark-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+          </label>
+        </div>
+      </div>
+
+      <!-- ADS.TXT CONTENT -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-file-lines text-indigo-500"></i> Konten File ads.txt
+          </label>
+          <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-dark-800 px-2 py-0.5 rounded">Wajib untuk Adsterra / Google AdSense / DSP</span>
+        </div>
+        <p class="text-[11px] text-slate-400 leading-relaxed">
+          Masukkan baris deklarasi verifikasi publisher per baris. Format: <code class="font-mono bg-slate-100 dark:bg-dark-800 px-1 py-0.5 rounded">domain, account-id, relationship, certification-id</code>.
+        </p>
+        <textarea name="ads_txt_content" rows="4" class="w-full font-mono text-[11px] bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl p-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500" placeholder="adsterra.com, DIRECT, 0000000000000000, f08c47fec0942fa0&#10;google.com, pub-xxxxxxxxxxxxxxxx, DIRECT, f08c47fec0942fa0">{{index .Settings "ads_txt_content"}}</textarea>
+      </div>
+
+      <!-- CUSTOM HEAD & FOOTER SCRIPTS -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- CUSTOM HEAD SCRIPTS -->
+        <div class="space-y-2">
+          <label class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+            <i class="fa-solid fa-code text-brand-500"></i> Custom Header Scripts (&lt;head&gt;)
+          </label>
+          <p class="text-[11px] text-slate-400">Dimasukkan tepat sebelum penutup &lt;/head&gt;. Cocok untuk Google Analytics (GA4), Meta Pixel, dsb.</p>
+          <textarea name="custom_head_code" rows="5" class="w-full font-mono text-[11px] bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl p-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="<!-- Google tag (gtag.js) -->&#10;<script async src='https://www.googletagmanager.com/gtag/js?id=G-XXXXX'></script>&#10;<script>...</script>">{{index .Settings "custom_head_code"}}</textarea>
+        </div>
+
+        <!-- CUSTOM FOOTER SCRIPTS -->
+        <div class="space-y-2">
+          <label class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+            <i class="fa-solid fa-code text-cyan-500"></i> Custom Footer Scripts (&lt;/body&gt;)
+          </label>
+          <p class="text-[11px] text-slate-400">Dimasukkan tepat sebelum penutup &lt;/body&gt;. Cocok untuk Histats counter, widget chat, atau script iklan tambahan.</p>
+          <textarea name="custom_footer_code" rows="5" class="w-full font-mono text-[11px] bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl p-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="<!-- Histats.com START -->&#10;<script>...</script>&#10;<!-- Histats.com END -->">{{index .Settings "custom_footer_code"}}</textarea>
+        </div>
+      </div>
     </div>
 
     <!-- TOMBOL SIMPAN PENGATURAN -->

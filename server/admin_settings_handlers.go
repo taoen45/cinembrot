@@ -88,6 +88,13 @@ func (s *Server) HandleAdminSaveSettings(w http.ResponseWriter, r *http.Request)
 	turnstileSiteKey := strings.TrimSpace(r.FormValue("turnstile_site_key"))
 	turnstileSecretKey := strings.TrimSpace(r.FormValue("turnstile_secret_key"))
 
+	// 7. Advanced Ads & Custom Scripts (ads.txt, Head/Footer scripts, Anti-AdBlock, Buffer Interstitial)
+	adsTxtContent := strings.TrimSpace(r.FormValue("ads_txt_content"))
+	customHeadCode := strings.TrimSpace(r.FormValue("custom_head_code"))
+	customFooterCode := strings.TrimSpace(r.FormValue("custom_footer_code"))
+	adblockNoticeEnabled := checkboxVal("adblock_notice_enabled")
+	downloadInterstitialEnabled := checkboxVal("download_interstitial_enabled")
+
 	// Save all to MariaDB system_settings table
 	_ = database.SaveSetting(s.db, "ads_enabled", adsEnabled, "Saklar Master ON/OFF Iklan di Website")
 	_ = database.SaveSetting(s.db, "adsterra_popunder_code", popunderCode, "Kode Script Iklan Adsterra Popunder")
@@ -126,7 +133,13 @@ func (s *Server) HandleAdminSaveSettings(w http.ResponseWriter, r *http.Request)
 		_ = database.SaveSetting(s.db, "turnstile_secret_key", turnstileSecretKey, "Cloudflare Turnstile Secret Key")
 	}
 
-	log.Printf("[CMS SETTINGS] ⚙️ Pengaturan website, SEO & Turnstile berhasil diperbarui oleh admin '%s'\n", s.GetLoggedInUser(r).Username)
+	_ = database.SaveSetting(s.db, "ads_txt_content", adsTxtContent, "Isi File ads.txt untuk Verifikasi Jaringan Iklan")
+	_ = database.SaveSetting(s.db, "custom_head_code", customHeadCode, "Script Custom di dalam Tag <head> (Google Analytics, Histats, dll)")
+	_ = database.SaveSetting(s.db, "custom_footer_code", customFooterCode, "Script Custom sebelum penutup </body>")
+	_ = database.SaveSetting(s.db, "adblock_notice_enabled", adblockNoticeEnabled, "Tampilkan Notifikasi/Banner Ramah jika Pengunjung Menggunakan AdBlocker")
+	_ = database.SaveSetting(s.db, "download_interstitial_enabled", downloadInterstitialEnabled, "Hitung Mundur Buffer Sponsor (Smartlink) 3 Detik saat Tombol Download Diklik")
+
+	log.Printf("[CMS SETTINGS] ⚙️ Pengaturan website, SEO, Ads & Turnstile berhasil diperbarui oleh admin '%s'\n", s.GetLoggedInUser(r).Username)
 
 	http.Redirect(w, r, "/admin/settings?saved=1", http.StatusSeeOther)
 }

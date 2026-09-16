@@ -218,6 +218,11 @@ func seedDefaultSettings(db *gorm.DB) {
 		{Key: "turnstile_enabled", Value: "true", Description: "Saklar ON/OFF Cloudflare Turnstile CAPTCHA saat Login Admin"},
 		{Key: "turnstile_site_key", Value: "0x4AAAAAAE4tnwYcBvU-hrsC", Description: "Cloudflare Turnstile Site Key"},
 		{Key: "turnstile_secret_key", Value: "0x4AAAAAAE4tn3-kKYj8JmsodJoqg4Sk40g", Description: "Cloudflare Turnstile Secret Key"},
+		{Key: "ads_txt_content", Value: "# ads.txt resmi untuk CINEMBROT (cinembrot.my.id)\n# Tambahkan baris otorisasi Adsterra / Google AdSense / partner DSP Anda di bawah ini:\n", Description: "Konten teks file /ads.txt untuk verifikasi jaringan iklan resmi"},
+		{Key: "custom_head_code", Value: "", Description: "Kode Custom HTML / JS yang disuntikkan ke dalam tag <head> (Google Analytics, Histats, dll)"},
+		{Key: "custom_footer_code", Value: "", Description: "Kode Custom HTML / JS yang disuntikkan sebelum penutup </body>"},
+		{Key: "adblock_notice_enabled", Value: "false", Description: "Saklar ON/OFF notifikasi deteksi Anti-AdBlocker ramah penonton"},
+		{Key: "download_interstitial_enabled", Value: "true", Description: "Saklar ON/OFF modal buffer sponsor Smartlink sebelum proses unduhan dimulai"},
 	}
 
 	for _, s := range defaults {

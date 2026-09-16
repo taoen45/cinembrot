@@ -298,6 +298,7 @@ func (s *Server) Start() error {
 	// SEO & Search Engine Discovery Endpoints
 	mux.HandleFunc("GET /sitemap.xml", s.HandleSitemapXML)
 	mux.HandleFunc("GET /robots.txt", s.HandleRobotsTXT)
+	mux.HandleFunc("GET /ads.txt", s.HandleAdsTXT)
 
 	// Route CMS Admin Endpoints
 	mux.HandleFunc("GET /admin/login", s.HandleAdminLogin)
