@@ -127,22 +127,63 @@ Gunakan URL protokol HTTP murni:
 
 ## ⚙️ Perintah CLI Terminal Lengkap (Internal Commands)
 
-Aplikasi menyediakan berbagai opsi CLI terminal (setara *Artisan* pada Laravel) untuk mempermudah automasi, pemeliharaan, dan scraping:
+Aplikasi menyediakan berbagai opsi CLI terminal (setara *Artisan* pada Laravel) untuk mempermudah automasi, pemeliharaan, dan scraping.
+
+> [!TIP]
+> **Apakah bisa dijalankan di Server Linux Ubuntu?**
+> **YA, BISA 100%!** Golang bersifat *cross-platform* murni tanpa dependensi eksternal. Perbedaan utamanya hanyalah di Linux tidak ada ekstensi `.exe` (`./cinembrot` alih-alih `.\cinembrot.exe`), atau dapat langsung dijalankan lewat **Docker Container** maupun `go run .`.
+>
+> **Tiga Cara Eksekusi di Linux Ubuntu:**
+> 1. **Melalui Docker Container (Paling Direkomendasikan di Server Produksi `taoen45`)**:
+>    ```bash
+>    cd /home/taoen45/docker
+>    docker compose exec app ./cinembrot -scrape-drama -year 2026
+>    ```
+> 2. **Melalui Binary Linux Lokal (`./cinembrot`)**:
+>    ```bash
+>    cd /home/taoen45/docker/html
+>    go build -o cinembrot .
+>    ./cinembrot -scrape-drama -year 2026
+>    ```
+> 3. **Melalui Go Toolchain Langsung (`go run .`)**:
+>    ```bash
+>    cd /home/taoen45/docker/html
+>    go run . -scrape-drama -year 2026
+>    ```
+
+### 📋 Tabel Perbandingan Perintah (Windows vs Linux Ubuntu)
+
+| Fitur / Aksi Operasional | Windows (PowerShell) | Linux Ubuntu (Host / Binary) | Linux Ubuntu (Docker di Server `taoen45`) |
+|---|---|---|---|
+| **Jalankan Web Server** | `.\cinembrot.exe -serve` | `./cinembrot -serve` | `docker compose up -d app` |
+| **Scrape Drama 2026** | `.\cinembrot.exe -scrape-drama -year 2026` | `./cinembrot -scrape-drama -year 2026` | `docker compose exec app ./cinembrot -scrape-drama -year 2026` |
+| **Scrape Anime 2026** | `.\cinembrot.exe -scrape-anime -year 2026` | `./cinembrot -scrape-anime -year 2026` | `docker compose exec app ./cinembrot -scrape-anime -year 2026` |
+| **Scrape Hollywood 2026** | `.\cinembrot.exe -scrape-hollywood -year 2026` | `./cinembrot -scrape-hollywood -year 2026` | `docker compose exec app ./cinembrot -scrape-hollywood -year 2026` |
+| **Isi Link Download Massal** | `.\cinembrot.exe -populate-downloads` | `./cinembrot -populate-downloads` | `docker compose exec app ./cinembrot -populate-downloads` |
+| **Isi Server Streaming Massal** | `.\cinembrot.exe -populate-streams` | `./cinembrot -populate-streams` | `docker compose exec app ./cinembrot -populate-streams` |
+| **Perbaiki Judul CJK & Slug** | `.\cinembrot.exe -fix-titles` | `./cinembrot -fix-titles` | `docker compose exec app ./cinembrot -fix-titles` |
+| **Auto-Translate Sinopsis** | `.\cinembrot.exe -translate-synopsis` | `./cinembrot -translate-synopsis` | `docker compose exec app ./cinembrot -translate-synopsis` |
+| **Scan Link Rusak / Validasi** | `.\cinembrot.exe -check-links` | `./cinembrot -check-links` | `docker compose exec app ./cinembrot -check-links` |
+| **Kompresi Gambar ke WebP** | `.\cinembrot.exe -convert-images` | `./cinembrot -convert-images` | `docker compose exec app ./cinembrot -convert-images` |
 
 ### 1. Operasional Web Server & Scheduler
 ```powershell
 # [UTAMA & WAJIB] Jalankan web server di port :8080 beserta auto-scraper background
-# Menghandle seluruh routing web, CMS admin, API, dan cron otomatis di background.
+# Windows:
 .\cinembrot.exe -serve
 
+# Linux Ubuntu (Docker app service / background):
+docker compose up -d app
+# Atau Linux Ubuntu (Binary host):
+./cinembrot -serve
+
 # [OPSIONAL / WORKER MANDIRI] Jalankan daemon scheduler otomatis tanpa web server
-# Berguna jika ingin memisahkan proses cron/worker di background container atau systemd terpisah.
 .\cinembrot.exe -daemon
+# Linux: ./cinembrot -daemon
 
 # [LEGACY SCRAPER] Jalankan 1 siklus scraping ramah server (polite mode) untuk seluruh rentang tahun
-# Catatan: Untuk scraping yang jauh lebih cepat, terarah, dan otomatis cek seluruh page,
-# disarankan memakai command spesifik di bagian 2 & 3 (-scrape-hollywood, -scrape-anime, -scrape-drama).
 .\cinembrot.exe -auto-scrape
+# Linux: ./cinembrot -auto-scrape
 ```
 
 ### 2. Scraper Film Hollywood & Box Office (Auto-Detect Seluruh Halaman)

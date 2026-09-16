@@ -91,7 +91,7 @@
       <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 p-6 text-center">
         <i class="fa-solid fa-video-slash text-5xl mb-3 text-slate-600"></i>
         <p class="mb-3">Player streaming sedang disiapkan atau film tersedia melalui link download di bawah.</p>
-        <button type="button" id="btn-refresh-stream-empty" onclick="refreshMovieStream({{.Movie.ID}})" class="inline-flex items-center justify-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition shadow-md cursor-pointer" title="Cari server streaming embed mandiri untuk judul ini">
+        <button type="button" id="btn-refresh-stream-empty" onclick="refreshMovieStream()" class="inline-flex items-center justify-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition shadow-md cursor-pointer" title="Cari server streaming embed mandiri untuk judul ini">
           <i id="icon-refresh-stream-empty" class="fa-solid fa-arrows-rotate"></i>
           <span id="text-refresh-stream-empty">Cari / Hubungkan Server Streaming</span>
         </button>
@@ -108,7 +108,7 @@
         </span>
         <div class="flex items-center gap-2">
           <!-- TOMBOL REFRESH / CEK SERVER STREAMING MANDIRI -->
-          <button type="button" id="btn-refresh-stream" onclick="refreshMovieStream({{.Movie.ID}})" class="inline-flex items-center justify-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-[11px] font-bold px-3 py-1.5 rounded-lg border border-slate-700 transition shadow-xs cursor-pointer shrink-0" title="Periksa dan dapatkan URL server streaming baru jika player error / broken">
+          <button type="button" id="btn-refresh-stream" onclick="refreshMovieStream()" class="inline-flex items-center justify-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-[11px] font-bold px-3 py-1.5 rounded-lg border border-slate-700 transition shadow-xs cursor-pointer shrink-0" title="Periksa dan dapatkan URL server streaming baru jika player error / broken">
             <i id="icon-refresh-stream" class="fa-solid fa-arrows-rotate text-emerald-400"></i>
             <span id="text-refresh-stream">Cek / Segarkan Server</span>
           </button>
@@ -118,7 +118,7 @@
       <div class="flex flex-wrap items-center gap-2" id="server-button-container">
         {{range $sIdx, $server := .Movie.StreamLinks}}
         <button type="button" 
-                onclick="switchServer({{$sIdx}}, '{{$server.EmbedURL}}', '{{$server.ServerName}}')" 
+                onclick="switchServer(this)" 
                 class="server-btn px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer {{if eq $sIdx 0}}bg-brand-500 text-white shadow-lg shadow-brand-500/25 active-server{{else}}bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800{{end}}"
                 data-index="{{$sIdx}}"
                 data-embed="{{$server.EmbedURL}}"
@@ -148,7 +148,7 @@
       <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-700" style="-webkit-overflow-scrolling: touch;">
         {{range .EpisodesList}}
         <button type="button"
-                onclick="switchEpisode({{.}})"
+                onclick="switchEpisode(this)"
                 class="episode-btn shrink-0 w-11 h-11 rounded-xl font-bold text-xs flex flex-col items-center justify-center transition border cursor-pointer {{if eq . 1}}bg-purple-600 text-white border-purple-500 shadow-md shadow-purple-600/30 active-episode{{else}}bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border-slate-700{{end}}"
                 data-episode="{{.}}">
           <span class="text-[9px] uppercase opacity-70">EPS</span>
@@ -217,7 +217,7 @@
         </div>
 
         <!-- TOMBOL REFRESH / CEK LINK DOWNLOAD MANDIRI KE SUMBER (PRESISI & RAPI) -->
-        <button type="button" id="btn-refresh-dl" onclick="refreshMovieDownload({{.Movie.ID}})" class="inline-flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-700 dark:text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition border border-slate-200 dark:border-dark-700 shadow-xs shrink-0 cursor-pointer self-start sm:self-auto" title="Periksa dan cari URL download/subtitle baru jika broken">
+        <button type="button" id="btn-refresh-dl" onclick="refreshMovieDownload()" class="inline-flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-700 dark:text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition border border-slate-200 dark:border-dark-700 shadow-xs shrink-0 cursor-pointer self-start sm:self-auto" title="Periksa dan cari URL download/subtitle baru jika broken">
           <i id="icon-refresh-dl" class="fa-solid fa-arrows-rotate text-emerald-500"></i>
           <span id="text-refresh-dl">Cek / Segarkan Link</span>
         </button>
@@ -549,7 +549,13 @@
     let currentServerIndex = 0;
     let currentEpisodeNumber = 1;
 
-    function switchServer(index, embedURL, serverName) {
+    function switchServer(indexOrBtn, embedURL, serverName) {
+      let index = indexOrBtn;
+      if (typeof indexOrBtn === 'object' && indexOrBtn !== null && indexOrBtn.dataset) {
+        index = parseInt(indexOrBtn.dataset.index, 10);
+        embedURL = indexOrBtn.dataset.embed;
+        serverName = indexOrBtn.dataset.name;
+      }
       currentServerIndex = index;
       const player = document.getElementById('main-stream-player');
       const badge = document.getElementById('active-server-badge');
@@ -575,7 +581,11 @@
       }
     }
 
-    function switchEpisode(epNum) {
+    function switchEpisode(epNumOrBtn) {
+      let epNum = epNumOrBtn;
+      if (typeof epNumOrBtn === 'object' && epNumOrBtn !== null && epNumOrBtn.dataset) {
+        epNum = parseInt(epNumOrBtn.dataset.episode, 10);
+      }
       currentEpisodeNumber = epNum;
       const badge = document.getElementById('active-episode-badge');
       if (badge) badge.textContent = 'Episode ' + epNum;

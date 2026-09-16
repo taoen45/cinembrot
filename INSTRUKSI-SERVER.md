@@ -179,31 +179,41 @@ sudo bash /home/taoen45/docker/setup-golang.sh
 
 Perintah CLI / Terminal (Setara Artisan di Laravel):
 
+Bisa dijalankan via Docker container (tanpa perlu Go di host) atau langsung via host jika Go terpasang:
+
 ```bash
+# --- METODE A: VIA DOCKER COMPOSE (DIREKOMENDASIKAN) ---
+cd /home/taoen45/docker
+
+# Scrape Anime / Drama Asia / Hollywood rilis 2026
+docker compose exec app ./cinembrot -scrape-anime -year 2026
+docker compose exec app ./cinembrot -scrape-drama -year 2026
+docker compose exec app ./cinembrot -scrape-hollywood -year 2026
+
+# Isi link download massal (Torrent & Subtitle) & server streaming embed
+docker compose exec app ./cinembrot -populate-downloads
+docker compose exec app ./cinembrot -populate-streams
+
+# Perbaikan judul non-Latin (Kanji/CJK) & auto-translate sinopsis dwibahasa
+docker compose exec app ./cinembrot -fix-titles
+docker compose exec app ./cinembrot -translate-synopsis
+
+# Validasi kesehatan tautan & konversi poster ke WebP lokal
+docker compose exec app ./cinembrot -check-links
+docker compose exec app ./cinembrot -convert-images
+
+# --- METODE B: LANGSUNG DI HOST DENGAN GO RUN / BINARY ---
 cd /home/taoen45/docker/html
 
-# Scrape anime resmi dari MyAnimeList (Jikan API)
-go run . -scrape-anime -anime-cat top -anime-limit 15
-go run . -scrape-anime -anime-cat seasonal -anime-limit 20
-
-# Scrape drama Asia dari TMDb TV API (K-Drama, C-Drama, J-Drama, Thai)
-go run . -scrape-drama -drama-lang ko -drama-pages 1
-go run . -scrape-drama -drama-lang zh -drama-pages 1
-
-# Pengecekan & validasi link download di database
-go run . -check-links
-
-# Sinkronisasi & isi server streaming embed (VidSrc, AutoEmbed, 2Embed, VidLink) untuk semua judul di database
-go run . -populate-streams
-
-# Sinkronisasi & lengkapi URL link download file / torrent / subtitle secara massal
+go run . -scrape-anime -year 2026
+go run . -scrape-drama -year 2026
+go run . -scrape-hollywood -year 2026
 go run . -populate-downloads
-
-# Terjemahkan sinopsis seluruh database ke dwibahasa (ID & EN)
+go run . -populate-streams
+go run . -fix-titles
 go run . -translate-synopsis
-
-# Jalankan 1 siklus auto-scraper semua tahun
-go run . -auto-scrape
+go run . -check-links
+go run . -convert-images
 ```
 
 Jellyfin (hanya jika diminta):
@@ -323,7 +333,8 @@ Tambah folder lain (contoh `blog`): buat `~/docker/html/blog/`, copy pola `/test
 | 2026-09-16 | **Integrasi URL Link Download Otomatis pada Seluruh Scraper & Perintah Massal (-populate-downloads):** (1) Menjamin bahwa seluruh command scraping (`-scrape-anime`, `-scrape-drama`, `-scrape-hollywood`) 100% meng-include URL link download dan subtitle dwibahasa secara otomatis saat scraping film baru. (2) Penambahan fitur CLI terminal `.\cinembrot.exe -populate-downloads` (`pipeline.PopulateAllExistingDownloadLinks`) untuk menyisir seluruh film di MariaDB yang belum memiliki link download dan otomatis melengkapinya dari sumber torrent resmi (YTS 720p/1080p/4K) dan subtitle (SubDL/Subsource). |
 | 2026-09-16 | **Pembaruan Dokumentasi Operasional Server & Verifikasi Runtime:** (1) Penambahan panduan lengkap cara menyalakan (Foreground & Background), mematikan (`Ctrl+C` & `Stop-Process`), serta memeriksa status server di `README.md`. (2) Verifikasi runtime: web server terkonfirmasi berjalan 100% normal dan menyajikan HTML di `http://localhost:8080`. |
 | 2026-09-16 | **Pemisahan Blok Download (Video MP4 vs Subtitle vs Torrent), Desain Tombol Presisi & Generator Torrent:** (1) Perbaikan tombol "Cek / Segarkan Link" di header Pusat Unduhan `detail.html` agar presisi, simetris, dan menyatu rapi dengan border box. (2) Pemisahan modul dan tampilan unduhan menjadi 3 bagian terpisah: File Video Siap Nonton (Direct MP4 / Hardsub) dengan tombol hijau "Download Video MP4", File Subtitle Terpisah (SRT / VTT) dengan tombol indigo "Download Subtitle", dan File Torrent & Magnet Link dengan tombol biru "Unduh Torrent". Mengatasi bug di mana tautan subtitle sebelumnya bertuliskan "Download MP4". (3) Pembuatan modul baru `provider/torrents/torrents.go` yang menghasilkan link torrent terverifikasi: Nyaa.si & AnimeTosho untuk Anime, EZTV & 1337x untuk Drama Asia/Series, serta 1337x & TorrentGalaxy untuk film Hollywood. (4) Integrasi auto-generate torrent candidates di `HandleMovieDetail` dan pipeline scraping. |
-| 2026-09-16 | **Pembersihan Syntax Error & Linter Editor pada Template detail.html:** (1) Menghapus blok komentar HTML lama `<!-- {{if .Movie.IsFree}} ... {{end}} -->` yang membungkus sintaks Go template di bagian header sehingga memicu garis merah linter di VS Code / Cursor IDE. (2) Memindahkan variabel server-side JavaScript (`.Movie.ID`, `.TMDbID`, `isTV`, `trailerURL`) ke HTML data-attributes (`#movie-client-meta`), sehingga seluruh kode di dalam blok `<script>` kini murni 100% JavaScript standar ECMA tanpa tanda kurung kurawal ganda `{{...}}` yang memicu syntax error pada language server editor. |
+| 2026-09-16 | **Pembersihan Syntax Error & Linter Editor pada Template detail.html:** (1) Menghapus blok komentar HTML lama `<!-- {{if .Movie.IsFree}} ... {{end}} -->` yang membungkus sintaks Go template di bagian header sehingga memicu garis merah linter di VS Code / Cursor IDE. (2) Memindahkan variabel server-side JavaScript (`.Movie.ID`, `.TMDbID`, `isTV`, `trailerURL`) ke HTML data-attributes (`#movie-client-meta`), sehingga seluruh kode di dalam blok `<script>` kini murni 100% JavaScript standar ECMA tanpa tanda kurung kurawal ganda `{{...}}` yang memicu syntax error pada language server editor. (3) Memperbaiki event `onclick="switchServer(this)"` dan `onclick="switchEpisode(this)"` dengan pembacaan data-attribute untuk mengeliminasi peringatan `',' expected.` pada IDE. |
+| 2026-09-16 | **Dokumentasi Eksekusi CLI di Linux Ubuntu (Docker & Host) di README.md & INSTRUKSI-SERVER.md:** Penambahan panduan komprehensif cara mengeksekusi seluruh varian perintah CLI terminal (Hollywood, Anime, Drama, Populate Streams, Downloads, Auto-Translate, Fix-Titles, Check-Links, Convert-Images) di server Linux Ubuntu, baik melalui container Docker `docker compose exec app ./cinembrot <flags>`, binary lokal `./cinembrot <flags>`, maupun `go run . <flags>`. |
 
 
 
