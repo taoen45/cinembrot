@@ -17,6 +17,13 @@
 - 🔤 **Resolusi Judul English Standar QWERTY & Alias Name**: Judul berbahasa non-Latin (Kanji Jepang, Hanzi Mandarin, Hangeul Korea) secara otomatis dikonversi ke versi **English resmi standar keyboard QWERTY** via TMDb Translations API (`iso_639_1 == "en"`) dan Jikan. Judul asli tetap dipertahankan pada kolom `original_title` dan `alternative_titles` (*alias name*), serta URL slug selalu bersih (contoh: `異世界かるてっと` $\rightarrow$ **`Isekai Quartet`** / `/movie/isekai-quartet-2019`).
 - 📝 **Auto-Fill Sinopsis Kosong**: Pengecekan otomatis saat proses generate/scraping; jika sinopsis berbahasa Indonesia kosong, sistem otomatis melengkapinya dari sinopsis resmi bahasa Inggris sehingga tidak ada lagi film/anime bersinopsis kosong.
 - 📅 **Scraper Berdasarkan Tahun Rilis**: Kemampuan menyaring dan mengumpulkan seluruh anime atau drama Asia yang rilis pada tahun tertentu (misal: `-year 2026`) secara akurat.
+- 🚀 **Arsitektur SEO Terbaik & Fast-Indexing Mesin Pencari**:
+  - **Dynamic XML Sitemap (`/sitemap.xml`)**: Otomatis menghasilkan sitemap XML standar protokol Sitemaps.org 0.9 dengan ekstensi Google Image (`xmlns:image`) untuk homepage, katalog utama, dan ribuan film dengan tag `<lastmod>`, `<changefreq>`, dan `<image:image>`.
+  - **Crawler Directive (`/robots.txt`)**: Standar kontrol akses perayap bot yang bersih, ramah crawler, dan mengarahkan otomatis ke sitemap resmi.
+  - **Meta Tags Lengkap**: Dynamic meta description, dynamic meta keywords kaya kata kunci pencarian, canonical URL otomatis, dan tag robots `index, follow, max-image-preview:large, max-snippet:-1`.
+  - **OpenGraph & Twitter Cards**: Tampilan preview visual saat link dibagikan ke WhatsApp, Telegram, Facebook, dan Twitter/X.
+  - **Schema.org Rich Snippets (JSON-LD)**: Format `Movie` dan `TVSeries` dengan `AggregateRating` agar bintang kuning rating film muncul di hasil pencarian Google SERP, serta schema `WebSite` dengan `SearchAction` (Sitelinks Searchbox) di beranda.
+  - **CMS Webmaster Verifications**: Kontrol setting di `/admin/settings` untuk memasukkan kode verifikasi Google Search Console, Bing Webmaster, dan Yandex tanpa edit kode HTML.
 - 🌐 **Fitur Terjemahan Dwibahasa (ID / EN)**:
   - Bahasa Indonesia sebagai bahasa utama (*default*) dan English sebagai bahasa kedua.
   - Dropdown pemilih bahasa elegan dengan ikon bendera SVG asli berwarna di desktop & mobile sub-navbar.

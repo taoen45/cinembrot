@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"net/http"
 	"strconv"
@@ -60,6 +61,18 @@ type PageData struct {
 	EpisodesList           []int
 	CurrentEpisode         int
 	TMDbID                 int
+
+	// SEO & Search Engine Optimization Fields
+	CanonicalURL       string
+	MetaDescription    string
+	MetaKeywords       string
+	MetaImage          string
+	SiteURL            string
+	OGType             string
+	GoogleVerification string
+	BingVerification   string
+	YandexVerification string
+	JSONLD             template.HTML
 }
 
 // PopulatePageData automatically sets dynamic settings from database into PageData
@@ -198,6 +211,7 @@ func (s *Server) HandleHome(w http.ResponseWriter, r *http.Request) {
 		EnableAds:  s.cfg.EnableAds,
 	}
 
+	s.PopulateSEO(r, &data)
 	s.RenderHTML(w, "home.html", "layout.html", data)
 }
 
@@ -302,6 +316,7 @@ func (s *Server) HandleFilter(w http.ResponseWriter, r *http.Request) {
 		data.CurrentYear = y
 	}
 
+	s.PopulateSEO(r, &data)
 	s.RenderHTML(w, "list.html", "layout.html", data)
 }
 
@@ -370,24 +385,27 @@ func (s *Server) HandleAnime(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := PageData{
-		Lang:           i18n.GetLang(r),
-		Title:          "Katalog Anime Subtitle Indonesia",
-		SiteName:       "CINEMBROT",
-		ActiveMenu:     "anime",
-		Movies:         movies,
-		Genres:         genres,
-		Years:          years,
-		Countries:      countries,
-		CurrentGenre:   genreStr,
-		CurrentCountry: countryStr,
-		CurrentSort:    sortStr,
-		TotalCount:     totalCount,
-		EnableAds:      s.cfg.EnableAds,
+		Lang:            i18n.GetLang(r),
+		Title:           "Nonton Anime Subtitle Indonesia Terbaru & Populer HD",
+		SiteName:        "CINEMBROT",
+		ActiveMenu:      "anime",
+		Movies:          movies,
+		Genres:          genres,
+		Years:           years,
+		Countries:       countries,
+		CurrentGenre:    genreStr,
+		CurrentCountry:  countryStr,
+		CurrentSort:     sortStr,
+		TotalCount:      totalCount,
+		EnableAds:       s.cfg.EnableAds,
+		MetaDescription: "Nonton anime subtitle Indonesia online terlengkap dan terupdate kualitas HD. Streaming dan download anime movie & series gratis tanpa ribet di CINEMBROT.",
+		MetaKeywords:    "nonton anime, anime sub indo, streaming anime, download anime gratis, anime terbaru, anime jepang, otaku indo, cinembrot anime",
 	}
 	if y, err := strconv.Atoi(yearStr); err == nil {
 		data.CurrentYear = y
 	}
 
+	s.PopulateSEO(r, &data)
 	s.RenderHTML(w, "anime.html", "layout.html", data)
 }
 
@@ -456,24 +474,27 @@ func (s *Server) HandleDramaPendek(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := PageData{
-		Lang:           i18n.GetLang(r),
-		Title:          "Serial Drama Pendek & Mini Series Sub Indo",
-		SiteName:       "CINEMBROT",
-		ActiveMenu:     "drama_pendek",
-		Movies:         movies,
-		Genres:         genres,
-		Years:          years,
-		Countries:      countries,
-		CurrentGenre:   genreStr,
-		CurrentCountry: countryStr,
-		CurrentSort:    sortStr,
-		TotalCount:     totalCount,
-		EnableAds:      s.cfg.EnableAds,
+		Lang:            i18n.GetLang(r),
+		Title:           "Serial Drama Pendek & Mini Series Sub Indo Lengkap HD",
+		SiteName:        "CINEMBROT",
+		ActiveMenu:      "drama_pendek",
+		Movies:          movies,
+		Genres:          genres,
+		Years:           years,
+		Countries:       countries,
+		CurrentGenre:    genreStr,
+		CurrentCountry:  countryStr,
+		CurrentSort:     sortStr,
+		TotalCount:      totalCount,
+		EnableAds:       s.cfg.EnableAds,
+		MetaDescription: "Nonton serial drama pendek, mini series, dan drama China/Korea subtitle Indonesia episode lengkap gratis kualitas jernih di CINEMBROT.",
+		MetaKeywords:    "nonton drama pendek, mini series sub indo, drama china pendek, drama korea pendek, streaming drama pendek, cinembrot drama",
 	}
 	if y, err := strconv.Atoi(yearStr); err == nil {
 		data.CurrentYear = y
 	}
 
+	s.PopulateSEO(r, &data)
 	s.RenderHTML(w, "drama_pendek.html", "layout.html", data)
 }
 
@@ -560,9 +581,47 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 	// Generate Anti-Spam Math CAPTCHA Challenge
 	captcha := GenerateCaptcha()
 
+	// SEO Rich Metadata Generator
+	metaDesc := scraper.CleanHTMLToPlainText(movie.Synopsis)
+	if len(metaDesc) > 160 {
+		metaDesc = metaDesc[:157] + "..."
+	}
+	if metaDesc == "" {
+		metaDesc = fmt.Sprintf("Nonton film %s (%d) subtitle Indonesia kualitas %s gratis dan legal. Streaming lancar dan download cepat tanpa ribet di CINEMBROT.", movie.Title, movie.Year, movie.Quality)
+	}
+
+	var kwList []string
+	kwList = append(kwList, fmt.Sprintf("nonton %s", movie.Title), fmt.Sprintf("%s sub indo", movie.Title), fmt.Sprintf("streaming %s", movie.Title), fmt.Sprintf("download %s", movie.Title), fmt.Sprintf("film %s %d", movie.Title, movie.Year), "cinembrot")
+	if movie.OriginalTitle != "" && movie.OriginalTitle != movie.Title {
+		kwList = append(kwList, movie.OriginalTitle)
+	}
+	if movie.AlternativeTitles != "" {
+		for _, alt := range strings.Split(movie.AlternativeTitles, ",") {
+			alt = strings.TrimSpace(alt)
+			if alt != "" {
+				kwList = append(kwList, alt)
+			}
+		}
+	}
+	for _, g := range movie.Genres {
+		kwList = append(kwList, g.Name)
+	}
+	for _, a := range movie.Actors {
+		kwList = append(kwList, a.Name)
+	}
+	metaKeywords := strings.Join(kwList, ", ")
+
+	metaImg := movie.PosterURL
+	if metaImg == "" {
+		metaImg = movie.ThumbnailURL
+	}
+	if metaImg == "" {
+		metaImg = movie.BackdropURL
+	}
+
 	data := PageData{
 		Lang:              lang,
-		Title:             movie.Title + " (" + strconv.Itoa(movie.Year) + ") - Nonton & Download",
+		Title:             fmt.Sprintf("Nonton %s (%d) Sub Indo HD - Streaming & Download", movie.Title, movie.Year),
 		SiteName:          "CINEMBROT",
 		Movie:             &movie,
 		Related:           related,
@@ -575,8 +634,14 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 		EpisodesList:      episodesList,
 		CurrentEpisode:    1,
 		TMDbID:            tmdbID,
+		MetaDescription:   metaDesc,
+		MetaKeywords:      metaKeywords,
+		MetaImage:         metaImg,
+		OGType:            "video.movie",
+		JSONLD:            s.GenerateJSONLDMovie(s.GetSiteURL(r), &movie),
 	}
 
+	s.PopulateSEO(r, &data)
 	s.RenderHTML(w, "detail.html", "layout.html", data)
 }
 
@@ -684,11 +749,13 @@ func (s *Server) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		SiteName:    "CINEMBROT",
 		SearchQuery: query,
 		Movies:      movies,
-		Genres:      genres,
-		TotalCount:  int64(len(movies)),
-		EnableAds:   s.cfg.EnableAds,
+		Genres:          genres,
+		TotalCount:      int64(len(movies)),
+		EnableAds:       s.cfg.EnableAds,
+		MetaDescription: fmt.Sprintf("Hasil pencarian untuk '%s' di CINEMBROT. Nonton streaming dan download film, anime, serta drama pendek subtitle Indonesia kualitas HD gratis.", query),
 	}
 
+	s.PopulateSEO(r, &data)
 	s.RenderHTML(w, "list.html", "layout.html", data)
 }
 

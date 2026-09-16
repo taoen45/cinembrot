@@ -4,6 +4,53 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{.Title}} - {{.SiteName}}</title>
+
+  <!-- ==================== SEARCH ENGINE OPTIMIZATION (SEO) ==================== -->
+  <meta name="description" content="{{.MetaDescription}}">
+  <meta name="keywords" content="{{.MetaKeywords}}">
+  <meta name="author" content="{{.SiteName}}">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  
+  <!-- Canonical & Alternate Links -->
+  {{if .CanonicalURL}}<link rel="canonical" href="{{.CanonicalURL}}">{{end}}
+  {{if .CanonicalURL}}
+  <link rel="alternate" hreflang="id" href="{{.CanonicalURL}}">
+  <link rel="alternate" hreflang="x-default" href="{{.CanonicalURL}}">
+  {{end}}
+
+  <!-- OpenGraph Metadata (Facebook, WhatsApp, Telegram, Discord) -->
+  <meta property="og:site_name" content="{{.SiteName}}">
+  <meta property="og:type" content="{{if .OGType}}{{.OGType}}{{else}}website{{end}}">
+  <meta property="og:title" content="{{.Title}} - {{.SiteName}}">
+  <meta property="og:description" content="{{.MetaDescription}}">
+  <meta property="og:url" content="{{.CanonicalURL}}">
+  <meta property="og:image" content="{{.MetaImage}}">
+  <meta property="og:image:alt" content="{{.Title}}">
+  <meta property="og:locale" content="{{if eq .Lang "en"}}en_US{{else}}id_ID{{end}}">
+
+  <!-- Twitter Cards (X) -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{.Title}} - {{.SiteName}}">
+  <meta name="twitter:description" content="{{.MetaDescription}}">
+  <meta name="twitter:image" content="{{.MetaImage}}">
+
+  <!-- Search Engine Webmaster Verifications -->
+  {{if .GoogleVerification}}<meta name="google-site-verification" content="{{.GoogleVerification}}">{{end}}
+  {{if .BingVerification}}<meta name="msvalidate.01" content="{{.BingVerification}}">{{end}}
+  {{if .YandexVerification}}<meta name="yandex-verification" content="{{.YandexVerification}}">{{end}}
+
+  <!-- Mobile & PWA Configuration -->
+  <meta name="theme-color" content="#0F172A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="{{.SiteName}}">
+
+  <!-- Schema.org Rich Snippet (JSON-LD) -->
+  {{if .JSONLD}}<script type="application/ld+json">
+{{safeJSON .JSONLD}}
+</script>{{end}}
   
   <!-- Theme Initialization Script (Persistent Theme from LocalStorage) -->
   <script>

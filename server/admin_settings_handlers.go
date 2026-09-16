@@ -75,6 +75,14 @@ func (s *Server) HandleAdminSaveSettings(w http.ResponseWriter, r *http.Request)
 	}
 	siteTagline := strings.TrimSpace(r.FormValue("site_tagline"))
 
+	// 5. Search Engine Optimization (SEO) & Webmaster Verifications
+	siteURL := strings.TrimRight(strings.TrimSpace(r.FormValue("site_url")), "/")
+	metaDescription := strings.TrimSpace(r.FormValue("meta_description"))
+	metaKeywords := strings.TrimSpace(r.FormValue("meta_keywords"))
+	googleVerification := strings.TrimSpace(r.FormValue("google_site_verification"))
+	bingVerification := strings.TrimSpace(r.FormValue("bing_site_verification"))
+	yandexVerification := strings.TrimSpace(r.FormValue("yandex_verification"))
+
 	// Save all to MariaDB system_settings table
 	_ = database.SaveSetting(s.db, "ads_enabled", adsEnabled, "Saklar Master ON/OFF Iklan di Website")
 	_ = database.SaveSetting(s.db, "adsterra_popunder_code", popunderCode, "Kode Script Iklan Adsterra Popunder")
@@ -98,7 +106,14 @@ func (s *Server) HandleAdminSaveSettings(w http.ResponseWriter, r *http.Request)
 	_ = database.SaveSetting(s.db, "site_name", siteName, "Nama Brand Website")
 	_ = database.SaveSetting(s.db, "site_tagline", siteTagline, "Tagline atau Slogan Website")
 
-	log.Printf("[CMS SETTINGS] ⚙️ Pengaturan website berhasil diperbarui oleh admin '%s'\n", s.GetLoggedInUser(r).Username)
+	_ = database.SaveSetting(s.db, "site_url", siteURL, "URL Publik Utama Website (contoh: https://cinembrot.my.id)")
+	_ = database.SaveSetting(s.db, "meta_description", metaDescription, "Meta Description Default Mesin Pencari Google/Bing")
+	_ = database.SaveSetting(s.db, "meta_keywords", metaKeywords, "Meta Keywords Default Website")
+	_ = database.SaveSetting(s.db, "google_site_verification", googleVerification, "Kode Verifikasi Google Search Console")
+	_ = database.SaveSetting(s.db, "bing_site_verification", bingVerification, "Kode Verifikasi Bing Webmaster Tools")
+	_ = database.SaveSetting(s.db, "yandex_verification", yandexVerification, "Kode Verifikasi Yandex Webmaster")
+
+	log.Printf("[CMS SETTINGS] ⚙️ Pengaturan website & SEO berhasil diperbarui oleh admin '%s'\n", s.GetLoggedInUser(r).Username)
 
 	http.Redirect(w, r, "/admin/settings?saved=1", http.StatusSeeOther)
 }

@@ -324,6 +324,91 @@
       </div>
     </div>
 
+    <!-- ==================== 5. PENGATURAN SEO & SEARCH ENGINE INDEXING ==================== -->
+    <div class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-6 shadow-sm space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-dark-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-magnifying-glass-chart"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Pengaturan SEO & Search Engine Indexing</h3>
+            <p class="text-xs text-slate-400">Optimalkan ranking Google, verifikasi Webmaster Tools, dan pantau XML Sitemap</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <a href="/sitemap.xml" target="_blank" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-700 dark:text-slate-200 transition flex items-center gap-1.5 border border-slate-200 dark:border-dark-700">
+            <i class="fa-solid fa-sitemap text-brand-500"></i> Buka sitemap.xml
+          </a>
+          <a href="/robots.txt" target="_blank" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-700 dark:text-slate-200 transition flex items-center gap-1.5 border border-slate-200 dark:border-dark-700">
+            <i class="fa-solid fa-robot text-purple-500"></i> Buka robots.txt
+          </a>
+        </div>
+      </div>
+
+      <!-- URL PUBLIK UTAMA & META DEFAULT -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+            Canonical Site URL (Domain Publik)
+          </label>
+          <input type="url" name="site_url" value="{{index .Settings "site_url"}}" class="w-full text-xs bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500 font-mono" placeholder="https://cinembrot.my.id">
+          <p class="text-[10px] text-slate-400 mt-1">Digunakan untuk Canonical Link, OpenGraph, dan XML Sitemap</p>
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+            Default Meta Keywords
+          </label>
+          <input type="text" name="meta_keywords" value="{{index .Settings "meta_keywords"}}" class="w-full text-xs bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="nonton film sub indo, streaming movie, download film gratis, nonton anime, drama pendek, cinembrot">
+          <p class="text-[10px] text-slate-400 mt-1">Pisahkan kata kunci dengan tanda koma (,)</p>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+          Default Meta Description (Snippet Pencarian Beranda)
+        </label>
+        <textarea name="meta_description" rows="2" class="w-full text-xs bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl p-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="Nonton film streaming dan download gratis subtitle Indonesia legal kualitas HD. Koleksi lengkap film bioskop, anime terbaru, dan drama pendek hanya di CINEMBROT.">{{index .Settings "meta_description"}}</textarea>
+        <p class="text-[10px] text-slate-400 mt-1">Maksimal 160 karakter untuk tampilan snippet terbaik di hasil pencarian Google.</p>
+      </div>
+
+      <!-- KODE VERIFIKASI WEBMASTER -->
+      <div class="p-4 bg-slate-50 dark:bg-dark-950 rounded-2xl border border-slate-200 dark:border-dark-800 space-y-4">
+        <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+          <i class="fa-solid fa-shield-halved text-brand-500"></i> Verifikasi Kepemilikan Webmaster (Search Console)
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Google Search Console</label>
+            <input type="text" name="google_site_verification" value="{{index .Settings "google_site_verification"}}" class="w-full text-xs bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-200 font-mono focus:outline-none focus:border-brand-500" placeholder="Contoh: v8kQj... atau string tag">
+            <p class="text-[10px] text-slate-400 mt-1">Kode dari tag &lt;meta name="google-site-verification" content="..."&gt;</p>
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Bing Webmaster Tools</label>
+            <input type="text" name="bing_site_verification" value="{{index .Settings "bing_site_verification"}}" class="w-full text-xs bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-200 font-mono focus:outline-none focus:border-brand-500" placeholder="Contoh: 9F2A1B...">
+            <p class="text-[10px] text-slate-400 mt-1">Kode dari tag &lt;meta name="msvalidate.01" content="..."&gt;</p>
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Yandex Webmaster</label>
+            <input type="text" name="yandex_verification" value="{{index .Settings "yandex_verification"}}" class="w-full text-xs bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-200 font-mono focus:outline-none focus:border-brand-500" placeholder="Contoh: a1b2c3d4...">
+            <p class="text-[10px] text-slate-400 mt-1">Kode dari tag &lt;meta name="yandex-verification" content="..."&gt;</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TIPS FAST INDEXING -->
+      <div class="p-3.5 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-700 dark:text-blue-300 text-xs flex items-start gap-2.5">
+        <i class="fa-solid fa-circle-info text-base mt-0.5 shrink-0"></i>
+        <div class="space-y-1">
+          <span class="font-bold">Tips Cepat Listing di Google:</span>
+          <p class="text-[11px] leading-relaxed">
+            Daftarkan domain Anda ke <a href="https://search.google.com/search-console" target="_blank" class="underline font-bold hover:text-brand-500">Google Search Console</a>, verifikasi dengan memasukkan kode HTML Tag di atas, lalu submit URL Sitemap: <code class="bg-blue-200/50 dark:bg-blue-900/40 px-1.5 py-0.5 rounded font-mono font-bold">https://cinembrot.my.id/sitemap.xml</code>. Googlebot akan langsung meng-crawl seluruh ribuan katalog film secara berkala.
+          </p>
+        </div>
+      </div>
+
+    </div>
+
     <!-- TOMBOL SIMPAN PENGATURAN -->
     <div class="flex items-center justify-end gap-3 sticky bottom-4 bg-white/95 dark:bg-dark-900/95 backdrop-blur p-4 rounded-2xl border border-slate-200 dark:border-dark-800 shadow-xl z-20">
       <button type="reset" class="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-dark-800 transition">

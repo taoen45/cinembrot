@@ -59,6 +59,16 @@ func (s *Server) loadTemplates() {
 		"safeHTML": func(str string) template.HTML {
 			return template.HTML(str)
 		},
+		"safeJSON": func(v interface{}) template.JS {
+			switch val := v.(type) {
+			case template.HTML:
+				return template.JS(val)
+			case string:
+				return template.JS(val)
+			default:
+				return template.JS(fmt.Sprint(val))
+			}
+		},
 		"cleanText": func(str string) string {
 			return scraper.CleanHTMLToPlainText(str)
 		},
@@ -274,6 +284,10 @@ func (s *Server) Start() error {
 	mux.HandleFunc("GET /search", s.HandleSearch)
 	mux.HandleFunc("GET /set-lang", s.HandleSetLang)
 	mux.HandleFunc("GET /api/movies", s.HandleAPIMovies)
+
+	// SEO & Search Engine Discovery Endpoints
+	mux.HandleFunc("GET /sitemap.xml", s.HandleSitemapXML)
+	mux.HandleFunc("GET /robots.txt", s.HandleRobotsTXT)
 
 	// Route CMS Admin Endpoints
 	mux.HandleFunc("GET /admin/login", s.HandleAdminLogin)
