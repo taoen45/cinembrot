@@ -95,7 +95,11 @@
       {{else}}
       <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 p-6 text-center">
         <i class="fa-solid fa-video-slash text-5xl mb-3 text-slate-600"></i>
-        <p>Player streaming sedang disiapkan atau film tersedia melalui link download di bawah.</p>
+        <p class="mb-3">Player streaming sedang disiapkan atau film tersedia melalui link download di bawah.</p>
+        <button type="button" id="btn-refresh-stream-empty" onclick="refreshMovieStream({{.Movie.ID}})" class="inline-flex items-center justify-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition shadow-md cursor-pointer" title="Cari server streaming embed mandiri untuk judul ini">
+          <i id="icon-refresh-stream-empty" class="fa-solid fa-arrows-rotate"></i>
+          <span id="text-refresh-stream-empty">Cari / Hubungkan Server Streaming</span>
+        </button>
       </div>
       {{end}}
     </div>
@@ -107,7 +111,14 @@
         <span class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
           <i class="fa-solid fa-server text-emerald-400"></i> Pilihan Server Streaming:
         </span>
-        <span class="text-[11px] text-slate-400 italic">*Jika video buffering/error, silakan klik server alternatif</span>
+        <div class="flex items-center gap-2">
+          <!-- TOMBOL REFRESH / CEK SERVER STREAMING MANDIRI -->
+          <button type="button" id="btn-refresh-stream" onclick="refreshMovieStream({{.Movie.ID}})" class="inline-flex items-center justify-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-[11px] font-bold px-3 py-1.5 rounded-lg border border-slate-700 transition shadow-xs cursor-pointer shrink-0" title="Periksa dan dapatkan URL server streaming baru jika player error / broken">
+            <i id="icon-refresh-stream" class="fa-solid fa-arrows-rotate text-emerald-400"></i>
+            <span id="text-refresh-stream">Cek / Segarkan Server</span>
+          </button>
+          <span class="text-[11px] text-slate-400 italic hidden md:inline">*Jika buffering, pilih server alternatif</span>
+        </div>
       </div>
       <div class="flex flex-wrap items-center gap-2" id="server-button-container">
         {{range $sIdx, $server := .Movie.StreamLinks}}
@@ -561,6 +572,52 @@
       }
     }
 
+    // Logika Cooldown 24 Jam (1 Hari) untuk Tombol Scraper Mandiri
+    function getCooldownKey(type, movieId) {
+      return 'cinembrot_' + type + '_cooldown_' + movieId;
+    }
+
+    function checkButtonCooldown(type, movieId, btnId, iconId, textId, defaultText) {
+      const btn = document.getElementById(btnId);
+      const icon = document.getElementById(iconId);
+      const text = document.getElementById(textId);
+      if (!btn) return;
+
+      const key = getCooldownKey(type, movieId);
+      const expireStr = localStorage.getItem(key);
+      if (expireStr) {
+        const expireTime = parseInt(expireStr, 10);
+        const now = Date.now();
+        if (expireTime > now) {
+          const sisaJam = Math.ceil((expireTime - now) / (1000 * 60 * 60));
+          btn.disabled = true;
+          btn.classList.add('cursor-not-allowed', 'opacity-60');
+          if (icon) icon.className = 'fa-solid fa-lock text-slate-400';
+          if (text) text.textContent = 'Versi Terbaru (' + sisaJam + 'j)';
+          return true;
+        } else {
+          localStorage.removeItem(key);
+        }
+      }
+      return false;
+    }
+
+    function apply24HourCooldown(type, movieId, btnId, iconId, textId) {
+      const btn = document.getElementById(btnId);
+      const icon = document.getElementById(iconId);
+      const text = document.getElementById(textId);
+      const key = getCooldownKey(type, movieId);
+      const expireTime = Date.now() + (24 * 60 * 60 * 1000); // 24 Jam
+      localStorage.setItem(key, expireTime.toString());
+
+      if (btn) {
+        btn.disabled = true;
+        btn.classList.add('cursor-not-allowed', 'opacity-60');
+      }
+      if (icon) icon.className = 'fa-solid fa-lock text-slate-400';
+      if (text) text.textContent = 'Versi Terbaru (24j)';
+    }
+
     // Refresh & Re-scrape Broken Download Link secara mandiri ke website sumber
     function refreshMovieDownload(movieId) {
       const btn = document.getElementById('btn-refresh-dl');
@@ -570,7 +627,7 @@
 
       btn.disabled = true;
       if (icon) icon.classList.add('fa-spin');
-      if (text) text.textContent = 'Memeriksa ke sumber...';
+      if (text) text.textContent = 'Memeriksa sumber...';
 
       fetch('/api/movie/' + movieId + '/refresh-download', {
         method: 'POST',
@@ -580,16 +637,14 @@
       .then(function(data) {
         if (icon) icon.classList.remove('fa-spin');
         if (data.status === 'updated') {
+          localStorage.removeItem(getCooldownKey('dl', movieId));
           btn.className = 'inline-flex items-center justify-center gap-2 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-xs font-bold px-4 py-2.5 rounded-xl border border-emerald-300 dark:border-emerald-800 shadow-sm shrink-0';
           if (icon) icon.className = 'fa-solid fa-circle-check text-emerald-500';
           if (text) text.textContent = 'Link Berhasil Diperbarui!';
           setTimeout(function() { window.location.reload(); }, 1200);
         } else {
-          // Jika ternyata URL sama persis / tidak ada URL baru dari sumber: Tombol otomatis disabled
-          btn.disabled = true;
-          btn.className = 'inline-flex items-center justify-center gap-2 bg-slate-100 dark:bg-dark-800 text-slate-400 dark:text-slate-500 text-xs font-bold px-4 py-2.5 rounded-xl border border-slate-200 dark:border-dark-700 shadow-sm shrink-0 cursor-not-allowed opacity-75';
-          if (icon) icon.className = 'fa-solid fa-check text-slate-400';
-          if (text) text.textContent = 'Link Sudah Versi Terbaru';
+          // URL sama persis: Kunci tombol selama 24 jam (1 hari)
+          apply24HourCooldown('dl', movieId, 'btn-refresh-dl', 'icon-refresh-dl', 'text-refresh-dl');
         }
       })
       .catch(function(err) {
@@ -598,6 +653,52 @@
         if (text) text.textContent = 'Coba Lagi';
       });
     }
+
+    // Refresh & Re-scrape Broken Streaming Link secara mandiri
+    function refreshMovieStream(movieId) {
+      const btn = document.getElementById('btn-refresh-stream') || document.getElementById('btn-refresh-stream-empty');
+      const icon = document.getElementById('icon-refresh-stream') || document.getElementById('icon-refresh-stream-empty');
+      const text = document.getElementById('text-refresh-stream') || document.getElementById('text-refresh-stream-empty');
+      if (!btn || btn.disabled) return;
+
+      btn.disabled = true;
+      if (icon) icon.classList.add('fa-spin');
+      if (text) text.textContent = 'Menghubungkan...';
+
+      fetch('/api/movie/' + movieId + '/refresh-stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (icon) icon.classList.remove('fa-spin');
+        if (data.status === 'updated') {
+          localStorage.removeItem(getCooldownKey('stream', movieId));
+          if (icon) icon.className = 'fa-solid fa-circle-check text-emerald-400';
+          if (text) text.textContent = 'Server Diperbarui!';
+          setTimeout(function() { window.location.reload(); }, 1200);
+        } else {
+          // URL sama persis: Kunci tombol selama 24 jam (1 hari)
+          const btnId = btn.id;
+          const iconId = icon.id;
+          const textId = text.id;
+          apply24HourCooldown('stream', movieId, btnId, iconId, textId);
+        }
+      })
+      .catch(function(err) {
+        if (icon) icon.classList.remove('fa-spin');
+        btn.disabled = false;
+        if (text) text.textContent = 'Coba Lagi';
+      });
+    }
+
+    // Inisialisasi status cooldown saat halaman dimuat
+    document.addEventListener('DOMContentLoaded', function() {
+      const movieId = {{.Movie.ID}};
+      checkButtonCooldown('dl', movieId, 'btn-refresh-dl', 'icon-refresh-dl', 'text-refresh-dl', 'Cek / Segarkan Link');
+      checkButtonCooldown('stream', movieId, 'btn-refresh-stream', 'icon-refresh-stream', 'text-refresh-stream', 'Cek / Segarkan Server');
+      checkButtonCooldown('stream', movieId, 'btn-refresh-stream-empty', 'icon-refresh-stream-empty', 'text-refresh-stream-empty', 'Cari / Hubungkan Server Streaming');
+    });
   </script>
 </div>
 {{end}}

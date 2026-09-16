@@ -293,6 +293,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("GET /set-lang", s.HandleSetLang)
 	mux.HandleFunc("GET /api/movies", s.HandleAPIMovies)
 	mux.HandleFunc("POST /api/movie/{id}/refresh-download", s.HandleRefreshDownloadLink)
+	mux.HandleFunc("POST /api/movie/{id}/refresh-stream", s.HandleRefreshStreamLink)
 
 	// SEO & Search Engine Discovery Endpoints
 	mux.HandleFunc("GET /sitemap.xml", s.HandleSitemapXML)

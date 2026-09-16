@@ -212,7 +212,16 @@ Aplikasi menyediakan berbagai opsi CLI terminal (setara *Artisan* pada Laravel) 
 .\cinembrot.exe -convert-images
 ```
 
-### 5. Scraping Film Barat & Domain Publik
+### 5. Fitur Mandiri Tombol Segarkan Link (Broken Link & Cooldown 24 Jam)
+Pada halaman detail film (`/movie/{slug}`), pengunjung dan pengelola disediakan 2 tombol interaktif:
+1. **Tombol "🔄 Cek / Segarkan Server"** (di atas player video streaming):
+   - Jika video error/broken/buffering, klik tombol ini untuk melakukan scraping mandiri mencari server streaming video terbaru dari sumber.
+   - **Aturan Cooldown 24 Jam**: Jika hasil pengecekan menunjukkan server streaming yang didapat sama persis dengan yang tersimpan, tombol otomatis di-*disabled* selama **1 hari (24 jam)** dengan tampilan hitung mundur jam (misal: *Versi Terbaru (24j)*) untuk mencegah spam request ke sumber.
+2. **Tombol "🔄 Cek / Segarkan Link"** (di samping daftar File Download):
+   - Jika link download mati/broken, klik tombol ini untuk re-scrape tautan file dan subtitle terbaru dari sumber.
+   - **Aturan Cooldown 24 Jam**: Jika URL dari sumber sama persis, tombol otomatis di-*disabled* selama **1 hari (24 jam)** secara persisten di browser.
+
+### 6. Scraping Film Barat & Domain Publik
 ```powershell
 # Scrape film rilis tahun tertentu dari provider (tmdb / archive / yts / all)
 .\cinembrot.exe -by-year 2024 -pages 1 -source yts

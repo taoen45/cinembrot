@@ -1058,9 +1058,112 @@ func (s *Server) HandleRefreshDownloadLink(w http.ResponseWriter, r *http.Reques
 
 	// Jika ternyata URL sama persis (tidak ada link baru dari website sumber)
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"success": true,
-		"status":  "same",
-		"message": "Link download sudah versi terbaru dari website sumber (tidak ada URL baru).",
+		"success":        true,
+		"status":         "same",
+		"cooldown_hours": 24,
+		"message":        "Link download sudah versi terbaru dari website sumber (tidak ada URL baru). Tombol dinonaktifkan selama 24 jam.",
+	})
+}
+
+// HandleRefreshStreamLink handles POST /api/movie/{id}/refresh-stream
+func (s *Server) HandleRefreshStreamLink(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"success":false,"message":"Metode HTTP harus POST"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	pathTrimmed := strings.Trim(r.URL.Path, "/")
+	parts := strings.Split(pathTrimmed, "/")
+	var movieID int
+	for i, part := range parts {
+		if part == "movie" && i+1 < len(parts) {
+			if id, err := strconv.Atoi(parts[i+1]); err == nil {
+				movieID = id
+				break
+			}
+		}
+	}
+	if movieID == 0 {
+		if id, err := strconv.Atoi(r.URL.Query().Get("id")); err == nil {
+			movieID = id
+		}
+	}
+
+	if movieID <= 0 {
+		http.Error(w, `{"success":false,"message":"ID Film tidak valid"}`, http.StatusBadRequest)
+		return
+	}
+
+	var movie model.Movie
+	if err := s.db.Preload("StreamLinks").Preload("Episodes.StreamLinks").First(&movie, movieID).Error; err != nil {
+		http.Error(w, `{"success":false,"message":"Film tidak ditemukan di database"}`, http.StatusNotFound)
+		return
+	}
+
+	// Kumpulkan URL streaming yang saat ini tersimpan
+	existingURLs := make(map[string]bool)
+	for _, sl := range movie.StreamLinks {
+		cleanU := strings.TrimSpace(sl.EmbedURL)
+		if cleanU != "" {
+			existingURLs[cleanU] = true
+		}
+	}
+	for _, ep := range movie.Episodes {
+		for _, sl := range ep.StreamLinks {
+			cleanU := strings.TrimSpace(sl.EmbedURL)
+			if cleanU != "" {
+				existingURLs[cleanU] = true
+			}
+		}
+	}
+
+	// Ekstrak atau cari TMDb ID
+	tmdbID := embed.ExtractTMDbID(&movie)
+	if tmdbID <= 0 && s.tmdbCli != nil {
+		if movie.Type == "anime" || movie.Type == "drama_pendek" || movie.Type == "series" {
+			if searchRes, err := s.tmdbCli.SearchTV(movie.Title); err == nil && len(searchRes.Results) > 0 {
+				tmdbID = searchRes.Results[0].ID
+			}
+		} else {
+			if searchRes, err := s.tmdbCli.SearchMovie(movie.Title, movie.Year); err == nil && len(searchRes.Results) > 0 {
+				tmdbID = searchRes.Results[0].ID
+			}
+		}
+	}
+
+	// Generate kandidat stream link server terbaru
+	freshStreams := embed.GenerateMultiServerStreams(&movie, tmdbID, 1, 1)
+
+	var newStreamsFound []model.StreamLink
+	for _, fs := range freshStreams {
+		cleanU := strings.TrimSpace(fs.EmbedURL)
+		if cleanU != "" && !existingURLs[cleanU] {
+			fs.MovieID = movie.ID
+			newStreamsFound = append(newStreamsFound, fs)
+		}
+	}
+
+	// Evaluasi hasil
+	if len(newStreamsFound) > 0 {
+		for i := range newStreamsFound {
+			s.db.Create(&newStreamsFound[i])
+		}
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success":     true,
+			"status":      "updated",
+			"message":     "Berhasil memperbarui server video streaming dari sumber!",
+			"added_count": len(newStreamsFound),
+		})
+		return
+	}
+
+	// Jika URL streaming sama persis
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":        true,
+		"status":         "same",
+		"cooldown_hours": 24,
+		"message":        "Server streaming sudah versi terbaru dan sama persis. Tombol dinonaktifkan selama 24 jam.",
 	})
 }
 
