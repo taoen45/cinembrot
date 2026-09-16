@@ -851,8 +851,67 @@ func (c *Client) DiscoverAsianDramas(lang string, page int, year ...int) ([]mode
 	return dramas, nil
 }
 
+// DiscoverAsianDramasWithTotal retrieves top Asian dramas and returns the total available pages from TMDb
+func (c *Client) DiscoverAsianDramasWithTotal(lang string, page int, year ...int) ([]model.Movie, int, error) {
+	apiKey := c.GetAPIKey()
+
+	if page <= 0 {
+		page = 1
+	}
+
+	langParam := "ko|zh|ja|th"
+	if lang != "" && lang != "all" {
+		langParam = lang
+	}
+
+	yearFilter := ""
+	if len(year) > 0 && year[0] > 0 {
+		yearFilter = fmt.Sprintf("&first_air_date_year=%d", year[0])
+	}
+
+	discoverURL := fmt.Sprintf("%s/discover/tv?api_key=%s&with_original_language=%s&sort_by=popularity.desc&page=%d&language=%s%s",
+		BaseURL, apiKey, langParam, page, c.cfg.TMDBLanguage, yearFilter)
+
+	req, err := http.NewRequest("GET", discoverURL, nil)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, 0, fmt.Errorf("TMDb Discover TV API returned status %d", resp.StatusCode)
+	}
+
+	var searchRes SearchTVResponse
+	if err := json.NewDecoder(resp.Body).Decode(&searchRes); err != nil {
+		return nil, 0, err
+	}
+
+	var dramas []model.Movie
+	for _, item := range searchRes.Results {
+		drama, err := c.GetTVDetails(item.ID)
+		if err != nil {
+			continue
+		}
+		dramas = append(dramas, *drama)
+	}
+
+	return dramas, searchRes.TotalPages, nil
+}
+
 // DiscoverAnime retrieves anime series from TMDb (with_genres=16, with_original_language=ja) with custom sort_by and year
 func (c *Client) DiscoverAnime(limit int, page int, year int, sortBy ...string) ([]model.Movie, error) {
+	animes, _, err := c.DiscoverAnimeWithTotal(limit, page, year, sortBy...)
+	return animes, err
+}
+
+// DiscoverAnimeWithTotal retrieves anime series and returns total available pages
+func (c *Client) DiscoverAnimeWithTotal(limit int, page int, year int, sortBy ...string) ([]model.Movie, int, error) {
 	apiKey := c.GetAPIKey()
 
 	if page <= 0 {
@@ -874,22 +933,22 @@ func (c *Client) DiscoverAnime(limit int, page int, year int, sortBy ...string) 
 
 	req, err := http.NewRequest("GET", discoverURL, nil)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("TMDb Discover Anime API returned status %d", resp.StatusCode)
+		return nil, 0, fmt.Errorf("TMDb Discover Anime API returned status %d", resp.StatusCode)
 	}
 
 	var searchRes SearchTVResponse
 	if err := json.NewDecoder(resp.Body).Decode(&searchRes); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	var animes []model.Movie
@@ -905,11 +964,17 @@ func (c *Client) DiscoverAnime(limit int, page int, year int, sortBy ...string) 
 		}
 	}
 
-	return animes, nil
+	return animes, searchRes.TotalPages, nil
 }
 
 // DiscoverHollywoodMovies retrieves top blockbuster Hollywood / Box Office movies from TMDb
 func (c *Client) DiscoverHollywoodMovies(category string, page int, year ...int) ([]model.Movie, error) {
+	movies, _, err := c.DiscoverHollywoodMoviesWithTotal(category, page, year...)
+	return movies, err
+}
+
+// DiscoverHollywoodMoviesWithTotal retrieves Hollywood movies and returns total available pages
+func (c *Client) DiscoverHollywoodMoviesWithTotal(category string, page int, year ...int) ([]model.Movie, int, error) {
 	apiKey := c.GetAPIKey()
 
 	if page <= 0 {
@@ -944,22 +1009,22 @@ func (c *Client) DiscoverHollywoodMovies(category string, page int, year ...int)
 
 	req, err := http.NewRequest("GET", discoverURL, nil)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("TMDb Discover Movie API returned status %d", resp.StatusCode)
+		return nil, 0, fmt.Errorf("TMDb Discover Movie API returned status %d", resp.StatusCode)
 	}
 
 	var searchRes SearchMovieResponse
 	if err := json.NewDecoder(resp.Body).Decode(&searchRes); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	var movies []model.Movie
@@ -972,7 +1037,7 @@ func (c *Client) DiscoverHollywoodMovies(category string, page int, year ...int)
 		movies = append(movies, *movie)
 	}
 
-	return movies, nil
+	return movies, searchRes.TotalPages, nil
 }
 
 var (

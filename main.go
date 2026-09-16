@@ -40,18 +40,19 @@ func main() {
 	checkLinks := flag.Bool("check-links", false, "Scan and validate all download file links in database for broken/dead URLs")
 
 	// CLI Scraper Khusus Anime & Drama Asia
-	scrapeAnime := flag.Bool("scrape-anime", false, "Scrape anime resmi dari MyAnimeList via Jikan API (WebP + Subtitle)")
+	scrapeAnime := flag.Bool("scrape-anime", false, "Scrape anime resmi dari MyAnimeList via Jikan API & TMDb (WebP + Subtitle)")
 	animeCat := flag.String("anime-cat", "top", "Kategori anime: 'top' (terpopuler) atau 'seasonal' (musim ini/on-going)")
-	animeLimit := flag.Int("anime-limit", 15, "Jumlah judul anime yang diambil (misal: 10, 15, 25)")
+	animeLimit := flag.Int("anime-limit", 0, "Jumlah judul anime yang diambil (0 = otomatis ikuti seluruh halaman)")
+	animePages := flag.Int("anime-pages", 0, "Jumlah halaman anime yang diambil (0 = otomatis scrape SEMUA halaman yang ada)")
 
 	scrapeDrama := flag.Bool("scrape-drama", false, "Scrape serial drama Asia dari TMDb TV API (WebP + Subtitle)")
 	dramaLang := flag.String("drama-lang", "ko", "Bahasa drama: 'ko' (Korea), 'zh' (China), 'ja' (Jepang), 'th' (Thailand), atau 'all'")
-	dramaPages := flag.Int("drama-pages", 1, "Jumlah halaman drama yang diambil (1 hal = 20 judul)")
+	dramaPages := flag.Int("drama-pages", 0, "Jumlah halaman drama yang diambil (0 = otomatis scrape SEMUA halaman yang ada)")
 
 	// CLI Scraper Khusus Film Hollywood / Box Office
 	scrapeHollywood := flag.Bool("scrape-hollywood", false, "Scrape film Hollywood / Box Office resmi dari TMDb API (WebP + Subtitle + Multi-Server Stream)")
 	hollywoodCat := flag.String("hollywood-cat", "boxoffice", "Kategori Hollywood: 'boxoffice' (pendapatan tertinggi), 'popular' (terpopuler), 'top_rated' (rating tertinggi), 'now_playing' (rilis bioskop terbaru)")
-	hollywoodPages := flag.Int("hollywood-pages", 1, "Jumlah halaman Hollywood yang diambil (1 hal = 20 film)")
+	hollywoodPages := flag.Int("hollywood-pages", 0, "Jumlah halaman Hollywood yang diambil (0 = otomatis scrape SEMUA halaman yang ada)")
 
 	// CLI Sinkronisasi Multi-Server Streaming Video
 	populateStreams := flag.Bool("populate-streams", false, "Isi dan perbarui server streaming embed (VidSrc, AutoEmbed, 2Embed, VidLink) untuk semua judul di database")
@@ -174,8 +175,18 @@ func main() {
 		if *tmdbYear > 0 {
 			yearInfo = fmt.Sprintf(", Tahun: %d", *tmdbYear)
 		}
-		fmt.Printf("\n[ACTION] 🎌 Memulai scraping Anime resmi (Kategori: %s, Limit: %d%s)...\n", *animeCat, *animeLimit, yearInfo)
-		count, err := pipe.IngestAnime(*animeCat, *animeLimit, *tmdbYear)
+		pageInfo := "Semua Halaman (Otomatis)"
+		effectiveLimit := *animeLimit
+		if *animePages > 0 {
+			pageInfo = fmt.Sprintf("%d Halaman", *animePages)
+			if effectiveLimit <= 0 {
+				effectiveLimit = *animePages * 25
+			}
+		} else if effectiveLimit > 0 {
+			pageInfo = fmt.Sprintf("Limit %d judul", effectiveLimit)
+		}
+		fmt.Printf("\n[ACTION] 🎌 Memulai scraping Anime resmi (Kategori: %s, Halaman: %s%s)...\n", *animeCat, pageInfo, yearInfo)
+		count, err := pipe.IngestAnime(*animeCat, effectiveLimit, *tmdbYear)
 		if err != nil {
 			log.Printf("[ERROR] Scraping Anime gagal: %v\n", err)
 		} else {
@@ -190,7 +201,11 @@ func main() {
 		if *tmdbYear > 0 {
 			yearInfo = fmt.Sprintf(", Tahun: %d", *tmdbYear)
 		}
-		fmt.Printf("\n[ACTION] 🎭 Memulai scraping Drama Asia resmi TMDb TV (Bahasa: %s, Halaman: %d%s)...\n", *dramaLang, *dramaPages, yearInfo)
+		pageInfo := "Semua Halaman (Otomatis)"
+		if *dramaPages > 0 {
+			pageInfo = fmt.Sprintf("%d Halaman", *dramaPages)
+		}
+		fmt.Printf("\n[ACTION] 🎭 Memulai scraping Drama Asia resmi TMDb TV (Bahasa: %s, Halaman: %s%s)...\n", *dramaLang, pageInfo, yearInfo)
 		count, err := pipe.IngestAsianDramas(*dramaLang, *dramaPages, *tmdbYear)
 		if err != nil {
 			log.Printf("[ERROR] Scraping Drama Asia gagal: %v\n", err)
@@ -206,7 +221,11 @@ func main() {
 		if *tmdbYear > 0 {
 			yearInfo = fmt.Sprintf(", Tahun: %d", *tmdbYear)
 		}
-		fmt.Printf("\n[ACTION] 🎬 Memulai scraping Film Hollywood / Box Office resmi TMDb (Kategori: %s, Halaman: %d%s)...\n", *hollywoodCat, *hollywoodPages, yearInfo)
+		pageInfo := "Semua Halaman (Otomatis)"
+		if *hollywoodPages > 0 {
+			pageInfo = fmt.Sprintf("%d Halaman", *hollywoodPages)
+		}
+		fmt.Printf("\n[ACTION] 🎬 Memulai scraping Film Hollywood / Box Office resmi TMDb (Kategori: %s, Halaman: %s%s)...\n", *hollywoodCat, pageInfo, yearInfo)
 		count, err := pipe.IngestHollywoodMovies(*hollywoodCat, *hollywoodPages, *tmdbYear)
 		if err != nil {
 			log.Printf("[ERROR] Scraping Hollywood gagal: %v\n", err)
@@ -263,12 +282,12 @@ func main() {
 	printDatabaseStats(db)
 
 	fmt.Println("\n[INFO] Perintah CLI (Terminal) yang dapat digunakan:")
-	fmt.Println("  go run . -serve                      # 🚀 JALANKAN WEB SERVER & AUTO-SCRAPER BACKGROUND")
-	fmt.Println("  go run . -scrape-hollywood -year 2024 # 🎬 Scrape film Hollywood/Box Office (-year 2024, -hollywood-cat boxoffice/popular, -hollywood-pages 1)")
-	fmt.Println("  go run . -scrape-anime -year 2026    # 🎌 Scrape anime resmi (-year 2026, -anime-cat top/seasonal, -anime-limit 15)")
-	fmt.Println("  go run . -scrape-drama -year 2026    # 🎭 Scrape drama Asia TMDb (-year 2026, -drama-lang ko/zh/ja/th/all, -drama-pages 1)")
-	fmt.Println("  go run . -fix-titles                 # 🛠️ Perbaiki judul Kanji ke English QWERTY & isi sinopsis kosong")
-	fmt.Println("  go run . -populate-streams           # 🎬 Isi/perbarui server streaming embed untuk semua judul")
+	fmt.Println("  go run . -serve                       # 🚀 JALANKAN WEB SERVER & AUTO-SCRAPER BACKGROUND")
+	fmt.Println("  go run . -scrape-hollywood -year 2026 # 🎬 Scrape SEMUA halaman film Hollywood/Box Office tahun 2026")
+	fmt.Println("  go run . -scrape-anime -year 2026     # 🎌 Scrape SEMUA halaman anime rilis tahun 2026")
+	fmt.Println("  go run . -scrape-drama -year 2026     # 🎭 Scrape SEMUA halaman drama Asia rilis tahun 2026")
+	fmt.Println("  go run . -fix-titles                  # 🛠️ Perbaiki judul Kanji ke English QWERTY & isi sinopsis kosong")
+	fmt.Println("  go run . -populate-streams            # 🎬 Isi/perbarui server streaming embed untuk semua judul")
 	fmt.Println("  go run . -check-links                # 🔍 Pengecekan & validasi link download file di database")
 	fmt.Println("  go run . -convert-images             # 🖼️ Download & konversi semua poster/backdrop di DB ke WebP lokal")
 	fmt.Println("  go run . -auto-scrape                # 🤖 Jalankan 1 siklus scraping ramah server semua tahun")

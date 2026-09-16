@@ -357,9 +357,6 @@ func (p *Pipeline) enrichMetadata(movie *model.Movie) {
 // IngestAnime fetches top popular and/or latest seasonal anime from MyAnimeList/Jikan and TMDb and saves to DB
 func (p *Pipeline) IngestAnime(category string, limit int, year ...int) (int, error) {
 	startTime := time.Now()
-	if limit <= 0 {
-		limit = 20
-	}
 
 	targetYear := 0
 	if len(year) > 0 && year[0] > 0 {
@@ -380,60 +377,136 @@ func (p *Pipeline) IngestAnime(category string, limit int, year ...int) (int, er
 		}
 	}
 
-	// Helper to fetch multiple pages from Jikan with TMDb fallback
-	fetchBatch := func(subCat string, targetCount int) {
-		got := 0
-		page := 1
-		for got < targetCount && page <= 10 {
-			perPage := targetCount - got
-			if perPage > 25 {
-				perPage = 25
-			}
-
-			var batch []model.Movie
-			var err error
-
-			if targetYear > 0 {
-				batch, err = p.jikanCli.FetchAnimeByYear(targetYear, perPage, page)
-			} else if subCat == "seasonal" || subCat == "now" || subCat == "latest" {
-				batch, err = p.jikanCli.FetchSeasonalAnime(perPage, page)
-			} else {
-				batch, err = p.jikanCli.FetchTopAnime(perPage, page)
-			}
-
-			if err != nil || len(batch) == 0 {
-				log.Printf("[WARN] Jikan %s page %d notice: %v. Menggunakan fallback TMDb...\n", subCat, page, err)
-				sortOption := "popularity.desc"
-				if targetYear == 0 && (subCat == "seasonal" || subCat == "now" || subCat == "latest") {
-					sortOption = "first_air_date.desc"
-				}
-				batch, err = p.tmdbCli.DiscoverAnime(perPage, page, targetYear, sortOption)
-			}
-
-			if len(batch) == 0 {
-				break
-			}
-
-			addUnique(batch)
-			got += len(batch)
-			page++
-			time.Sleep(350 * time.Millisecond) // Respect rate limits
-		}
-	}
-
+	// 1. Scraping Anime berdasarkan Tahun Rilis dengan Auto-Discovery Seluruh Halaman
 	if targetYear > 0 {
-		log.Printf("[ANIME] 🎌 Mengambil %d anime yang rilis pada tahun %d...\n", limit, targetYear)
-		fetchBatch("year", limit)
-	} else if catLower == "all" || catLower == "combo" || catLower == "popular-latest" || limit >= 40 {
-		half := limit / 2
-		log.Printf("[ANIME] 🎌 Mengambil %d anime terpopuler sepanjang masa...\n", half)
-		fetchBatch("top", half)
-		log.Printf("[ANIME] 🎌 Mengambil %d anime terbaru & seasonal musim ini...\n", limit-half)
-		fetchBatch("seasonal", limit-half)
-	} else if catLower == "seasonal" || catLower == "now" || catLower == "latest" {
-		fetchBatch("seasonal", limit)
+		if limit <= 0 {
+			// Mode Otomatis: Cek berapa page yang ada lalu generate SEMUA page
+			log.Printf("[ANIME] 🔍 Menghubungi provider untuk mendeteksi total halaman anime rilis tahun %d...\n", targetYear)
+			firstBatch, lastPage, hasNext, err := p.jikanCli.FetchAnimeByYearWithPagination(targetYear, 25, 1)
+			if err == nil && len(firstBatch) > 0 {
+				if lastPage > 50 {
+					lastPage = 50 // batas aman
+				}
+				log.Printf("[ANIME] 🎌 Terdeteksi total %d halaman anime di MyAnimeList untuk tahun %d. Men-generate SEMUA halaman secara otomatis...\n",
+					lastPage, targetYear)
+				addUnique(firstBatch)
+
+				currentPage := 2
+				for currentPage <= lastPage && (hasNext || currentPage <= lastPage) {
+					log.Printf("[ANIME] 🎌 Mengambil halaman %d dari %d...\n", currentPage, lastPage)
+					time.Sleep(350 * time.Millisecond)
+					batch, lp, hn, fetchErr := p.jikanCli.FetchAnimeByYearWithPagination(targetYear, 25, currentPage)
+					if fetchErr != nil || len(batch) == 0 {
+						log.Printf("[WARN] Jikan page %d notice: %v\n", currentPage, fetchErr)
+						break
+					}
+					addUnique(batch)
+					if lp > lastPage && lp <= 50 {
+						lastPage = lp
+					}
+					hasNext = hn
+					currentPage++
+				}
+			} else {
+				// Fallback ke TMDb Discover Anime
+				log.Printf("[WARN] Jikan anime tahun %d tidak merespons. Menggunakan fallback TMDb...\n", targetYear)
+				firstBatchTMDb, totalPages, tmdbErr := p.tmdbCli.DiscoverAnimeWithTotal(20, 1, targetYear, "popularity.desc")
+				if tmdbErr == nil && len(firstBatchTMDb) > 0 {
+					if totalPages > 50 {
+						totalPages = 50
+					}
+					log.Printf("[ANIME] 🎌 Terdeteksi total %d halaman anime di TMDb untuk tahun %d. Men-generate SEMUA halaman secara otomatis...\n",
+						totalPages, targetYear)
+					addUnique(firstBatchTMDb)
+
+					for pg := 2; pg <= totalPages; pg++ {
+						log.Printf("[ANIME] 🎌 Mengambil TMDb halaman %d dari %d...\n", pg, totalPages)
+						batch, _ := p.tmdbCli.DiscoverAnime(20, pg, targetYear, "popularity.desc")
+						if len(batch) == 0 {
+							break
+						}
+						addUnique(batch)
+						time.Sleep(250 * time.Millisecond)
+					}
+				}
+			}
+		} else {
+			// Jika limit ditentukan secara eksplisit, batasi sesuai limit
+			log.Printf("[ANIME] 🎌 Mengambil %d anime yang rilis pada tahun %d...\n", limit, targetYear)
+			got := 0
+			page := 1
+			for got < limit && page <= 15 {
+				perPage := limit - got
+				if perPage > 25 {
+					perPage = 25
+				}
+				batch, err := p.jikanCli.FetchAnimeByYear(targetYear, perPage, page)
+				if err != nil || len(batch) == 0 {
+					batch, _ = p.tmdbCli.DiscoverAnime(perPage, page, targetYear, "popularity.desc")
+				}
+				if len(batch) == 0 {
+					break
+				}
+				addUnique(batch)
+				got += len(batch)
+				page++
+				time.Sleep(300 * time.Millisecond)
+			}
+		}
 	} else {
-		fetchBatch("top", limit)
+		// Non-year: top atau seasonal
+		if limit <= 0 {
+			limit = 25
+		}
+		fetchBatch := func(subCat string, targetCount int) {
+			got := 0
+			page := 1
+			for got < targetCount && page <= 10 {
+				perPage := targetCount - got
+				if perPage > 25 {
+					perPage = 25
+				}
+
+				var batch []model.Movie
+				var err error
+
+				if subCat == "seasonal" || subCat == "now" || subCat == "latest" {
+					batch, err = p.jikanCli.FetchSeasonalAnime(perPage, page)
+				} else {
+					batch, err = p.jikanCli.FetchTopAnime(perPage, page)
+				}
+
+				if err != nil || len(batch) == 0 {
+					log.Printf("[WARN] Jikan %s page %d notice: %v. Menggunakan fallback TMDb...\n", subCat, page, err)
+					sortOption := "popularity.desc"
+					if subCat == "seasonal" || subCat == "now" || subCat == "latest" {
+						sortOption = "first_air_date.desc"
+					}
+					batch, err = p.tmdbCli.DiscoverAnime(perPage, page, 0, sortOption)
+				}
+
+				if len(batch) == 0 {
+					break
+				}
+
+				addUnique(batch)
+				got += len(batch)
+				page++
+				time.Sleep(350 * time.Millisecond)
+			}
+		}
+
+		if catLower == "all" || catLower == "combo" || catLower == "popular-latest" || limit >= 40 {
+			half := limit / 2
+			log.Printf("[ANIME] 🎌 Mengambil %d anime terpopuler sepanjang masa...\n", half)
+			fetchBatch("top", half)
+			log.Printf("[ANIME] 🎌 Mengambil %d anime terbaru & seasonal musim ini...\n", limit-half)
+			fetchBatch("seasonal", limit-half)
+		} else if catLower == "seasonal" || catLower == "now" || catLower == "latest" {
+			fetchBatch("seasonal", limit)
+		} else {
+			fetchBatch("top", limit)
+		}
 	}
 
 	if len(allMovies) == 0 {
@@ -465,87 +538,203 @@ func (p *Pipeline) IngestAnime(category string, limit int, year ...int) (int, er
 		savedCount++
 	}
 
-	_ = p.repo.LogScrape("Anime-Scraper", fmt.Sprintf("category=%s&limit=%d", category, limit), "SUCCESS", savedCount, "", time.Since(startTime))
+	_ = p.repo.LogScrape("Anime-Scraper", fmt.Sprintf("category=%s&total=%d", category, savedCount), "SUCCESS", savedCount, "", time.Since(startTime))
 	return savedCount, nil
 }
 
 // IngestAsianDramas fetches top Asian dramas (Korean, Chinese, Japanese, Thai) from TMDb and saves to DB
-func (p *Pipeline) IngestAsianDramas(lang string, page int, year ...int) (int, error) {
+func (p *Pipeline) IngestAsianDramas(lang string, pages int, year ...int) (int, error) {
 	startTime := time.Now()
-	if page <= 0 {
-		page = 1
-	}
-
-	dramas, err := p.tmdbCli.DiscoverAsianDramas(lang, page, year...)
-	if err != nil {
-		_ = p.repo.LogScrape("TMDb-TV", fmt.Sprintf("discover/tv?lang=%s", lang), "FAILED", 0, err.Error(), time.Since(startTime))
-		return 0, err
-	}
-
+	targetPages := pages
 	savedCount := 0
-	for i := range dramas {
-		drama := &dramas[i]
-		p.enrichMetadata(drama)
 
-		// Download & Convert Images to WebP (Original & Thumbnail)
-		imageprocessor.ProcessMovieImages(drama, p.cfg.ScraperUserAgent)
+	// Jika pages <= 0, periksa total_pages di API lalu scrape SEMUA halaman
+	if targetPages <= 0 {
+		firstBatch, totalPages, err := p.tmdbCli.DiscoverAsianDramasWithTotal(lang, 1, year...)
+		if err != nil {
+			_ = p.repo.LogScrape("TMDb-TV", fmt.Sprintf("discover/tv?lang=%s&pages=all", lang), "FAILED", 0, err.Error(), time.Since(startTime))
+			return 0, err
+		}
+		if totalPages <= 0 {
+			totalPages = 1
+		}
+		if totalPages > 50 {
+			totalPages = 50
+		}
+		targetPages = totalPages
 
-		// Generate multi-server streaming embed links if empty
-		if len(drama.StreamLinks) == 0 {
-			drama.StreamLinks = embed.GenerateMultiServerStreams(drama, 0, 1, 1)
+		yearStr := "Semua Tahun"
+		if len(year) > 0 && year[0] > 0 {
+			yearStr = fmt.Sprintf("Tahun %d", year[0])
+		}
+		log.Printf("[DRAMA] 🔍 Terdeteksi total %d halaman untuk Drama '%s' (%s). Men-generate SEMUA halaman secara otomatis...\n",
+			targetPages, lang, yearStr)
+
+		// Simpan halaman 1
+		for i := range firstBatch {
+			drama := &firstBatch[i]
+			p.enrichMetadata(drama)
+			imageprocessor.ProcessMovieImages(drama, p.cfg.ScraperUserAgent)
+			if len(drama.StreamLinks) == 0 {
+				drama.StreamLinks = embed.GenerateMultiServerStreams(drama, 0, 1, 1)
+			}
+			if err := p.repo.UpsertMovie(drama); err != nil {
+				continue
+			}
+			log.Printf("[SUCCESS] Saved Asian Drama: '%s' (%d) [WebP Ready, Links: %d]\n",
+				drama.Title, drama.Year, len(drama.DownloadLinks))
+			savedCount++
 		}
 
-		if err := p.repo.UpsertMovie(drama); err != nil {
-			log.Printf("[ERROR] Failed to upsert Asian drama '%s': %v\n", drama.Title, err)
-			continue
+		// Lanjutkan halaman 2 sampai targetPages
+		for pg := 2; pg <= targetPages; pg++ {
+			log.Printf("[DRAMA] 🎭 Mengambil halaman %d dari %d...\n", pg, targetPages)
+			dramas, err := p.tmdbCli.DiscoverAsianDramas(lang, pg, year...)
+			if err != nil {
+				log.Printf("[WARN] Asian drama page %d notice: %v\n", pg, err)
+				break
+			}
+			for i := range dramas {
+				drama := &dramas[i]
+				p.enrichMetadata(drama)
+				imageprocessor.ProcessMovieImages(drama, p.cfg.ScraperUserAgent)
+				if len(drama.StreamLinks) == 0 {
+					drama.StreamLinks = embed.GenerateMultiServerStreams(drama, 0, 1, 1)
+				}
+				if err := p.repo.UpsertMovie(drama); err != nil {
+					continue
+				}
+				log.Printf("[SUCCESS] Saved Asian Drama: '%s' (%d) [WebP Ready, Links: %d]\n",
+					drama.Title, drama.Year, len(drama.DownloadLinks))
+				savedCount++
+			}
+			time.Sleep(250 * time.Millisecond)
 		}
-		log.Printf("[SUCCESS] Saved Asian Drama: '%s' (%d) [WebP Ready, Links: %d]\n",
-			drama.Title, drama.Year, len(drama.DownloadLinks))
-		savedCount++
+	} else {
+		for pg := 1; pg <= targetPages; pg++ {
+			dramas, err := p.tmdbCli.DiscoverAsianDramas(lang, pg, year...)
+			if err != nil {
+				_ = p.repo.LogScrape("TMDb-TV", fmt.Sprintf("discover/tv?lang=%s&page=%d", lang, pg), "FAILED", savedCount, err.Error(), time.Since(startTime))
+				return savedCount, err
+			}
+
+			for i := range dramas {
+				drama := &dramas[i]
+				p.enrichMetadata(drama)
+				imageprocessor.ProcessMovieImages(drama, p.cfg.ScraperUserAgent)
+				if len(drama.StreamLinks) == 0 {
+					drama.StreamLinks = embed.GenerateMultiServerStreams(drama, 0, 1, 1)
+				}
+				if err := p.repo.UpsertMovie(drama); err != nil {
+					log.Printf("[ERROR] Failed to upsert Asian drama '%s': %v\n", drama.Title, err)
+					continue
+				}
+				log.Printf("[SUCCESS] Saved Asian Drama: '%s' (%d) [WebP Ready, Links: %d]\n",
+					drama.Title, drama.Year, len(drama.DownloadLinks))
+				savedCount++
+			}
+		}
 	}
 
-	_ = p.repo.LogScrape("TMDb-TV", fmt.Sprintf("discover/tv?lang=%s&page=%d", lang, page), "SUCCESS", savedCount, "", time.Since(startTime))
+	_ = p.repo.LogScrape("TMDb-TV", fmt.Sprintf("discover/tv?lang=%s&pages=%d", lang, targetPages), "SUCCESS", savedCount, "", time.Since(startTime))
 	return savedCount, nil
 }
 
 // IngestHollywoodMovies fetches top blockbuster Hollywood / Box Office movies from TMDb and saves to DB
 func (p *Pipeline) IngestHollywoodMovies(category string, pages int, year ...int) (int, error) {
 	startTime := time.Now()
-	if pages <= 0 {
-		pages = 1
-	}
-
+	targetPages := pages
 	savedCount := 0
-	for pg := 1; pg <= pages; pg++ {
-		movies, err := p.tmdbCli.DiscoverHollywoodMovies(category, pg, year...)
+
+	// Jika pages <= 0, periksa total_pages di API lalu scrape SEMUA halaman
+	if targetPages <= 0 {
+		firstBatch, totalPages, err := p.tmdbCli.DiscoverHollywoodMoviesWithTotal(category, 1, year...)
 		if err != nil {
-			_ = p.repo.LogScrape("TMDb-Hollywood", fmt.Sprintf("category=%s&page=%d", category, pg), "FAILED", savedCount, err.Error(), time.Since(startTime))
-			return savedCount, err
+			_ = p.repo.LogScrape("TMDb-Hollywood", fmt.Sprintf("category=%s&pages=all", category), "FAILED", 0, err.Error(), time.Since(startTime))
+			return 0, err
 		}
+		if totalPages <= 0 {
+			totalPages = 1
+		}
+		if totalPages > 50 {
+			totalPages = 50
+		}
+		targetPages = totalPages
 
-		for i := range movies {
-			movie := &movies[i]
+		yearStr := "Semua Tahun"
+		if len(year) > 0 && year[0] > 0 {
+			yearStr = fmt.Sprintf("Tahun %d", year[0])
+		}
+		log.Printf("[HOLLYWOOD] 🔍 Terdeteksi total %d halaman untuk kategori '%s' (%s). Men-generate SEMUA halaman secara otomatis...\n",
+			targetPages, category, yearStr)
+
+		// Simpan halaman 1
+		for i := range firstBatch {
+			movie := &firstBatch[i]
 			p.enrichMetadata(movie)
-
-			// Download & Convert Images to WebP (Original & Thumbnail)
 			imageprocessor.ProcessMovieImages(movie, p.cfg.ScraperUserAgent)
-
-			// Generate multi-server streaming embed links if empty
 			if len(movie.StreamLinks) == 0 {
 				movie.StreamLinks = embed.GenerateMultiServerStreams(movie, 0, 1, 1)
 			}
-
 			if err := p.repo.UpsertMovie(movie); err != nil {
-				log.Printf("[ERROR] Failed to upsert Hollywood movie '%s': %v\n", movie.Title, err)
 				continue
 			}
 			log.Printf("[SUCCESS] Saved Hollywood Movie: '%s' (%d) [WebP Ready, Links: %d, Rating: %.1f]\n",
 				movie.Title, movie.Year, len(movie.DownloadLinks), movie.Rating)
 			savedCount++
 		}
+
+		// Lanjutkan halaman 2 sampai targetPages
+		for pg := 2; pg <= targetPages; pg++ {
+			log.Printf("[HOLLYWOOD] 🎬 Mengambil halaman %d dari %d...\n", pg, targetPages)
+			movies, err := p.tmdbCli.DiscoverHollywoodMovies(category, pg, year...)
+			if err != nil {
+				log.Printf("[WARN] Hollywood page %d notice: %v\n", pg, err)
+				break
+			}
+			for i := range movies {
+				movie := &movies[i]
+				p.enrichMetadata(movie)
+				imageprocessor.ProcessMovieImages(movie, p.cfg.ScraperUserAgent)
+				if len(movie.StreamLinks) == 0 {
+					movie.StreamLinks = embed.GenerateMultiServerStreams(movie, 0, 1, 1)
+				}
+				if err := p.repo.UpsertMovie(movie); err != nil {
+					continue
+				}
+				log.Printf("[SUCCESS] Saved Hollywood Movie: '%s' (%d) [WebP Ready, Links: %d, Rating: %.1f]\n",
+					movie.Title, movie.Year, len(movie.DownloadLinks), movie.Rating)
+				savedCount++
+			}
+			time.Sleep(250 * time.Millisecond)
+		}
+	} else {
+		for pg := 1; pg <= targetPages; pg++ {
+			movies, err := p.tmdbCli.DiscoverHollywoodMovies(category, pg, year...)
+			if err != nil {
+				_ = p.repo.LogScrape("TMDb-Hollywood", fmt.Sprintf("category=%s&page=%d", category, pg), "FAILED", savedCount, err.Error(), time.Since(startTime))
+				return savedCount, err
+			}
+
+			for i := range movies {
+				movie := &movies[i]
+				p.enrichMetadata(movie)
+				imageprocessor.ProcessMovieImages(movie, p.cfg.ScraperUserAgent)
+				if len(movie.StreamLinks) == 0 {
+					movie.StreamLinks = embed.GenerateMultiServerStreams(movie, 0, 1, 1)
+				}
+				if err := p.repo.UpsertMovie(movie); err != nil {
+					log.Printf("[ERROR] Failed to upsert Hollywood movie '%s': %v\n", movie.Title, err)
+					continue
+				}
+				log.Printf("[SUCCESS] Saved Hollywood Movie: '%s' (%d) [WebP Ready, Links: %d, Rating: %.1f]\n",
+					movie.Title, movie.Year, len(movie.DownloadLinks), movie.Rating)
+				savedCount++
+			}
+		}
 	}
 
-	_ = p.repo.LogScrape("TMDb-Hollywood", fmt.Sprintf("category=%s&pages=%d", category, pages), "SUCCESS", savedCount, "", time.Since(startTime))
+	_ = p.repo.LogScrape("TMDb-Hollywood", fmt.Sprintf("category=%s&pages=%d", category, targetPages), "SUCCESS", savedCount, "", time.Since(startTime))
 	return savedCount, nil
 }
 

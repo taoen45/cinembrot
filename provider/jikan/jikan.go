@@ -117,8 +117,14 @@ func (c *Client) FetchSeasonalAnime(limit int, page int) ([]model.Movie, error) 
 
 // FetchAnimeByYear fetches anime released in a specific year from MyAnimeList/Jikan
 func (c *Client) FetchAnimeByYear(year int, limit int, page int) ([]model.Movie, error) {
+	movies, _, _, err := c.FetchAnimeByYearWithPagination(year, limit, page)
+	return movies, err
+}
+
+// FetchAnimeByYearWithPagination fetches anime by release year and returns pagination metadata (lastVisiblePage, hasNextPage)
+func (c *Client) FetchAnimeByYearWithPagination(year int, limit int, page int) ([]model.Movie, int, bool, error) {
 	if limit <= 0 {
-		limit = 15
+		limit = 25
 	}
 	if page <= 0 {
 		page = 1
@@ -126,13 +132,18 @@ func (c *Client) FetchAnimeByYear(year int, limit int, page int) ([]model.Movie,
 
 	endpoint := fmt.Sprintf("%s/anime?start_date=%d-01-01&end_date=%d-12-31&order_by=popularity&sort=asc&page=%d&limit=%d",
 		BaseURL, year, year, page, limit)
-	return c.fetchAndParse(endpoint)
+	return c.fetchAndParseWithPagination(endpoint)
 }
 
 func (c *Client) fetchAndParse(endpoint string) ([]model.Movie, error) {
+	movies, _, _, err := c.fetchAndParseWithPagination(endpoint)
+	return movies, err
+}
+
+func (c *Client) fetchAndParseWithPagination(endpoint string) ([]model.Movie, int, bool, error) {
 	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
-		return nil, err
+		return nil, 0, false, err
 	}
 
 	ua := "CINEMBROT-AnimeScraper/1.0"
@@ -144,18 +155,18 @@ func (c *Client) fetchAndParse(endpoint string) ([]model.Movie, error) {
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("jikan api request failed: %w", err)
+		return nil, 0, false, fmt.Errorf("jikan api request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("jikan api returned status %d: %s", resp.StatusCode, string(body))
+		return nil, 0, false, fmt.Errorf("jikan api returned status %d: %s", resp.StatusCode, string(body))
 	}
 
 	var res JikanAnimeResponse
 	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return nil, fmt.Errorf("failed to decode jikan response: %w", err)
+		return nil, 0, false, fmt.Errorf("failed to decode jikan response: %w", err)
 	}
 
 	var movies []model.Movie
@@ -164,7 +175,12 @@ func (c *Client) fetchAndParse(endpoint string) ([]model.Movie, error) {
 		movies = append(movies, movie)
 	}
 
-	return movies, nil
+	lastPage := res.Pagination.LastVisiblePage
+	if lastPage <= 0 {
+		lastPage = 1
+	}
+
+	return movies, lastPage, res.Pagination.HasNextPage, nil
 }
 
 func (c *Client) convertAnimeToMovie(a JikanAnime) model.Movie {

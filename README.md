@@ -112,13 +112,16 @@ Aplikasi menyediakan berbagai opsi CLI terminal (setara *Artisan* pada Laravel) 
 .\cinembrot.exe -auto-scrape
 ```
 
-### 2. Scraper Film Hollywood & Box Office (TMDb Movie API)
+### 2. Scraper Film Hollywood & Box Office (Auto-Detect Seluruh Halaman)
 ```powershell
-# Scrape film Box Office terpopuler / rilis terbaru (otomatis unduh poster WebP, subtitle dwibahasa & 5 player streaming)
-.\cinembrot.exe -scrape-hollywood -hollywood-cat boxoffice -hollywood-pages 1
+# 🚀 AUTO-ALL: Scrape SEMUA halaman film Hollywood rilis tahun 2026 (sistem otomatis cek total page)
+.\cinembrot.exe -scrape-hollywood -year 2026
 
-# Scrape film Hollywood berdasarkan tahun rilis tertentu (contoh: tahun 2024 atau 2026)
-.\cinembrot.exe -scrape-hollywood -year 2024 -hollywood-pages 1
+# 🚀 AUTO-ALL: Scrape SEMUA halaman film Box Office rilis bioskop tahun 2024
+.\cinembrot.exe -scrape-hollywood -year 2024
+
+# Scrape film Box Office terpopuler (opsional batas halaman: -hollywood-pages 1 atau 2)
+.\cinembrot.exe -scrape-hollywood -hollywood-cat boxoffice -hollywood-pages 2
 
 # Scrape film Hollywood kategori rating tertinggi (Top Rated)
 .\cinembrot.exe -scrape-hollywood -hollywood-cat top_rated -hollywood-pages 1
@@ -127,22 +130,25 @@ Aplikasi menyediakan berbagai opsi CLI terminal (setara *Artisan* pada Laravel) 
 .\cinembrot.exe -scrape-hollywood -hollywood-cat now_playing -hollywood-pages 1
 ```
 
-### 3. Scraper Anime & Drama Asia (Berdasarkan Tahun & Kategori)
+### 3. Scraper Anime & Drama Asia (Auto-Detect Seluruh Halaman)
 ```powershell
-# Scrape anime yang rilis pada tahun tertentu (contoh: tahun 2026)
-.\cinembrot.exe -scrape-anime -year 2026 -anime-limit 15
+# 🚀 AUTO-ALL: Scrape SEMUA anime rilis tahun 2026 (otomatis cek berapa page yang ada lalu scrape semuanya)
+.\cinembrot.exe -scrape-anime -year 2026
+
+# Scrape anime tahun 2026 dengan batasan halaman tertentu (contoh: 2 halaman = ~50 anime)
+.\cinembrot.exe -scrape-anime -year 2026 -anime-pages 2
 
 # Scrape anime terpopuler sepanjang masa (MyAnimeList / TMDb)
-.\cinembrot.exe -scrape-anime -anime-cat top -anime-limit 20
+.\cinembrot.exe -scrape-anime -anime-cat top -anime-pages 2
 
 # Scrape anime musim ini / on-going (Seasonal)
-.\cinembrot.exe -scrape-anime -anime-cat seasonal -anime-limit 20
+.\cinembrot.exe -scrape-anime -anime-cat seasonal -anime-pages 1
 
-# Scrape drama Asia rilis tahun tertentu (contoh: tahun 2026)
-.\cinembrot.exe -scrape-drama -year 2026 -drama-pages 1
+# 🚀 AUTO-ALL: Scrape SEMUA drama Asia rilis tahun 2026
+.\cinembrot.exe -scrape-drama -year 2026
 
-# Scrape K-Drama Korea dari TMDb TV API
-.\cinembrot.exe -scrape-drama -drama-lang ko -drama-pages 1
+# Scrape K-Drama Korea rilis tahun 2026 (atau batasi halaman: -drama-pages 2)
+.\cinembrot.exe -scrape-drama -drama-lang ko -year 2026
 
 # Scrape Drama China (C-Drama) / Mini-series
 .\cinembrot.exe -scrape-drama -drama-lang zh -drama-pages 1
