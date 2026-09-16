@@ -11,6 +11,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   {{if ne (index .Settings "turnstile_enabled") "false"}}
+  <link rel="preconnect" href="https://challenges.cloudflare.com">
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
   {{end}}
   <script>
@@ -73,10 +74,25 @@
         <div class="cf-turnstile" 
              data-sitekey="{{index .Settings "turnstile_site_key"}}" 
              data-theme="dark"
+             data-callback="onTurnstileSuccess"
+             data-expired-callback="onTurnstileExpired"
              data-error-callback="onTurnstileError"></div>
         <div id="turnstile-diag" class="hidden mt-2.5 p-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl text-xs text-left w-full space-y-1"></div>
       </div>
       <script>
+        function onTurnstileSuccess(token) {
+          var diag = document.getElementById("turnstile-diag");
+          if (diag) {
+            diag.classList.add("hidden");
+            diag.innerHTML = "";
+          }
+        }
+        function onTurnstileExpired() {
+          console.warn("Cloudflare Turnstile token expired, resetting...");
+          if (window.turnstile) {
+            window.turnstile.reset();
+          }
+        }
         function onTurnstileError(errorCode) {
           console.error("Cloudflare Turnstile Error:", errorCode);
           var diag = document.getElementById("turnstile-diag");
@@ -85,8 +101,8 @@
             var desc = "Verifikasi Turnstile gagal (Kode: <strong>" + errorCode + "</strong>).";
             if (errorCode == "110200") {
               desc += "<br><strong>Domain belum diizinkan:</strong> Pastikan domain <code>" + window.location.hostname + "</code> sudah ditambahkan di Cloudflare Dashboard → Turnstile → Widget Settings (tanpa https://).";
-            } else if (errorCode == "110100" || errorCode == "110110") {
-              desc += "<br><strong>Site Key tidak valid:</strong> Periksa kembali Site Key di Cloudflare Dashboard.";
+            } else if (errorCode == "110100" || errorCode == "110110" || errorCode == "400020") {
+              desc += "<br><strong>Site Key tidak valid / kadaluarsa:</strong> Kode " + errorCode + " menandakan Site Key salah atau widget sudah dihapus dari Cloudflare Dashboard.";
             } else if (errorCode == "200500" || errorCode == "300030") {
               desc += "<br><strong>Akses diblokir:</strong> Script/iframe terblokir oleh ekstensi browser (AdBlock, 2Captcha/Solver, Brave Shield) atau VPN. Coba matikan ekstensi atau gunakan Incognito / Jendela Penyamaran.";
             } else {

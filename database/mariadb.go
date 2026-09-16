@@ -216,8 +216,8 @@ func seedDefaultSettings(db *gorm.DB) {
 		{Key: "site_name", Value: "CINEMBROT", Description: "Nama Brand Website"},
 		{Key: "site_tagline", Value: "Platform Streaming & Download Film Gratis Legal", Description: "Tagline atau Slogan Website"},
 		{Key: "turnstile_enabled", Value: "true", Description: "Saklar ON/OFF Cloudflare Turnstile CAPTCHA saat Login Admin"},
-		{Key: "turnstile_site_key", Value: "0x4AAAAAAAE4maYm7wAdHyX_j", Description: "Cloudflare Turnstile Site Key"},
-		{Key: "turnstile_secret_key", Value: "0x4AAAAAAAE4maSz0Gah94IJ72HChDjUsDyc", Description: "Cloudflare Turnstile Secret Key"},
+		{Key: "turnstile_site_key", Value: "0x4AAAAAAE4tnwYcBvU-hrsC", Description: "Cloudflare Turnstile Site Key"},
+		{Key: "turnstile_secret_key", Value: "0x4AAAAAAE4tn3-kKYj8JmsodJoqg4Sk40g", Description: "Cloudflare Turnstile Secret Key"},
 	}
 
 	for _, s := range defaults {

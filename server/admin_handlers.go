@@ -89,7 +89,7 @@ func (s *Server) HandleAdminLogin(w http.ResponseWriter, r *http.Request) {
 
 	// 1. Verifikasi Cloudflare Turnstile jika diaktifkan
 	turnstileEnabled := database.GetSetting(s.db, "turnstile_enabled", "true") == "true"
-	turnstileSecretKey := database.GetSetting(s.db, "turnstile_secret_key", "0x4AAAAAAAE4maSz0Gah94IJ72HChDjUsDyc")
+	turnstileSecretKey := database.GetSetting(s.db, "turnstile_secret_key", "0x4AAAAAAE4tn3-kKYj8JmsodJoqg4Sk40g")
 
 	if turnstileEnabled && turnstileSecretKey != "" {
 		turnstileToken := r.FormValue("cf-turnstile-response")
