@@ -77,23 +77,47 @@ Impor skema awal (jika database baru):
 mysql -u root -p cinembrot < schema.sql
 ```
 
-### 2. Kompilasi & Jalankan Server
-```powershell
-# Build binary
-go build -o cinembrot.exe .
+### 2. Kompilasi & Panduan Operasional Server (Menyalakan & Mematikan)
 
-# Jalankan server web & background auto-scraper
-.\cinembrot.exe -serve
-```
-Atau jalankan di background (Windows):
+#### A. Menyalakan Web Server
+Pilih salah satu cara berikut di terminal PowerShell:
+
 ```powershell
+# Opsi 1: Dijalankan langsung di Terminal (Rekomendasi saat Uji Coba / Dev)
+# Anda dapat melihat log inisialisasi database dan trafik HTTP secara langsung
+.\cinembrot.exe -serve
+# atau via Go source code:
+go run . -serve
+
+# Opsi 2: Dijalankan di Background (Latar Belakang - Terminal tetap bebas dipakai)
 Start-Process .\cinembrot.exe -ArgumentList "-serve" -WindowStyle Hidden
 ```
+> ⏱️ **Catatan Waktu Inisialisasi**: Saat pertama kali dinyalakan, aplikasi membutuhkan waktu **sekitar 3-5 detik** untuk inisialisasi koneksi MariaDB remote, sinkronisasi skema tabel, dan pengaturan sistem sebelum port `:8080` siap menerima pengunjung.
 
-Akses situs melalui browser:
+#### B. Mematikan Web Server
+```powershell
+# Jika dijalankan di Terminal (Opsi 1):
+Tekan kombinasi tombol keyboard: Ctrl + C
+
+# Jika dijalankan di Background (Opsi 2) atau ingin mematikan paksa seluruh proses:
+Stop-Process -Name "cinembrot" -Force
+```
+
+#### C. Memeriksa Apakah Server Sedang Berjalan
+```powershell
+# Cek apakah proses cinembrot aktif
+Get-Process -Name "cinembrot" -ErrorAction SilentlyContinue
+
+# Cek apakah port :8080 sedang aktif mendengarkan (LISTEN)
+Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue
+```
+
+#### D. Akses Situs Melalui Browser:
+Gunakan URL protokol HTTP murni:
 - **Halaman Utama**: [http://localhost:8080](http://localhost:8080)
 - **Katalog Anime**: [http://localhost:8080/anime](http://localhost:8080/anime)
 - **Drama Pendek / Asia**: [http://localhost:8080/drama-pendek](http://localhost:8080/drama-pendek)
+- **Film Hollywood / Box Office**: [http://localhost:8080/hollywood](http://localhost:8080/hollywood)
 - **CMS Admin**: [http://localhost:8080/admin](http://localhost:8080/admin)
   - **Username**: `admin`
   - **Password**: `cinembrot123`
