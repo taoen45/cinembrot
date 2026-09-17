@@ -294,12 +294,19 @@ func (s *Server) HandleFilter(w http.ResponseWriter, r *http.Request) {
 		keyword = SanitizeSearchQuery(r.URL.Query().Get("keyword"))
 	}
 	typeStr := strings.TrimSpace(r.URL.Query().Get("type"))
+	yearParamExists := r.URL.Query().Has("year")
 	yearStr := strings.TrimSpace(r.URL.Query().Get("year"))
+	if !yearParamExists {
+		yearStr = "2026" // Default tahun sekarang saat halaman pertama kali dimuat
+	}
 	genreStr := strings.TrimSpace(r.URL.Query().Get("genre"))
 	countryStr := strings.TrimSpace(r.URL.Query().Get("country"))
 	catStr := strings.TrimSpace(r.URL.Query().Get("category"))
 	ratingStr := strings.TrimSpace(r.URL.Query().Get("rating"))
 	sortStr := strings.TrimSpace(r.URL.Query().Get("sort"))
+	if sortStr == "" {
+		sortStr = "year_desc" // Default: Rilis Terbaru
+	}
 	pageStr := strings.TrimSpace(r.URL.Query().Get("p"))
 
 	page := SanitizePageNumber(pageStr, 500)
@@ -323,8 +330,8 @@ func (s *Server) HandleFilter(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// 3. Filter Tahun Rilis
-	if yearStr != "" {
+	// 3. Filter Tahun Rilis (Default 2026, jika 'all' atau kosong maka tampil semua)
+	if yearStr != "" && yearStr != "all" {
 		if y, err := strconv.Atoi(yearStr); err == nil && y > 0 {
 			query = query.Where("year = ?", y)
 		}
@@ -452,16 +459,23 @@ func (s *Server) HandleFilter(w http.ResponseWriter, r *http.Request) {
 
 // HandleHollywood displays the dedicated Hollywood & Box Office movies catalog with multi-parameter filtering
 func (s *Server) HandleHollywood(w http.ResponseWriter, r *http.Request) {
+	yearParamExists := r.URL.Query().Has("year")
 	yearStr := strings.TrimSpace(r.URL.Query().Get("year"))
+	if !yearParamExists {
+		yearStr = "2026" // Default tahun sekarang saat pertama kali dimuat
+	}
 	genreStr := strings.TrimSpace(r.URL.Query().Get("genre"))
 	countryStr := strings.TrimSpace(r.URL.Query().Get("country"))
 	sortStr := strings.TrimSpace(r.URL.Query().Get("sort"))
+	if sortStr == "" {
+		sortStr = "year_desc" // Default: Rilis Terbaru
+	}
 
 	query := s.db.Model(&model.Movie{}).
 		Where("type = ? OR (type = 'movie' AND (country LIKE '%United States%' OR country LIKE '%USA%' OR country LIKE '%UK%' OR country LIKE '%Amerika%' OR language LIKE '%English%' OR language = 'en'))", "hollywood").
 		Preload("Genres")
 
-	if yearStr != "" {
+	if yearStr != "" && yearStr != "all" {
 		if y, err := strconv.Atoi(yearStr); err == nil && y > 0 {
 			query = query.Where("year = ?", y)
 		}
@@ -547,14 +561,21 @@ func (s *Server) HandleHollywood(w http.ResponseWriter, r *http.Request) {
 
 // HandleAnime displays the dedicated Anime catalog with multi-parameter filtering
 func (s *Server) HandleAnime(w http.ResponseWriter, r *http.Request) {
+	yearParamExists := r.URL.Query().Has("year")
 	yearStr := strings.TrimSpace(r.URL.Query().Get("year"))
+	if !yearParamExists {
+		yearStr = "2026" // Default tahun sekarang saat halaman pertama kali dimuat
+	}
 	genreStr := strings.TrimSpace(r.URL.Query().Get("genre"))
 	countryStr := strings.TrimSpace(r.URL.Query().Get("country"))
 	sortStr := strings.TrimSpace(r.URL.Query().Get("sort"))
+	if sortStr == "" {
+		sortStr = "year_desc" // Default: Rilis Terbaru
+	}
 
 	query := s.db.Model(&model.Movie{}).Where("type = ?", "anime").Preload("Genres")
 
-	if yearStr != "" {
+	if yearStr != "" && yearStr != "all" {
 		if y, err := strconv.Atoi(yearStr); err == nil && y > 0 {
 			query = query.Where("year = ?", y)
 		}
@@ -636,14 +657,21 @@ func (s *Server) HandleAnime(w http.ResponseWriter, r *http.Request) {
 
 // HandleDramaPendek displays the dedicated Drama Pendek / Mini Series catalog with multi-parameter filtering
 func (s *Server) HandleDramaPendek(w http.ResponseWriter, r *http.Request) {
+	yearParamExists := r.URL.Query().Has("year")
 	yearStr := strings.TrimSpace(r.URL.Query().Get("year"))
+	if !yearParamExists {
+		yearStr = "2026" // Default tahun sekarang saat halaman pertama kali dimuat
+	}
 	genreStr := strings.TrimSpace(r.URL.Query().Get("genre"))
 	countryStr := strings.TrimSpace(r.URL.Query().Get("country"))
 	sortStr := strings.TrimSpace(r.URL.Query().Get("sort"))
+	if sortStr == "" {
+		sortStr = "year_desc" // Default: Rilis Terbaru
+	}
 
 	query := s.db.Model(&model.Movie{}).Where("type = ?", "drama_pendek").Preload("Genres")
 
-	if yearStr != "" {
+	if yearStr != "" && yearStr != "all" {
 		if y, err := strconv.Atoi(yearStr); err == nil && y > 0 {
 			query = query.Where("year = ?", y)
 		}
@@ -1381,7 +1409,7 @@ func (s *Server) HandleAPIMoviesFilter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 3. Filter Tahun Rilis
-	if yearStr != "" {
+	if yearStr != "" && yearStr != "all" {
 		if y, err := strconv.Atoi(yearStr); err == nil && y > 0 {
 			query = query.Where("year = ?", y)
 		}

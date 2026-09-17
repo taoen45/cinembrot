@@ -239,7 +239,7 @@
     const country = countrySelect ? countrySelect.value : '';
     const sort = sortSelect ? sortSelect.value : '';
 
-    const isFiltered = (year !== '' || genre !== '' || country !== '' || (sort !== 'year_desc' && sort !== ''));
+    const isFiltered = (year !== '2026' || genre !== '' || country !== '' || (sort !== 'year_desc' && sort !== ''));
     if (liveBadge) {
       if (isFiltered) liveBadge.classList.remove('hidden');
       else liveBadge.classList.add('hidden');
@@ -309,7 +309,7 @@
   };
 
   window.resetHollywoodFilter = function() {
-    if (yearSelect) yearSelect.value = '';
+    if (yearSelect) yearSelect.value = '2026';
     if (genreSelect) genreSelect.value = '';
     if (countrySelect) countrySelect.value = '';
     if (sortSelect) sortSelect.value = 'year_desc';
