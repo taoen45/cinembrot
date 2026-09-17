@@ -375,62 +375,172 @@
   {{end}}
 
 
-  <!-- ==================== 7. COMPACT GLASSMORPHIIC SEARCH & FILTER BAR ==================== -->
-  <div class="bg-white/80 dark:bg-dark-900/80 backdrop-blur-md border border-slate-200 dark:border-dark-800 rounded-3xl p-5 shadow-sm transition">
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3" id="catalog-anchor">
-      <div>
-        <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <i class="fa-solid fa-sliders text-brand-500"></i> Cari & Filter Cepat Katalog
-          <span id="ajax-live-badge" class="hidden text-[10px] font-bold bg-brand-500/10 text-brand-500 border border-brand-500/20 px-2 py-0.5 rounded-full animate-pulse">
-            Live Filter
+  <!-- ==================== 7. MONETISASI ADSTERRA & SPONSOR SPOTLIGHT (MID-HOME) ==================== -->
+  {{if .EnableAds}}
+    <!-- 7A. NATIVE BANNER (WIDGET IN-FEED MENYERUPAI REKOMENDASI FILM - CTR TERTINGGI) -->
+    {{if .AdsterraNative}}
+    <div class="bg-white/80 dark:bg-dark-900/80 backdrop-blur-md border border-slate-200 dark:border-dark-800 rounded-3xl p-4 sm:p-5 shadow-xs transition overflow-hidden">
+      <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-100 dark:border-dark-800">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+          <span class="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-rectangle-ad text-amber-500"></i> Rekomendasi Pilihan Sponsor
           </span>
-        </h3>
-        <p class="text-[11px] text-slate-400">Pencarian kilat tanpa refresh halaman berdasarkan judul, genre, dan tahun rilis terbaru</p>
+        </div>
+        {{if .AdsterraSmartlink}}
+        <a href="{{.AdsterraSmartlink}}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-brand-500 hover:text-brand-600 flex items-center gap-1 transition">
+          <span>Akses Cepat</span> <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+        </a>
+        {{end}}
       </div>
-      <a href="/filter" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-500 hover:text-brand-600 transition">
-        <span>Buka Filter Lengkap (Rating / Negara / Kategori)</span>
-        <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+      <div class="flex justify-center w-full min-h-[90px] overflow-hidden">
+        {{.AdsterraNative}}
+      </div>
+    </div>
+    {{end}}
+
+    <!-- 7B. LEADERBOARD DISPLAY BANNER (728x90 DESKTOP & 300x250 MOBILE) -->
+    {{if or .AdsterraBanner728 .AdsterraBanner300}}
+    <div class="bg-white/80 dark:bg-dark-900/80 backdrop-blur-md border border-slate-200 dark:border-dark-800 rounded-3xl p-4 shadow-xs text-center overflow-hidden">
+      <div class="flex items-center justify-between mb-2 text-[10px] text-slate-400 font-mono px-2">
+        <span class="flex items-center gap-1"><i class="fa-solid fa-bolt text-amber-500"></i> SPONSOR</span>
+        <span>ADS</span>
+      </div>
+      {{if .AdsterraBanner728}}
+      <div class="hidden md:flex justify-center overflow-hidden">
+        {{.AdsterraBanner728}}
+      </div>
+      {{end}}
+      {{if .AdsterraBanner300}}
+      <div class="flex {{if .AdsterraBanner728}}md:hidden{{end}} justify-center overflow-hidden">
+        {{.AdsterraBanner300}}
+      </div>
+      {{end}}
+    </div>
+    {{end}}
+
+    <!-- 7C. ADSTERRA SMARTLINK VIP PROMO CARD (CONVERSION & REVENUE BOOSTER) -->
+    {{if .AdsterraSmartlink}}
+    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-amber-500/15 via-brand-500/15 to-purple-600/15 border border-amber-500/30 p-5 sm:p-6 shadow-sm transition hover:border-amber-500/50">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-4 text-center sm:text-left">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-slate-950 flex items-center justify-center text-xl shrink-0 shadow-lg shadow-amber-500/30">
+            <i class="fa-solid fa-bolt-lightning"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2 justify-center sm:justify-start mb-1">
+              <span class="bg-amber-500 text-slate-950 text-[10px] font-black uppercase px-2 py-0.5 rounded-md">VIP STREAM</span>
+              <h4 class="text-sm font-black text-slate-900 dark:text-white">Nonton Cepat Full HD & Unduh Tanpa Antre</h4>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Akses langsung server direct sponsor berkecepatan tinggi tanpa jeda buffering.</p>
+          </div>
+        </div>
+        <a href="{{.AdsterraSmartlink}}" target="_blank" rel="noopener noreferrer" class="shrink-0 px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-red-600 hover:from-amber-600 hover:to-red-700 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-red-500/25 hover:scale-105 active:scale-95 transition-all flex items-center gap-2">
+          <span>Buka Link Cepat</span>
+          <i class="fa-solid fa-arrow-right text-[11px]"></i>
+        </a>
+      </div>
+    </div>
+    {{end}}
+  {{end}}
+
+
+  <!-- ==================== 8. PENGGANTI PENCARIAN: JELAJAHI GENRE FAVORIT (EXPLORE BY GENRE) ==================== -->
+  <div class="bg-white/80 dark:bg-dark-900/80 backdrop-blur-md border border-slate-200 dark:border-dark-800 rounded-3xl p-5 sm:p-6 shadow-xs transition space-y-4" id="catalog-anchor">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-100 dark:border-dark-800">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center text-sm font-black">
+          <i class="fa-solid fa-shapes"></i>
+        </div>
+        <div>
+          <h3 class="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+            Jelajahi Berdasarkan Kategori & Genre
+          </h3>
+          <p class="text-[11px] text-slate-400">Pilih genre favorit penonton untuk menemukan tontonan yang pas dengan mood</p>
+        </div>
+      </div>
+      <a href="/filter" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-500 hover:text-brand-600 transition self-start sm:self-auto">
+        <i class="fa-solid fa-sliders"></i>
+        <span>Buka Filter Lengkap (Tahun & Rating)</span>
+        <i class="fa-solid fa-chevron-right text-[10px]"></i>
       </a>
     </div>
 
-    <form id="home-filter-form" action="/filter" method="GET" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
-      <!-- Search Input dengan live AJAX -->
-      <div class="md:col-span-2 relative">
-        <input type="text" id="home-search-input" name="q" placeholder="Ketik judul film, kanji, atau nama alias..." autocomplete="off" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl pl-9 pr-8 py-2.5 focus:outline-none focus:border-brand-500 transition">
-        <i class="fa-solid fa-magnifying-glass text-slate-400 absolute left-3 top-3 text-xs"></i>
-        <button type="button" id="home-search-clear" class="hidden absolute right-3 top-2.5 text-slate-400 hover:text-slate-200 text-xs" title="Hapus pencarian">
-          <i class="fa-solid fa-circle-xmark"></i>
-        </button>
-      </div>
-
-      <!-- Quick Genre Select -->
-      <div>
-        <select id="home-genre-select" name="genre" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition font-medium">
-          <option value="">🎭 Semua Genre</option>
-          {{range .Genres}}
-          <option value="{{.Slug}}">{{.Name}}</option>
-          {{end}}
-        </select>
-      </div>
-
-      <!-- Quick Year Select -->
-      <div>
-        <select id="home-year-select" name="year" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition font-medium">
-          <option value="">📅 Semua Tahun</option>
-          {{range .Years}}
-          <option value="{{.}}">{{.}}</option>
-          {{end}}
-        </select>
-      </div>
-
-      <!-- Submit / Filter Button -->
-      <div>
-        <button type="submit" id="home-filter-btn" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-md shadow-brand-500/25 active:scale-95">
-          <i class="fa-solid fa-filter"></i>
-          <span>Terapkan</span>
-        </button>
-      </div>
-    </form>
+    <!-- Quick Genre Badges Grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+      <a href="/filter?genre=aksi" class="group p-3 rounded-2xl bg-red-500/10 hover:bg-red-500 border border-red-500/20 text-red-600 hover:text-white transition-all flex items-center justify-between shadow-xs">
+        <span class="text-xs font-bold flex items-center gap-2">
+          <i class="fa-solid fa-fire text-red-500 group-hover:text-white transition"></i> Aksi
+        </span>
+        <i class="fa-solid fa-arrow-right text-[10px] opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition"></i>
+      </a>
+      <a href="/filter?genre=petualangan" class="group p-3 rounded-2xl bg-amber-500/10 hover:bg-amber-500 border border-amber-500/20 text-amber-600 hover:text-white transition-all flex items-center justify-between shadow-xs">
+        <span class="text-xs font-bold flex items-center gap-2">
+          <i class="fa-solid fa-compass text-amber-500 group-hover:text-white transition"></i> Petualangan
+        </span>
+        <i class="fa-solid fa-arrow-right text-[10px] opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition"></i>
+      </a>
+      <a href="/filter?genre=animasi" class="group p-3 rounded-2xl bg-purple-500/10 hover:bg-purple-600 border border-purple-500/20 text-purple-600 hover:text-white transition-all flex items-center justify-between shadow-xs">
+        <span class="text-xs font-bold flex items-center gap-2">
+          <i class="fa-solid fa-wand-magic-sparkles text-purple-500 group-hover:text-white transition"></i> Animasi
+        </span>
+        <i class="fa-solid fa-arrow-right text-[10px] opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition"></i>
+      </a>
+      <a href="/filter?genre=komedi" class="group p-3 rounded-2xl bg-yellow-500/10 hover:bg-yellow-500 border border-yellow-500/20 text-yellow-600 hover:text-slate-950 transition-all flex items-center justify-between shadow-xs">
+        <span class="text-xs font-bold flex items-center gap-2">
+          <i class="fa-solid fa-face-laugh-squint text-yellow-500 group-hover:text-slate-950 transition"></i> Komedi
+        </span>
+        <i class="fa-solid fa-arrow-right text-[10px] opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition"></i>
+      </a>
+      <a href="/filter?genre=drama" class="group p-3 rounded-2xl bg-blue-500/10 hover:bg-blue-600 border border-blue-500/20 text-blue-600 hover:text-white transition-all flex items-center justify-between shadow-xs">
+        <span class="text-xs font-bold flex items-center gap-2">
+          <i class="fa-solid fa-masks-theater text-blue-500 group-hover:text-white transition"></i> Drama
+        </span>
+        <i class="fa-solid fa-arrow-right text-[10px] opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition"></i>
+      </a>
+      <a href="/filter?genre=horor" class="group p-3 rounded-2xl bg-stone-500/10 hover:bg-stone-700 border border-stone-500/20 text-stone-600 hover:text-white dark:text-stone-300 transition-all flex items-center justify-between shadow-xs">
+        <span class="text-xs font-bold flex items-center gap-2">
+          <i class="fa-solid fa-ghost text-stone-500 group-hover:text-white transition"></i> Horor
+        </span>
+        <i class="fa-solid fa-arrow-right text-[10px] opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition"></i>
+      </a>
+      <a href="/filter?genre=romantis" class="group p-3 rounded-2xl bg-pink-500/10 hover:bg-pink-600 border border-pink-500/20 text-pink-600 hover:text-white transition-all flex items-center justify-between shadow-xs">
+        <span class="text-xs font-bold flex items-center gap-2">
+          <i class="fa-solid fa-heart text-pink-500 group-hover:text-white transition"></i> Romantis
+        </span>
+        <i class="fa-solid fa-arrow-right text-[10px] opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition"></i>
+      </a>
+      <a href="/filter?genre=sci-fi" class="group p-3 rounded-2xl bg-cyan-500/10 hover:bg-cyan-600 border border-cyan-500/20 text-cyan-600 hover:text-white transition-all flex items-center justify-between shadow-xs">
+        <span class="text-xs font-bold flex items-center gap-2">
+          <i class="fa-solid fa-rocket text-cyan-500 group-hover:text-white transition"></i> Sci-Fi
+        </span>
+        <i class="fa-solid fa-arrow-right text-[10px] opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition"></i>
+      </a>
+      <a href="/filter?genre=misteri" class="group p-3 rounded-2xl bg-indigo-500/10 hover:bg-indigo-600 border border-indigo-500/20 text-indigo-600 hover:text-white transition-all flex items-center justify-between shadow-xs">
+        <span class="text-xs font-bold flex items-center gap-2">
+          <i class="fa-solid fa-user-secret text-indigo-500 group-hover:text-white transition"></i> Misteri
+        </span>
+        <i class="fa-solid fa-arrow-right text-[10px] opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition"></i>
+      </a>
+      <a href="/filter?genre=thriller" class="group p-3 rounded-2xl bg-emerald-500/10 hover:bg-emerald-600 border border-emerald-500/20 text-emerald-600 hover:text-white transition-all flex items-center justify-between shadow-xs">
+        <span class="text-xs font-bold flex items-center gap-2">
+          <i class="fa-solid fa-skull text-emerald-500 group-hover:text-white transition"></i> Thriller
+        </span>
+        <i class="fa-solid fa-arrow-right text-[10px] opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition"></i>
+      </a>
+      <a href="/filter?genre=kejahatan" class="group p-3 rounded-2xl bg-zinc-500/10 hover:bg-zinc-700 border border-zinc-500/20 text-zinc-600 hover:text-white dark:text-zinc-300 transition-all flex items-center justify-between shadow-xs">
+        <span class="text-xs font-bold flex items-center gap-2">
+          <i class="fa-solid fa-handcuffs text-zinc-500 group-hover:text-white transition"></i> Kejahatan
+        </span>
+        <i class="fa-solid fa-arrow-right text-[10px] opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition"></i>
+      </a>
+      <a href="/filter" class="group p-3 rounded-2xl bg-brand-500/10 hover:bg-brand-500 border border-brand-500/20 text-brand-500 hover:text-white transition-all flex items-center justify-between shadow-xs font-black">
+        <span class="text-xs flex items-center gap-2">
+          <i class="fa-solid fa-ellipsis text-brand-500 group-hover:text-white transition"></i> Semua Genre
+        </span>
+        <i class="fa-solid fa-arrow-right text-[10px] opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition"></i>
+      </a>
+    </div>
   </div>
 
 
@@ -465,16 +575,16 @@
       </div>
     </div>
 
-    <!-- Empty State (Jika tidak ada film yang cocok) -->
+    <!-- Empty State -->
     <div id="home-movies-empty" class="hidden py-16 text-center space-y-3 bg-white dark:bg-dark-900 rounded-3xl border border-slate-200 dark:border-dark-800 p-8 shadow-xs">
       <div class="w-16 h-16 rounded-full bg-slate-100 dark:bg-dark-800 text-slate-400 flex items-center justify-center text-2xl mx-auto">
-        <i class="fa-solid fa-magnifying-glass"></i>
+        <i class="fa-solid fa-film"></i>
       </div>
-      <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Film Tidak Ditemukan</h3>
-      <p class="text-xs text-slate-400 max-w-md mx-auto">Coba gunakan kata kunci yang lebih umum, periksa ejaan, atau reset filter genre dan tahun.</p>
-      <button type="button" onclick="resetHomeFilter()" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-500 text-white text-xs font-bold hover:bg-brand-600 transition shadow-md shadow-brand-500/20">
-        <i class="fa-solid fa-rotate-left"></i> Reset Filter
-      </button>
+      <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Katalog Sedang Diperbarui</h3>
+      <p class="text-xs text-slate-400 max-w-md mx-auto">Jelajahi seluruh koleksi film kami melalui halaman filter lengkap.</p>
+      <a href="/filter" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-500 text-white text-xs font-bold hover:bg-brand-600 transition shadow-md shadow-brand-500/20">
+        <i class="fa-solid fa-sliders"></i> Buka Filter Lengkap
+      </a>
     </div>
 
     <!-- Movie Grid: 2 kolom (HP), 3 (Tablet), 4 (Laptop), 6 (Desktop) -->
@@ -657,35 +767,18 @@
     startAutoPlay();
   })();
 
-  // ==================== 10. AJAX POST LIVE SEARCH & FILTER CONTROLLER ====================
+  // ==================== 10. AJAX POST RECENT MOVIES PAGINATION CONTROLLER ====================
   (function() {
-    const form = document.getElementById('home-filter-form');
-    const searchInput = document.getElementById('home-search-input');
-    const searchClear = document.getElementById('home-search-clear');
-    const genreSelect = document.getElementById('home-genre-select');
-    const yearSelect = document.getElementById('home-year-select');
-    const liveBadge = document.getElementById('ajax-live-badge');
-    const catalogTitle = document.getElementById('catalog-title');
-    const catalogSubtitle = document.getElementById('catalog-subtitle');
     const catalogCounter = document.getElementById('catalog-counter');
     const moviesGrid = document.getElementById('home-movies-grid');
     const moviesLoading = document.getElementById('home-movies-loading');
     const moviesEmpty = document.getElementById('home-movies-empty');
     const moviesPagination = document.getElementById('home-movies-pagination');
 
-    if (!form || !moviesGrid) return;
+    if (!moviesGrid) return;
 
-    let debounceTimer = null;
     let currentAbortController = null;
     let currentPage = 1;
-
-    // Helper debounce
-    function debounce(callback, delay) {
-      return function(...args) {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => callback.apply(this, args), delay);
-      };
-    }
 
     // Escape HTML string
     function escapeHtml(str) {
@@ -785,48 +878,22 @@
       moviesPagination.classList.remove('hidden');
     }
 
-    // Main AJAX Fetch Function via POST
+    // Main AJAX Fetch Function for Recent Movies via POST
     window.fetchMoviesAjax = function(page = 1) {
       currentPage = page;
-      const q = (searchInput ? searchInput.value.trim() : '');
-      const genre = (genreSelect ? genreSelect.value : '');
-      const year = (yearSelect ? yearSelect.value : '');
 
-      // Toggle Clear Button
-      if (searchClear) {
-        if (q.length > 0) {
-          searchClear.classList.remove('hidden');
-        } else {
-          searchClear.classList.add('hidden');
-        }
-      }
-
-      // Live Badge indicator
-      const isFiltered = (q.length > 0 || genre !== '' || year !== '');
-      if (liveBadge) {
-        if (isFiltered) {
-          liveBadge.classList.remove('hidden');
-        } else {
-          liveBadge.classList.add('hidden');
-        }
-      }
-
-      // Abort previous running request if any
       if (currentAbortController) {
         currentAbortController.abort();
       }
       currentAbortController = new AbortController();
 
-      // UI Loading state
       moviesGrid.classList.add('opacity-40');
       if (moviesLoading) moviesLoading.classList.remove('hidden');
       if (moviesEmpty) moviesEmpty.classList.add('hidden');
 
-      // Siapkan payload POST Form Data / URLSearchParams
       const params = new URLSearchParams();
-      params.append('q', q);
-      params.append('genre', genre);
-      params.append('year', year);
+      params.append('sort', 'year_desc');
+      params.append('year', '2026');
       params.append('p', String(page));
       params.append('limit', '24');
 
@@ -849,35 +916,23 @@
         if (!data || !data.movies || data.movies.length === 0) {
           moviesGrid.innerHTML = '';
           if (moviesEmpty) moviesEmpty.classList.remove('hidden');
-          if (catalogCounter) catalogCounter.textContent = '0 film ditemukan';
+          if (catalogCounter) catalogCounter.textContent = '0 film';
           if (moviesPagination) moviesPagination.classList.add('hidden');
           return;
         }
 
-        // Render hasil film
         let gridHtml = '';
         data.movies.forEach(m => {
           gridHtml += buildMovieCard(m);
         });
         moviesGrid.innerHTML = gridHtml;
 
-        // Update header & counter
-        if (catalogTitle) {
-          catalogTitle.textContent = isFiltered ? 'Hasil Filter Katalog' : 'Katalog Rilis Terbaru';
-        }
-        if (catalogSubtitle) {
-          catalogSubtitle.textContent = isFiltered 
-            ? `Pencarian untuk "${q || 'Semua'}" | Genre: ${genre || 'Semua'} | Tahun: ${year || 'Semua'}`
-            : 'Diurutkan dari tanggal & tahun rilis terkini siap streaming & download';
-        }
         if (catalogCounter) {
           catalogCounter.textContent = `Menampilkan ${data.movies.length} dari ${data.total_count} film`;
         }
 
-        // Render Pagination
         renderPagination(data.page, data.total_pages);
 
-        // Jika page > 1, scroll halus ke judul katalog
         if (page > 1) {
           const anchor = document.getElementById('catalog-anchor');
           if (anchor) {
@@ -887,56 +942,11 @@
       })
       .catch(err => {
         if (err.name === 'AbortError') return;
-        console.error('Gagal mengambil data film via AJAX:', err);
+        console.error('Gagal mengambil data film rilis terbaru:', err);
         moviesGrid.classList.remove('opacity-40');
         if (moviesLoading) moviesLoading.classList.add('hidden');
       });
     };
-
-    // Reset filter helper
-    window.resetHomeFilter = function() {
-      if (searchInput) searchInput.value = '';
-      if (genreSelect) genreSelect.value = '';
-      if (yearSelect) yearSelect.value = '';
-      if (searchClear) searchClear.classList.add('hidden');
-      if (liveBadge) liveBadge.classList.add('hidden');
-      window.fetchMoviesAjax(1);
-    };
-
-    // Event Listeners
-    const debouncedSearch = debounce(() => window.fetchMoviesAjax(1), 350);
-
-    if (searchInput) {
-      searchInput.addEventListener('input', debouncedSearch);
-      searchInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          window.fetchMoviesAjax(1);
-        }
-      });
-    }
-
-    if (searchClear) {
-      searchClear.addEventListener('click', () => {
-        if (searchInput) searchInput.value = '';
-        searchClear.classList.add('hidden');
-        window.fetchMoviesAjax(1);
-      });
-    }
-
-    if (genreSelect) {
-      genreSelect.addEventListener('change', () => window.fetchMoviesAjax(1));
-    }
-
-    if (yearSelect) {
-      yearSelect.addEventListener('change', () => window.fetchMoviesAjax(1));
-    }
-
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      window.fetchMoviesAjax(1);
-    });
-
   })();
 </script>
 {{end}}
