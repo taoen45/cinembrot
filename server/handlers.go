@@ -314,8 +314,8 @@ func (s *Server) HandleFilter(w http.ResponseWriter, r *http.Request) {
 
 	query := s.db.Model(&model.Movie{}).Preload("Genres")
 
-	// 1. Filter Kata Kunci (Judul, Original Title, Name Alias, Sinopsis)
-	if keyword != "" {
+	// 1. Filter Kata Kunci (Judul, Original Title, Name Alias, Sinopsis - Minimal 3 karakter untuk hemat beban server)
+	if keyword != "" && len([]rune(keyword)) >= 3 {
 		kwPattern := "%" + keyword + "%"
 		query = query.Where("title LIKE ? OR original_title LIKE ? OR alternative_titles LIKE ? OR synopsis LIKE ?",
 			kwPattern, kwPattern, kwPattern, kwPattern)
@@ -1392,8 +1392,8 @@ func (s *Server) HandleAPIMoviesFilter(w http.ResponseWriter, r *http.Request) {
 
 	query := s.db.Model(&model.Movie{}).Preload("Genres")
 
-	// 1. Filter Kata Kunci
-	if keyword != "" {
+	// 1. Filter Kata Kunci (Minimal 3 karakter untuk hemat beban server)
+	if keyword != "" && len([]rune(keyword)) >= 3 {
 		kwPattern := "%" + keyword + "%"
 		query = query.Where("title LIKE ? OR original_title LIKE ? OR alternative_titles LIKE ? OR synopsis LIKE ?",
 			kwPattern, kwPattern, kwPattern, kwPattern)

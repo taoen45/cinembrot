@@ -1,16 +1,19 @@
 {{define "content"}}
 <!-- ==================== FILTER BAR ==================== -->
-<div class="mb-8 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-5 shadow-sm transition-colors">
+<div class="mb-8 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-5 shadow-sm transition-colors" id="filter-anchor">
   <div class="flex items-center justify-between mb-4">
     <div>
       <h1 class="text-xl font-black text-slate-800 dark:text-white flex items-center gap-2">
         <i class="fa-solid fa-folder-open text-brand-500"></i> {{.Title}}
+        <span id="filter-live-badge" class="hidden text-[10px] font-bold bg-brand-500/10 text-brand-500 border border-brand-500/20 px-2.5 py-0.5 rounded-full animate-pulse">
+          Live Filter
+        </span>
       </h1>
-      <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">Ditemukan {{.TotalCount}} judul film sesuai kriteria</p>
+      <p id="filter-counter-text" class="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">Ditemukan {{.TotalCount}} judul film sesuai kriteria</p>
     </div>
   </div>
 
-  <form action="/filter" method="GET" class="space-y-3">
+  <form id="full-filter-form" action="/filter" method="GET" class="space-y-3">
     <!-- BARIS 1: PENCARIAN KATA KUNCI (JUDUL / ALIAS / NAMA ASLI) & JENIS FILM -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
       <!-- INPUT PENCARIAN KATA KUNCI & ALIAS -->
@@ -19,8 +22,16 @@
           <i class="fa-solid fa-magnifying-glass text-brand-500 mr-1"></i> Kata Kunci / Judul / Name Alias
         </label>
         <div class="relative">
-          <input type="text" name="q" value="{{.SearchQuery}}" placeholder="Cari nama inggris, alias, judul kanji/romaji, atau sinopsis..." class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl pl-9 pr-3 py-2.5 focus:outline-none focus:border-brand-500 transition">
+          <input type="text" id="filter-search-input" name="q" value="{{.SearchQuery}}" placeholder="Cari judul (min. 3 karakter)..." autocomplete="off" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl pl-9 pr-8 py-2.5 focus:outline-none focus:border-brand-500 transition">
           <i class="fa-solid fa-font text-slate-400 absolute left-3 top-3 text-xs"></i>
+          <button type="button" id="filter-search-clear" class="{{if not .SearchQuery}}hidden{{end}} absolute right-3 top-2.5 text-slate-400 hover:text-slate-200 text-xs" title="Hapus kata kunci">
+            <i class="fa-solid fa-circle-xmark"></i>
+          </button>
+        </div>
+        <!-- Search Hint (Minimal 3 Karakter) -->
+        <div id="filter-search-hint" class="hidden mt-1 text-[11px] text-amber-500 dark:text-amber-400 font-medium flex items-center gap-1.5 animate-fadeIn">
+          <i class="fa-solid fa-circle-info text-[10px]"></i>
+          <span>Ketik minimal 3 karakter untuk memulai pencarian kilat</span>
         </div>
       </div>
 
@@ -29,7 +40,7 @@
         <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
           <i class="fa-solid fa-clapperboard text-brand-500 mr-1"></i> Jenis / Kategori Film
         </label>
-        <select name="type" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition font-medium">
+        <select id="filter-type-select" name="type" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition font-medium">
           <option value="">Semua Jenis Film</option>
           <option value="hollywood" {{if eq $.CurrentType "hollywood"}}selected{{end}}>🎬 Hollywood / Box Office</option>
           <option value="anime" {{if eq $.CurrentType "anime"}}selected{{end}}>🎌 Anime & Animasi</option>
@@ -45,8 +56,8 @@
       <!-- DROPDOWN TAHUN -->
       <div>
         <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">📅 {{t $.Lang "filter.year"}}</label>
-        <select name="year" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition">
-          <option value="">{{t $.Lang "filter.all_years"}}</option>
+        <select id="filter-year-select" name="year" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition">
+          <option value="all" {{if eq $.CurrentYear "all"}}selected{{end}}>{{t $.Lang "filter.all_years"}}</option>
           {{range .Years}}
           <option value="{{.}}" {{if eq $.CurrentYear .}}selected{{end}}>{{.}}</option>
           {{end}}
@@ -56,7 +67,7 @@
       <!-- DROPDOWN GENRE -->
       <div>
         <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">🎭 {{t $.Lang "filter.genre"}}</label>
-        <select name="genre" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition">
+        <select id="filter-genre-select" name="genre" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition">
           <option value="">{{t $.Lang "filter.all_genres"}}</option>
           {{range .Genres}}
           <option value="{{.Slug}}" {{if eq $.CurrentGenre .Slug}}selected{{end}}>{{.Name}}</option>
@@ -67,7 +78,7 @@
       <!-- DROPDOWN NEGARA -->
       <div>
         <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">🌍 {{t $.Lang "filter.country"}}</label>
-        <select name="country" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition">
+        <select id="filter-country-select" name="country" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition">
           <option value="">{{t $.Lang "filter.all_country"}}</option>
           {{range .Countries}}
           <option value="{{.}}" {{if eq $.CurrentCountry .}}selected{{end}}>{{.}}</option>
@@ -78,7 +89,7 @@
       <!-- DROPDOWN RATING MINIMAL -->
       <div>
         <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">⭐ Rating Minimal</label>
-        <select name="rating" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition">
+        <select id="filter-rating-select" name="rating" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition">
           <option value="">Semua Rating</option>
           <option value="8" {{if eq $.CurrentMinRating "8"}}selected{{end}}>⭐ 8.0+ Ke Atas</option>
           <option value="7" {{if eq $.CurrentMinRating "7"}}selected{{end}}>⭐ 7.0+ Ke Atas</option>
@@ -90,7 +101,7 @@
       <!-- DROPDOWN URUTKAN -->
       <div>
         <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">⚡ {{t $.Lang "filter.sort"}}</label>
-        <select name="sort" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition">
+        <select id="filter-sort-select" name="sort" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition">
           <option value="year_desc" {{if or (eq $.CurrentSort "year_desc") (eq $.CurrentSort "")}}selected{{end}}>{{t $.Lang "filter.sort_newest"}}</option>
           <option value="rating_desc" {{if eq $.CurrentSort "rating_desc"}}selected{{end}}>{{t $.Lang "filter.sort_rating"}} ★</option>
           <option value="views_desc" {{if eq $.CurrentSort "views_desc"}}selected{{end}}>{{t $.Lang "filter.sort_popular"}}</option>
@@ -100,30 +111,55 @@
 
       <!-- TOMBOL SUBMIT & RESET -->
       <div class="flex items-end gap-2">
-        <button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-md">
+        <button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-md shadow-brand-500/20 active:scale-95">
           <i class="fa-solid fa-filter"></i> {{t $.Lang "filter.btn_apply"}}
         </button>
-        <a href="/filter" class="bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-600 dark:text-slate-300 p-2.5 rounded-xl text-xs transition flex items-center justify-center border border-slate-200 dark:border-dark-700" title="Reset Semua Filter">
+        <button type="button" onclick="resetFullFilter()" class="bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-600 dark:text-slate-300 p-2.5 rounded-xl text-xs transition flex items-center justify-center border border-slate-200 dark:border-dark-700 active:scale-95" title="Reset Semua Filter">
           <i class="fa-solid fa-rotate-left"></i>
-        </a>
+        </button>
       </div>
     </div>
   </form>
 </div>
 
+<!-- ==================== LOADING OVERLAY ==================== -->
+<div id="filter-movies-loading" class="hidden py-16 text-center">
+  <div class="inline-flex items-center gap-3 px-5 py-3 rounded-2xl bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 shadow-xl">
+    <div class="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+    <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Memuat data filter via AJAX...</span>
+  </div>
+</div>
+
+<!-- ==================== EMPTY STATE ==================== -->
+<div id="filter-movies-empty" class="hidden py-16 text-center text-slate-400 dark:text-slate-500 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-8 my-4">
+  <i class="fa-solid fa-box-open text-5xl mb-3 text-slate-300 dark:text-slate-600"></i>
+  <h3 class="text-base font-bold text-slate-800 dark:text-slate-200 mb-1">Tidak Ada Film Ditemukan</h3>
+  <p class="font-medium text-xs text-slate-400 max-w-md mx-auto mb-4">Tidak ada film yang cocok dengan kombinasi filter yang dipilih. Coba ganti kata kunci, tahun rilis, atau genre.</p>
+  <button type="button" onclick="resetFullFilter()" class="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow">
+    <i class="fa-solid fa-rotate-left mr-1"></i> Reset Semua Filter
+  </button>
+</div>
+
 <!-- ==================== MOVIE GRID ==================== -->
-<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+<div id="filter-movies-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 transition-opacity duration-300">
   {{range .Movies}}
   <a href="/movie/{{.Slug}}" class="group bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-xl overflow-hidden hover:border-brand-500 hover:shadow-lg dark:hover:border-brand-500 transition duration-300 flex flex-col shadow-sm">
     <div class="relative aspect-[2/3] overflow-hidden bg-slate-200 dark:bg-dark-800">
       <img src="{{if .PosterThumbURL}}{{.PosterThumbURL}}{{else if .PosterURL}}{{.PosterURL}}{{else}}{{.ThumbnailURL}}{{end}}" alt="{{.Title}}" data-fallback="{{if .ThumbnailURL}}{{.ThumbnailURL}}{{else if .PosterURL}}{{.PosterURL}}{{end}}" onerror="if (this.dataset.fallback && this.src !== this.dataset.fallback) { this.src = this.dataset.fallback; } else { this.onerror=null; this.src='/img/poster-placeholder.svg'; }" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" loading="lazy">
 
       <div class="absolute top-2 left-2 flex flex-col gap-1">
+        {{if eq .Type "anime"}}
+        <span class="bg-purple-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">ANIME</span>
+        {{else if eq .Type "drama_pendek"}}
+        <span class="bg-rose-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">DRAMA</span>
+        {{else if eq .Type "hollywood"}}
+        <span class="bg-amber-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">BOX OFFICE</span>
+        {{end}}
         {{if .IsFree}}
-        <span class="bg-green-600 text-white text-[10px] font-black px-2 py-0.5 rounded shadow">GRATIS</span>
+        <span class="bg-green-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">GRATIS</span>
         {{end}}
         {{if .Quality}}
-        <span class="bg-slate-900/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded border border-slate-700 shadow">{{.Quality}}</span>
+        <span class="bg-slate-900/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded border border-slate-700 shadow">{{.Quality}}</span>
         {{end}}
       </div>
 
@@ -140,53 +176,379 @@
       </div>
     </div>
   </a>
-  {{else}}
-  <div class="col-span-full py-16 text-center text-slate-400 dark:text-slate-500 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-8">
-    <i class="fa-solid fa-box-open text-5xl mb-3 text-slate-300 dark:text-slate-600"></i>
-    <p class="font-medium text-sm">Tidak ada film yang cocok dengan filter yang dipilih.</p>
+  {{end}}
+</div>
+
+<!-- ==================== PAGINATION BAR ==================== -->
+<div id="filter-pagination-container">
+  {{if gt .TotalPages 1}}
+  <div class="mt-8 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+    <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+      Menampilkan <span class="font-bold text-slate-900 dark:text-white">{{.TotalCount}}</span> film (Halaman <span class="font-bold text-brand-500">{{.CurrentPage}}</span> dari <span class="font-bold text-slate-900 dark:text-white">{{.TotalPages}}</span>)
+    </span>
+    <div class="flex items-center gap-1.5 flex-wrap justify-center">
+      {{if gt .CurrentPage 1}}
+      <button type="button" onclick="fetchFilterAjax(1)" class="w-8 h-8 flex items-center justify-center bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition" title="Halaman Pertama">
+        <i class="fa-solid fa-angles-left"></i>
+      </button>
+      <button type="button" onclick="fetchFilterAjax({{sub .CurrentPage 1}})" class="px-3 h-8 flex items-center gap-1 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition">
+        <i class="fa-solid fa-chevron-left text-[10px]"></i> Prev
+      </button>
+      {{end}}
+
+      {{range (pageItems .CurrentPage .TotalPages)}}
+        {{if .IsDots}}
+        <span class="px-2 h-8 flex items-center justify-center text-xs text-slate-400 dark:text-slate-500 font-black select-none">...</span>
+        {{else if .IsActive}}
+        <span class="w-8 h-8 flex items-center justify-center bg-brand-500 text-white rounded-xl text-xs font-black shadow-md">
+          {{.Number}}
+        </span>
+        {{else}}
+        <button type="button" onclick="fetchFilterAjax({{.Number}})" class="w-8 h-8 flex items-center justify-center bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition">
+          {{.Number}}
+        </button>
+        {{end}}
+      {{end}}
+
+      {{if lt .CurrentPage .TotalPages}}
+      <button type="button" onclick="fetchFilterAjax({{add .CurrentPage 1}})" class="px-3 h-8 flex items-center gap-1 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition">
+        Next <i class="fa-solid fa-chevron-right text-[10px]"></i>
+      </button>
+      <button type="button" onclick="fetchFilterAjax({{.TotalPages}})" class="w-8 h-8 flex items-center justify-center bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition" title="Halaman Terakhir ({{.TotalPages}})">
+        <i class="fa-solid fa-angles-right"></i>
+      </button>
+      {{end}}
+    </div>
   </div>
   {{end}}
 </div>
 
-<!-- PAGINATION BAR -->
-{{if gt .TotalPages 1}}
-<div class="mt-8 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
-  <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">
-    Menampilkan <span class="font-bold text-slate-900 dark:text-white">{{.TotalCount}}</span> film (Halaman <span class="font-bold text-brand-500">{{.CurrentPage}}</span> dari <span class="font-bold text-slate-900 dark:text-white">{{.TotalPages}}</span>)
-  </span>
-  <div class="flex items-center gap-1.5 flex-wrap justify-center">
-    {{if gt .CurrentPage 1}}
-    <a href="/filter?p=1&q={{$.SearchQuery}}&type={{$.CurrentType}}&genre={{$.CurrentGenre}}&year={{$.CurrentYear}}&country={{$.CurrentCountry}}&category={{$.CurrentCategory}}&rating={{$.CurrentMinRating}}&sort={{$.CurrentSort}}" class="w-8 h-8 flex items-center justify-center bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition" title="Halaman Pertama">
-      <i class="fa-solid fa-angles-left"></i>
-    </a>
-    <a href="/filter?p={{sub .CurrentPage 1}}&q={{$.SearchQuery}}&type={{$.CurrentType}}&genre={{$.CurrentGenre}}&year={{$.CurrentYear}}&country={{$.CurrentCountry}}&category={{$.CurrentCategory}}&rating={{$.CurrentMinRating}}&sort={{$.CurrentSort}}" class="px-3 h-8 flex items-center gap-1 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition">
-      <i class="fa-solid fa-chevron-left text-[10px]"></i> Prev
-    </a>
-    {{end}}
+<!-- ==================== JAVASCRIPT AJAX CONTROLLER ==================== -->
+<script>
+(function() {
+  const form = document.getElementById('full-filter-form');
+  const searchInput = document.getElementById('filter-search-input');
+  const searchClear = document.getElementById('filter-search-clear');
+  const searchHint = document.getElementById('filter-search-hint');
+  const typeSelect = document.getElementById('filter-type-select');
+  const yearSelect = document.getElementById('filter-year-select');
+  const genreSelect = document.getElementById('filter-genre-select');
+  const countrySelect = document.getElementById('filter-country-select');
+  const ratingSelect = document.getElementById('filter-rating-select');
+  const sortSelect = document.getElementById('filter-sort-select');
+  const liveBadge = document.getElementById('filter-live-badge');
+  const counterText = document.getElementById('filter-counter-text');
+  const grid = document.getElementById('filter-movies-grid');
+  const loading = document.getElementById('filter-movies-loading');
+  const emptyState = document.getElementById('filter-movies-empty');
+  const paginationContainer = document.getElementById('filter-pagination-container');
 
-    {{range (pageItems .CurrentPage .TotalPages)}}
-      {{if .IsDots}}
-      <span class="px-2 h-8 flex items-center justify-center text-xs text-slate-400 dark:text-slate-500 font-black select-none">...</span>
-      {{else if .IsActive}}
-      <span class="w-8 h-8 flex items-center justify-center bg-brand-500 text-white rounded-xl text-xs font-black shadow-md">
-        {{.Number}}
+  if (!form || !grid) return;
+
+  let currentAbortController = null;
+  let debounceTimer = null;
+  let lastSearchedKeyword = searchInput ? searchInput.value.trim() : '';
+
+  function debounce(callback, delay) {
+    return function(...args) {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => callback.apply(this, args), delay);
+    };
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+
+  function buildMovieCard(m) {
+    const imgUrl = m.poster_thumb_url || m.poster_url || m.thumbnail_url || '/img/poster-placeholder.svg';
+    const fallbackUrl = m.thumbnail_url || m.poster_url || '/img/poster-placeholder.svg';
+    const rating = m.rating > 0 ? m.rating.toFixed(1) : '0';
+    const quality = m.quality || 'HD';
+    const freeBadge = m.is_free ? '<span class="bg-green-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">GRATIS</span>' : '';
+
+    let typeBadge = '';
+    if (m.type === 'anime') {
+      typeBadge = '<span class="bg-purple-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">ANIME</span>';
+    } else if (m.type === 'drama_pendek') {
+      typeBadge = '<span class="bg-rose-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">DRAMA</span>';
+    } else if (m.type === 'hollywood') {
+      typeBadge = '<span class="bg-amber-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">BOX OFFICE</span>';
+    }
+
+    return `
+    <a href="/movie/${encodeURIComponent(m.slug)}" class="group bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-xl overflow-hidden hover:border-brand-500 hover:shadow-lg dark:hover:border-brand-500 transition duration-300 flex flex-col shadow-sm">
+      <div class="relative aspect-[2/3] overflow-hidden bg-slate-200 dark:bg-dark-800">
+        <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(m.title)}" data-fallback="${escapeHtml(fallbackUrl)}" onerror="if (this.dataset.fallback && this.src !== this.dataset.fallback) { this.src = this.dataset.fallback; } else { this.onerror=null; this.src='/img/poster-placeholder.svg'; }" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" loading="lazy">
+
+        <div class="absolute top-2 left-2 flex flex-col gap-1">
+          ${typeBadge}
+          ${freeBadge}
+          <span class="bg-slate-900/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded border border-slate-700 shadow">${escapeHtml(quality)}</span>
+        </div>
+
+        <div class="absolute top-2 right-2 bg-black/80 text-yellow-400 text-xs font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shadow">
+          <i class="fa-solid fa-star text-[10px]"></i> ${rating}
+        </div>
+      </div>
+
+      <div class="p-3 flex-1 flex flex-col justify-between">
+        <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-brand-500 line-clamp-1 transition">${escapeHtml(m.title)}</h3>
+        <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mt-2">
+          <span>${m.year || '-'}</span>
+          <span class="text-brand-500 font-semibold text-[11px]"><i class="fa-solid fa-play"></i> Watch</span>
+        </div>
+      </div>
+    </a>`;
+  }
+
+  function renderPagination(page, totalPages, totalCount) {
+    if (!paginationContainer) return;
+    if (totalPages <= 1) {
+      paginationContainer.innerHTML = '';
+      return;
+    }
+
+    let pageBtns = '';
+    // Hitung range pagination mirip pageItems helper Go
+    const startP = Math.max(1, page - 2);
+    const endP = Math.min(totalPages, startP + 4);
+    const adjustedStart = Math.max(1, endP - 4);
+
+    if (page > 1) {
+      pageBtns += `
+      <button type="button" onclick="fetchFilterAjax(1)" class="w-8 h-8 flex items-center justify-center bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition" title="Halaman Pertama">
+        <i class="fa-solid fa-angles-left"></i>
+      </button>
+      <button type="button" onclick="fetchFilterAjax(${page - 1})" class="px-3 h-8 flex items-center gap-1 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition">
+        <i class="fa-solid fa-chevron-left text-[10px]"></i> Prev
+      </button>`;
+    }
+
+    for (let p = adjustedStart; p <= endP; p++) {
+      if (p === page) {
+        pageBtns += `<span class="w-8 h-8 flex items-center justify-center bg-brand-500 text-white rounded-xl text-xs font-black shadow-md">${p}</span>`;
+      } else {
+        pageBtns += `<button type="button" onclick="fetchFilterAjax(${p})" class="w-8 h-8 flex items-center justify-center bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition">${p}</button>`;
+      }
+    }
+
+    if (page < totalPages) {
+      pageBtns += `
+      <button type="button" onclick="fetchFilterAjax(${page + 1})" class="px-3 h-8 flex items-center gap-1 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition">
+        Next <i class="fa-solid fa-chevron-right text-[10px]"></i>
+      </button>
+      <button type="button" onclick="fetchFilterAjax(${totalPages})" class="w-8 h-8 flex items-center justify-center bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition" title="Halaman Terakhir (${totalPages})">
+        <i class="fa-solid fa-angles-right"></i>
+      </button>`;
+    }
+
+    paginationContainer.innerHTML = `
+    <div class="mt-8 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+      <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+        Menampilkan <span class="font-bold text-slate-900 dark:text-white">${totalCount}</span> film (Halaman <span class="font-bold text-brand-500">${page}</span> dari <span class="font-bold text-slate-900 dark:text-white">${totalPages}</span>)
       </span>
-      {{else}}
-      <a href="/filter?p={{.Number}}&q={{$.SearchQuery}}&type={{$.CurrentType}}&genre={{$.CurrentGenre}}&year={{$.CurrentYear}}&country={{$.CurrentCountry}}&category={{$.CurrentCategory}}&rating={{$.CurrentMinRating}}&sort={{$.CurrentSort}}" class="w-8 h-8 flex items-center justify-center bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition">
-        {{.Number}}
-      </a>
-      {{end}}
-    {{end}}
+      <div class="flex items-center gap-1.5 flex-wrap justify-center">
+        ${pageBtns}
+      </div>
+    </div>`;
+  }
 
-    {{if lt .CurrentPage .TotalPages}}
-    <a href="/filter?p={{add .CurrentPage 1}}&q={{$.SearchQuery}}&type={{$.CurrentType}}&genre={{$.CurrentGenre}}&year={{$.CurrentYear}}&country={{$.CurrentCountry}}&category={{$.CurrentCategory}}&rating={{$.CurrentMinRating}}&sort={{$.CurrentSort}}" class="px-3 h-8 flex items-center gap-1 bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition">
-      Next <i class="fa-solid fa-chevron-right text-[10px]"></i>
-    </a>
-    <a href="/filter?p={{.TotalPages}}&q={{$.SearchQuery}}&type={{$.CurrentType}}&genre={{$.CurrentGenre}}&year={{$.CurrentYear}}&country={{$.CurrentCountry}}&category={{$.CurrentCategory}}&rating={{$.CurrentMinRating}}&sort={{$.CurrentSort}}" class="w-8 h-8 flex items-center justify-center bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition" title="Halaman Terakhir ({{.TotalPages}})">
-      <i class="fa-solid fa-angles-right"></i>
-    </a>
-    {{end}}
-  </div>
-</div>
-{{end}}
+  window.fetchFilterAjax = function(page = 1) {
+    const q = searchInput ? searchInput.value.trim() : '';
+    const type = typeSelect ? typeSelect.value : '';
+    const year = yearSelect ? yearSelect.value : '';
+    const genre = genreSelect ? genreSelect.value : '';
+    const country = countrySelect ? countrySelect.value : '';
+    const rating = ratingSelect ? ratingSelect.value : '';
+    const sort = sortSelect ? sortSelect.value : '';
+
+    // Update Live Badge status
+    const isFiltered = (q !== '' || type !== '' || (year !== '2026' && year !== '') || genre !== '' || country !== '' || rating !== '' || (sort !== 'year_desc' && sort !== ''));
+    if (liveBadge) {
+      if (isFiltered) liveBadge.classList.remove('hidden');
+      else liveBadge.classList.add('hidden');
+    }
+
+    // Toggle Clear Button
+    if (searchClear) {
+      if (q.length > 0) searchClear.classList.remove('hidden');
+      else searchClear.classList.add('hidden');
+    }
+
+    // Abort request sebelumnya jika ada yang sedang berjalan
+    if (currentAbortController) currentAbortController.abort();
+    currentAbortController = new AbortController();
+
+    // UI Loading state
+    grid.classList.add('opacity-30');
+    if (loading) loading.classList.remove('hidden');
+    if (emptyState) emptyState.classList.add('hidden');
+
+    const params = new URLSearchParams();
+    if (q.length >= 3) params.append('q', q);
+    if (type) params.append('type', type);
+    if (year) params.append('year', year);
+    if (genre) params.append('genre', genre);
+    if (country) params.append('country', country);
+    if (rating) params.append('rating', rating);
+    if (sort) params.append('sort', sort);
+    params.append('p', String(page));
+    params.append('limit', '24');
+
+    lastSearchedKeyword = q;
+
+    // Sinkronisasi Address Bar Browser
+    const cleanParams = new URLSearchParams();
+    if (q.length >= 3) cleanParams.append('q', q);
+    if (type) cleanParams.append('type', type);
+    if (year && year !== '2026') cleanParams.append('year', year);
+    else if (year === 'all') cleanParams.append('year', 'all');
+    if (genre) cleanParams.append('genre', genre);
+    if (country) cleanParams.append('country', country);
+    if (rating) cleanParams.append('rating', rating);
+    if (sort && sort !== 'year_desc') cleanParams.append('sort', sort);
+    if (page > 1) cleanParams.append('p', String(page));
+
+    const newUrl = '/filter' + (cleanParams.toString() ? '?' + cleanParams.toString() : '');
+    window.history.pushState(null, '', newUrl);
+
+    fetch('/api/movies/filter', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+      },
+      body: params.toString(),
+      signal: currentAbortController.signal
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('HTTP error ' + res.status);
+      return res.json();
+    })
+    .then(data => {
+      grid.classList.remove('opacity-30');
+      if (loading) loading.classList.add('hidden');
+
+      if (!data || !data.movies || data.movies.length === 0) {
+        grid.innerHTML = '';
+        if (emptyState) emptyState.classList.remove('hidden');
+        if (counterText) counterText.textContent = 'Ditemukan 0 judul film sesuai kriteria';
+        if (paginationContainer) paginationContainer.innerHTML = '';
+        return;
+      }
+
+      let html = '';
+      data.movies.forEach(m => {
+        html += buildMovieCard(m);
+      });
+      grid.innerHTML = html;
+
+      if (counterText) {
+        counterText.textContent = `Ditemukan ${data.total_count} judul film sesuai kriteria`;
+      }
+
+      renderPagination(data.page, data.total_pages, data.total_count);
+
+      if (page > 1) {
+        const anchor = document.getElementById('filter-anchor');
+        if (anchor) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    })
+    .catch(err => {
+      if (err.name === 'AbortError') return;
+      console.error('Gagal mengambil data film filter via AJAX:', err);
+      grid.classList.remove('opacity-30');
+      if (loading) loading.classList.add('hidden');
+    });
+  };
+
+  // Helper reset filter ke default 2026 & rilis terbaru
+  window.resetFullFilter = function() {
+    if (searchInput) searchInput.value = '';
+    if (typeSelect) typeSelect.value = '';
+    if (yearSelect) yearSelect.value = '2026';
+    if (genreSelect) genreSelect.value = '';
+    if (countrySelect) countrySelect.value = '';
+    if (ratingSelect) ratingSelect.value = '';
+    if (sortSelect) sortSelect.value = 'year_desc';
+    if (searchClear) searchClear.classList.add('hidden');
+    if (searchHint) searchHint.classList.add('hidden');
+    if (liveBadge) liveBadge.classList.add('hidden');
+    window.fetchFilterAjax(1);
+  };
+
+  // Event Listener Kata Kunci dengan Rule Minimal 3 Karakter & Debounce 400ms
+  const debouncedSearch = debounce(() => {
+    const q = searchInput ? searchInput.value.trim() : '';
+    if (q.length > 0 && q.length < 3) {
+      if (searchHint) searchHint.classList.remove('hidden');
+      return; // Tidak mengirim request ke server jika < 3 karakter
+    }
+    if (searchHint) searchHint.classList.add('hidden');
+    if (q !== lastSearchedKeyword || q === '') {
+      window.fetchFilterAjax(1);
+    }
+  }, 400);
+
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      const q = searchInput.value.trim();
+      if (searchClear) {
+        if (q.length > 0) searchClear.classList.remove('hidden');
+        else searchClear.classList.add('hidden');
+      }
+
+      if (q.length > 0 && q.length < 3) {
+        if (searchHint) searchHint.classList.remove('hidden');
+      } else {
+        if (searchHint) searchHint.classList.add('hidden');
+      }
+
+      debouncedSearch();
+    });
+
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const q = searchInput.value.trim();
+        if (q.length > 0 && q.length < 3) {
+          if (searchHint) searchHint.classList.remove('hidden');
+          return;
+        }
+        window.fetchFilterAjax(1);
+      }
+    });
+  }
+
+  if (searchClear) {
+    searchClear.addEventListener('click', () => {
+      if (searchInput) searchInput.value = '';
+      searchClear.classList.add('hidden');
+      if (searchHint) searchHint.classList.add('hidden');
+      window.fetchFilterAjax(1);
+    });
+  }
+
+  // Instant Trigger pada perubahan dropdown
+  if (typeSelect) typeSelect.addEventListener('change', () => window.fetchFilterAjax(1));
+  if (yearSelect) yearSelect.addEventListener('change', () => window.fetchFilterAjax(1));
+  if (genreSelect) genreSelect.addEventListener('change', () => window.fetchFilterAjax(1));
+  if (countrySelect) countrySelect.addEventListener('change', () => window.fetchFilterAjax(1));
+  if (ratingSelect) ratingSelect.addEventListener('change', () => window.fetchFilterAjax(1));
+  if (sortSelect) sortSelect.addEventListener('change', () => window.fetchFilterAjax(1));
+
+  // Handle form submit (mencegah reload page penuh)
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const q = searchInput ? searchInput.value.trim() : '';
+    if (q.length > 0 && q.length < 3) {
+      if (searchHint) searchHint.classList.remove('hidden');
+      return;
+    }
+    window.fetchFilterAjax(1);
+  });
+
+})();
+</script>
 {{end}}
