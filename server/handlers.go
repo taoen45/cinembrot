@@ -31,6 +31,9 @@ type PageData struct {
 	BoxOffice              []model.Movie
 	TopRated               []model.Movie
 	FreeMovies             []model.Movie
+	AnimePopular           []model.Movie
+	DramaPopular           []model.Movie
+	HollywoodPopular       []model.Movie
 	Featured               *model.Movie
 	Movie                  *model.Movie
 	Related                []model.Movie
@@ -205,11 +208,35 @@ func (s *Server) HandleHome(w http.ResponseWriter, r *http.Request) {
 		Limit(12).
 		Find(&freeMovies)
 
-	// 5. Latest movie catalog grid
+	// 5. Anime Populer & Paling Banyak Ditonton
+	var animePopular []model.Movie
+	s.db.Preload("Genres").
+		Where("type = 'anime' AND poster_url <> ''").
+		Order("views desc, rating desc, id desc").
+		Limit(12).
+		Find(&animePopular)
+
+	// 6. Drama Pendek Asia Populer
+	var dramaPopular []model.Movie
+	s.db.Preload("Genres").
+		Where("type = 'drama_pendek' AND poster_url <> ''").
+		Order("views desc, rating desc, id desc").
+		Limit(12).
+		Find(&dramaPopular)
+
+	// 7. Film Hollywood & Box Office Populer
+	var hollywoodPopular []model.Movie
+	s.db.Preload("Genres").
+		Where("(type = 'hollywood' OR type = 'movie') AND poster_url <> ''").
+		Order("year desc, rating desc, views desc").
+		Limit(12).
+		Find(&hollywoodPopular)
+
+	// 8. Latest movie catalog grid
 	var movies []model.Movie
 	s.db.Preload("Genres").Order("id desc").Limit(24).Find(&movies)
 
-	// 6. Dropdown filter datasets
+	// 9. Dropdown filter datasets
 	var genres []model.Genre
 	s.db.Order("name asc").Find(&genres)
 
@@ -223,20 +250,23 @@ func (s *Server) HandleHome(w http.ResponseWriter, r *http.Request) {
 	s.db.Model(&model.Movie{}).Distinct().Where("country <> ''").Order("country asc").Pluck("country", &countries)
 
 	data := PageData{
-		Lang:       i18n.GetLang(r),
-		Title:      "Nonton Film Streaming & Download Gratis Legal",
-		SiteName:   "CINEMBROT",
-		ActiveMenu: "home",
-		Slides:     slides,
-		BoxOffice:  boxOffice,
-		TopRated:   topRated,
-		FreeMovies: freeMovies,
-		Featured:   featured,
-		Movies:     movies,
-		Genres:     genres,
-		Years:      years,
-		Countries:  countries,
-		EnableAds:  s.cfg.EnableAds,
+		Lang:             i18n.GetLang(r),
+		Title:            "Nonton Film Streaming & Download Gratis Legal",
+		SiteName:         "CINEMBROT",
+		ActiveMenu:       "home",
+		Slides:           slides,
+		BoxOffice:        boxOffice,
+		TopRated:         topRated,
+		FreeMovies:       freeMovies,
+		AnimePopular:     animePopular,
+		DramaPopular:     dramaPopular,
+		HollywoodPopular: hollywoodPopular,
+		Featured:         featured,
+		Movies:           movies,
+		Genres:           genres,
+		Years:            years,
+		Countries:        countries,
+		EnableAds:        s.cfg.EnableAds,
 	}
 
 	s.PopulateSEO(r, &data)
@@ -245,9 +275,9 @@ func (s *Server) HandleHome(w http.ResponseWriter, r *http.Request) {
 
 // HandleFilter handles dynamic multi-parameter filtering (Keyword/Alias, Type, Year, Genre, Country, Category, Rating, Sort, Page)
 func (s *Server) HandleFilter(w http.ResponseWriter, r *http.Request) {
-	keyword := strings.TrimSpace(r.URL.Query().Get("q"))
+	keyword := SanitizeSearchQuery(r.URL.Query().Get("q"))
 	if keyword == "" {
-		keyword = strings.TrimSpace(r.URL.Query().Get("keyword"))
+		keyword = SanitizeSearchQuery(r.URL.Query().Get("keyword"))
 	}
 	typeStr := strings.TrimSpace(r.URL.Query().Get("type"))
 	yearStr := strings.TrimSpace(r.URL.Query().Get("year"))
@@ -258,10 +288,7 @@ func (s *Server) HandleFilter(w http.ResponseWriter, r *http.Request) {
 	sortStr := strings.TrimSpace(r.URL.Query().Get("sort"))
 	pageStr := strings.TrimSpace(r.URL.Query().Get("p"))
 
-	page := 1
-	if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
-		page = p
-	}
+	page := SanitizePageNumber(pageStr, 500)
 	pageSize := 24
 
 	query := s.db.Model(&model.Movie{}).Preload("Genres")
@@ -685,7 +712,7 @@ func (s *Server) HandleDramaPendek(w http.ResponseWriter, r *http.Request) {
 // HandleMovieDetail displays movie details, player, and download links
 func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 	slug := r.PathValue("slug")
-	if slug == "" {
+	if !ValidateSlug(slug) {
 		http.NotFound(w, r)
 		return
 	}
@@ -850,13 +877,17 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 
 // HandleSubmitComment saves user submitted comment for a movie
 func (s *Server) HandleSubmitComment(w http.ResponseWriter, r *http.Request) {
+	if !RateLimitAction(w, r) {
+		return
+	}
+
 	if !s.cfg.EnableComments || database.GetSetting(s.db, "comments_enabled", "true") == "false" {
 		http.Error(w, "Fitur komentar dinonaktifkan oleh administrator.", http.StatusForbidden)
 		return
 	}
 
 	slug := r.PathValue("slug")
-	if slug == "" {
+	if !ValidateSlug(slug) {
 		http.NotFound(w, r)
 		return
 	}
@@ -917,12 +948,20 @@ func (s *Server) HandleSubmitComment(w http.ResponseWriter, r *http.Request) {
 // HandleYearFilter filters movies by release year
 func (s *Server) HandleYearFilter(w http.ResponseWriter, r *http.Request) {
 	yearStr := r.PathValue("year")
+	if y, err := strconv.Atoi(yearStr); err != nil || y < 1900 || y > 2050 {
+		http.NotFound(w, r)
+		return
+	}
 	http.Redirect(w, r, "/filter?year="+yearStr, http.StatusFound)
 }
 
 // HandleGenreFilter filters movies by genre
 func (s *Server) HandleGenreFilter(w http.ResponseWriter, r *http.Request) {
 	genreSlug := r.PathValue("slug")
+	if !ValidateSlug(genreSlug) {
+		http.NotFound(w, r)
+		return
+	}
 	http.Redirect(w, r, "/filter?genre="+genreSlug, http.StatusFound)
 }
 
@@ -933,7 +972,7 @@ func (s *Server) HandleFreeFilter(w http.ResponseWriter, r *http.Request) {
 
 // HandleSearch searches movies by title, original title, or synopsis
 func (s *Server) HandleSearch(w http.ResponseWriter, r *http.Request) {
-	query := strings.TrimSpace(r.URL.Query().Get("q"))
+	query := SanitizeSearchQuery(r.URL.Query().Get("q"))
 
 	var movies []model.Movie
 	if query != "" {
@@ -973,6 +1012,9 @@ func (s *Server) HandleAPIMovies(w http.ResponseWriter, r *http.Request) {
 // HandleRefreshDownloadLink rescrapes or validates download links for a specific movie
 func (s *Server) HandleRefreshDownloadLink(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	if !RateLimitAction(w, r) {
+		return
+	}
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"success":false,"message":"Metode HTTP harus POST"}`, http.StatusMethodNotAllowed)
 		return
@@ -1113,6 +1155,9 @@ func (s *Server) HandleRefreshDownloadLink(w http.ResponseWriter, r *http.Reques
 // HandleRefreshStreamLink handles POST /api/movie/{id}/refresh-stream
 func (s *Server) HandleRefreshStreamLink(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	if !RateLimitAction(w, r) {
+		return
+	}
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"success":false,"message":"Metode HTTP harus POST"}`, http.StatusMethodNotAllowed)
 		return

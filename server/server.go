@@ -402,10 +402,13 @@ func (s *Server) Start() error {
 	log.Printf(" 🚀 CINEMBROT WEB SERVER AKTIF DI: http://localhost:%s", port)
 	log.Printf("==============================================================\n")
 
-	return http.ListenAndServe(":"+port, mux)
+	// Pasang global security headers & rate limiter per IP
+	securedHandler := SecurityHeadersMiddleware(RateLimitPublicMiddleware(mux))
+
+	return http.ListenAndServe(":"+port, securedHandler)
 }
 
-// HandleSetLang handles switching language and redirects back to the previous page
+// HandleSetLang handles switching language and redirects back to the previous page safely
 func (s *Server) HandleSetLang(w http.ResponseWriter, r *http.Request) {
 	lang := r.URL.Query().Get("lang")
 	i18n.SetLangCookie(w, lang)
@@ -431,10 +434,10 @@ func (s *Server) HandleSetLang(w http.ResponseWriter, r *http.Request) {
 	}
 
 	redirect := r.URL.Query().Get("redirect")
-	if redirect == "" || strings.HasPrefix(redirect, "//") || strings.Contains(redirect, "://") {
+	if !IsSafeLocalRedirect(redirect) {
 		redirect = r.Header.Get("Referer")
 	}
-	if redirect == "" || strings.HasPrefix(redirect, "//") || strings.Contains(redirect, "://") {
+	if !IsSafeLocalRedirect(redirect) {
 		redirect = "/"
 	}
 	http.Redirect(w, r, redirect, http.StatusSeeOther)

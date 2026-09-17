@@ -79,11 +79,15 @@ func (s *Server) HandleAdminLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// POST Login
+	if !RateLimitAdminAuth(w, r) {
+		return
+	}
+
 	_ = r.ParseForm()
 	username := strings.TrimSpace(r.FormValue("username"))
 	password := strings.TrimSpace(r.FormValue("password"))
 	redirectTo := r.FormValue("redirect")
-	if redirectTo == "" {
+	if !IsSafeLocalRedirect(redirectTo) {
 		redirectTo = "/admin"
 	}
 
@@ -93,13 +97,7 @@ func (s *Server) HandleAdminLogin(w http.ResponseWriter, r *http.Request) {
 
 	if turnstileEnabled && turnstileSecretKey != "" {
 		turnstileToken := r.FormValue("cf-turnstile-response")
-		clientIP := r.Header.Get("CF-Connecting-IP")
-		if clientIP == "" {
-			clientIP = strings.TrimSpace(strings.Split(r.Header.Get("X-Forwarded-For"), ",")[0])
-		}
-		if clientIP == "" {
-			clientIP = r.RemoteAddr
-		}
+		clientIP := ExtractClientIP(r)
 		valid, err := VerifyTurnstile(turnstileSecretKey, turnstileToken, clientIP)
 		if err != nil || !valid {
 			log.Printf("[ADMIN AUTH] ⚠️ Verifikasi Cloudflare Turnstile gagal untuk IP %s: %v\n", clientIP, err)
@@ -119,6 +117,7 @@ func (s *Server) HandleAdminLogin(w http.ResponseWriter, r *http.Request) {
 				Value:    token,
 				Path:     "/",
 				HttpOnly: true,
+				SameSite: http.SameSiteLaxMode,
 				MaxAge:   int(auth.SessionDuration.Seconds()),
 			})
 			http.Redirect(w, r, redirectTo, http.StatusSeeOther)
@@ -151,6 +150,7 @@ func (s *Server) HandleAdminLogin(w http.ResponseWriter, r *http.Request) {
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
 		MaxAge:   int(auth.SessionDuration.Seconds()),
 	})
 

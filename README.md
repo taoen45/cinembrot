@@ -12,6 +12,15 @@
 
 ## 🚀 Fitur Utama
 
+- 🍿 **Beranda Sinematik Modern (Cinematic Streaming Hub)**:
+  - **Hero Spotlight Sinematik**: Tampilan slider film unggulan HD dengan thumbnail preview strip di kanan bawah dan navigasi touch swipe mobile.
+  - **Quick Access Category Pills**: Kapsul tombol akses cepat (*Hollywood*, *Anime*, *Drama Pendek*, *Rating 8.0+*, *Gratis Legal*).
+  - **Rak Film Horisontal (Netflix-Style Carousel Shelves)**: 5 rak kurasi film geser mulus (*Sedang Tren & Box Office*, *Pilihan Kritikus / Rating Tertinggi*, *Anime Populer*, *Drama Pendek Asia*, dan *Hollywood Pilihan*) lengkap dengan ranking Top 10.
+  - **Filter Bar Kompak**: Desain glassmorphic ramping satu baris yang hemat tempat dan responsif.
+- 🛡️ **Hardening Keamanan URL & Server (Anti-Hacker, Anti-Bot & Anti-Abuse)**:
+  - **Global HTTP Security Headers**: Injeksi otomatis `X-Frame-Options: SAMEORIGIN` (anti-clickjacking), `X-Content-Type-Options: nosniff`, `X-XSS-Protection`, `Referrer-Policy`, `Permissions-Policy`, dan `HSTS`.
+  - **In-Memory Token Bucket Rate Limiter**: Pembatasan request per IP (60 req/menit untuk publik, 5 req/menit untuk login admin anti-brute force, dan 15 req/menit untuk action API) dengan auto-cleanup memory.
+  - **Sanitasi & Validasi Input URL**: Validasi regex ketat slug path parameter (`/movie/{slug}` dan `/genre/{slug}`) dari serangan path traversal dan SQL injection, pembatasan pagination integer `?p=` (maks 500), pembersihan query `?q=` (maks 100 karakter), validasi integer ID API, dan proteksi anti-open-redirect.
 - 📺 **Multi-Server Streaming Player**: Dilengkapi 5 server embed streaming video instan (**Server 1: VidSrc HD**, **Server 2: AutoEmbed Fast**, **Server 3: 2Embed VIP**, **Server 4: VidLink Pro**, **Server 5: SuperEmbed Multi**, serta **Trailer Resmi YouTube**) yang dapat dipilih penonton secara fleksibel langsung di halaman detail tanpa reload halaman.
 - 📑 **Episode Selector Bar**: Navigasi pemilih episode interaktif client-side untuk serial Anime dan Drama Pendek, memudahkan penonton berpindah antar episode dengan mulus.
 - 🔤 **Resolusi Judul English Standar QWERTY & Alias Name**: Judul berbahasa non-Latin (Kanji Jepang, Hanzi Mandarin, Hangeul Korea) secara otomatis dikonversi ke versi **English resmi standar keyboard QWERTY** via TMDb Translations API (`iso_639_1 == "en"`) dan Jikan. Judul asli tetap dipertahankan pada kolom `original_title` dan `alternative_titles` (*alias name*), serta URL slug selalu bersih (contoh: `異世界かるてっと` $\rightarrow$ **`Isekai Quartet`** / `/movie/isekai-quartet-2019`).
