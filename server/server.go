@@ -292,6 +292,8 @@ func (s *Server) Start() error {
 	mux.HandleFunc("GET /search", s.HandleSearch)
 	mux.HandleFunc("GET /set-lang", s.HandleSetLang)
 	mux.HandleFunc("GET /api/movies", s.HandleAPIMovies)
+	mux.HandleFunc("POST /api/movies/filter", s.HandleAPIMoviesFilter)
+	mux.HandleFunc("GET /api/movies/filter", s.HandleAPIMoviesFilter)
 	mux.HandleFunc("POST /api/movie/{id}/refresh-download", s.HandleRefreshDownloadLink)
 	mux.HandleFunc("POST /api/movie/{id}/refresh-stream", s.HandleRefreshStreamLink)
 

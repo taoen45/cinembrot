@@ -39,28 +39,48 @@ type URLSet struct {
 }
 
 // GetSiteURL determines the canonical base URL of the website
+// Mendukung mode auto-detect host dinamis agar website dapat berganti domain secara instan tanpa perlu restart server atau konfigurasi rumit jika domain terblokir.
 func (s *Server) GetSiteURL(r *http.Request) string {
-	// 1. Cek pengaturan eksplisit dari database MariaDB
-	if custom := strings.TrimSpace(database.GetSetting(s.db, "site_url", "")); custom != "" {
-		return strings.TrimRight(custom, "/")
-	}
+	mode := strings.ToLower(strings.TrimSpace(database.GetSetting(s.db, "site_url_mode", "auto")))
+	custom := strings.TrimRight(strings.TrimSpace(database.GetSetting(s.db, "site_url", "")), "/")
 
-	// 2. Jika ada request HTTP aktif, tentukan scheme dan host
-	if r != nil {
-		scheme := "https"
-		if r.TLS == nil && r.Header.Get("X-Forwarded-Proto") != "https" {
-			// Jika di localhost tanpa reverse proxy SSL
-			if strings.HasPrefix(r.Host, "localhost") || strings.HasPrefix(r.Host, "127.0.0.1") {
-				scheme = "http"
+	// Jika mode "auto" atau custom bernilai "auto" atau kosong, utamakan host request aktif
+	if mode == "auto" || custom == "auto" || custom == "" {
+		if r != nil {
+			scheme := "https"
+			if r.TLS == nil && r.Header.Get("X-Forwarded-Proto") != "https" {
+				if strings.HasPrefix(r.Host, "localhost") || strings.HasPrefix(r.Host, "127.0.0.1") {
+					scheme = "http"
+				}
+			}
+
+			// Prioritaskan X-Forwarded-Host (dari Cloudflare Tunnel / Caddy), lalu r.Host
+			host := strings.TrimSpace(r.Header.Get("X-Forwarded-Host"))
+			if host == "" {
+				host = r.Host
+			}
+			// Bersihkan koma jika ada multi proxy
+			if idx := strings.Index(host, ","); idx != -1 {
+				host = strings.TrimSpace(host[:idx])
+			}
+
+			if host != "" {
+				return fmt.Sprintf("%s://%s", scheme, host)
 			}
 		}
-		host := r.Host
-		if host != "" {
-			return fmt.Sprintf("%s://%s", scheme, host)
+
+		// Jika r nil (misal sitemap cron generator), gunakan custom jika ada
+		if custom != "" && custom != "auto" {
+			return custom
 		}
+		return "https://cinembrot.my.id"
 	}
 
-	// 3. Fallback default ke domain produksi resmi
+	// Jika mode custom eksplisit
+	if custom != "" && custom != "auto" {
+		return custom
+	}
+
 	return "https://cinembrot.my.id"
 }
 

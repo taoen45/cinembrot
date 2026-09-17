@@ -77,6 +77,13 @@ func (s *Server) HandleAdminSaveSettings(w http.ResponseWriter, r *http.Request)
 
 	// 5. Search Engine Optimization (SEO) & Webmaster Verifications
 	siteURL := strings.TrimRight(strings.TrimSpace(r.FormValue("site_url")), "/")
+	siteURLMode := strings.ToLower(strings.TrimSpace(r.FormValue("site_url_mode")))
+	if siteURLMode != "custom" {
+		siteURLMode = "auto"
+	}
+	domainNoticeEnabled := checkboxVal("domain_notice_enabled")
+	domainNoticeText := strings.TrimSpace(r.FormValue("domain_notice_text"))
+
 	metaDescription := strings.TrimSpace(r.FormValue("meta_description"))
 	metaKeywords := strings.TrimSpace(r.FormValue("meta_keywords"))
 	googleVerification := strings.TrimSpace(r.FormValue("google_site_verification"))
@@ -119,6 +126,10 @@ func (s *Server) HandleAdminSaveSettings(w http.ResponseWriter, r *http.Request)
 	_ = database.SaveSetting(s.db, "site_tagline", siteTagline, "Tagline atau Slogan Website")
 
 	_ = database.SaveSetting(s.db, "site_url", siteURL, "URL Publik Utama Website (contoh: https://cinembrot.my.id)")
+	_ = database.SaveSetting(s.db, "site_url_mode", siteURLMode, "Mode Domain: 'auto' (deteksi host pengunjung otomatis) atau 'custom' (kunci domain)")
+	_ = database.SaveSetting(s.db, "domain_notice_enabled", domainNoticeEnabled, "Tampilkan banner pengumuman domain baru / anti-blokir di atas halaman")
+	_ = database.SaveSetting(s.db, "domain_notice_text", domainNoticeText, "Teks notifikasi pindah domain atau channel resmi")
+
 	_ = database.SaveSetting(s.db, "meta_description", metaDescription, "Meta Description Default Mesin Pencari Google/Bing")
 	_ = database.SaveSetting(s.db, "meta_keywords", metaKeywords, "Meta Keywords Default Website")
 	_ = database.SaveSetting(s.db, "google_site_verification", googleVerification, "Kode Verifikasi Google Search Console")

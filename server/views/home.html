@@ -377,12 +377,15 @@
 
   <!-- ==================== 7. COMPACT GLASSMORPHIIC SEARCH & FILTER BAR ==================== -->
   <div class="bg-white/80 dark:bg-dark-900/80 backdrop-blur-md border border-slate-200 dark:border-dark-800 rounded-3xl p-5 shadow-sm transition">
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3" id="catalog-anchor">
       <div>
         <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
           <i class="fa-solid fa-sliders text-brand-500"></i> Cari & Filter Cepat Katalog
+          <span id="ajax-live-badge" class="hidden text-[10px] font-bold bg-brand-500/10 text-brand-500 border border-brand-500/20 px-2 py-0.5 rounded-full animate-pulse">
+            Live Filter
+          </span>
         </h3>
-        <p class="text-[11px] text-slate-400">Temukan ribuan film berdasarkan judul, genre, dan tahun rilis</p>
+        <p class="text-[11px] text-slate-400">Pencarian kilat tanpa refresh halaman berdasarkan judul, genre, dan tahun rilis terbaru</p>
       </div>
       <a href="/filter" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-500 hover:text-brand-600 transition">
         <span>Buka Filter Lengkap (Rating / Negara / Kategori)</span>
@@ -390,16 +393,19 @@
       </a>
     </div>
 
-    <form action="/filter" method="GET" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
-      <!-- Search Input -->
+    <form id="home-filter-form" action="/filter" method="GET" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+      <!-- Search Input dengan live AJAX -->
       <div class="md:col-span-2 relative">
-        <input type="text" name="q" placeholder="Ketik judul inggris, kanji, atau nama alias..." class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl pl-9 pr-3 py-2.5 focus:outline-none focus:border-brand-500 transition">
+        <input type="text" id="home-search-input" name="q" placeholder="Ketik judul film, kanji, atau nama alias..." autocomplete="off" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl pl-9 pr-8 py-2.5 focus:outline-none focus:border-brand-500 transition">
         <i class="fa-solid fa-magnifying-glass text-slate-400 absolute left-3 top-3 text-xs"></i>
+        <button type="button" id="home-search-clear" class="hidden absolute right-3 top-2.5 text-slate-400 hover:text-slate-200 text-xs" title="Hapus pencarian">
+          <i class="fa-solid fa-circle-xmark"></i>
+        </button>
       </div>
 
       <!-- Quick Genre Select -->
       <div>
-        <select name="genre" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition font-medium">
+        <select id="home-genre-select" name="genre" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition font-medium">
           <option value="">🎭 Semua Genre</option>
           {{range .Genres}}
           <option value="{{.Slug}}">{{.Name}}</option>
@@ -409,7 +415,7 @@
 
       <!-- Quick Year Select -->
       <div>
-        <select name="year" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition font-medium">
+        <select id="home-year-select" name="year" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500 transition font-medium">
           <option value="">📅 Semua Tahun</option>
           {{range .Years}}
           <option value="{{.}}">{{.}}</option>
@@ -417,9 +423,9 @@
         </select>
       </div>
 
-      <!-- Submit Button -->
+      <!-- Submit / Filter Button -->
       <div>
-        <button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-md shadow-brand-500/25 active:scale-95">
+        <button type="submit" id="home-filter-btn" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-md shadow-brand-500/25 active:scale-95">
           <i class="fa-solid fa-filter"></i>
           <span>Terapkan</span>
         </button>
@@ -428,7 +434,7 @@
   </div>
 
 
-  <!-- ==================== 8. KATALOG FILM TERBARU (GRID 24 FILM) ==================== -->
+  <!-- ==================== 8. KATALOG FILM TERBARU (GRID 24 FILM & AJAX RESULTS) ==================== -->
   <div class="space-y-4">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-100 dark:border-dark-800">
       <div class="flex items-center gap-2.5">
@@ -436,18 +442,43 @@
           <i class="fa-solid fa-film"></i>
         </div>
         <div>
-          <h2 class="text-lg font-black text-slate-900 dark:text-white">Katalog Terbaru</h2>
-          <p class="text-[11px] text-slate-400">Pembaruan judul rilis terkini siap streaming & download</p>
+          <h2 id="catalog-title" class="text-lg font-black text-slate-900 dark:text-white">Katalog Rilis Terbaru</h2>
+          <p id="catalog-subtitle" class="text-[11px] text-slate-400">Diurutkan dari tanggal & tahun rilis terkini siap streaming & download</p>
         </div>
       </div>
-      <a href="/filter" class="inline-flex items-center gap-1 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-brand-500 transition self-start sm:self-auto">
-        <span>Lihat Semua Katalog ({{len .Movies}}+)</span>
-        <i class="fa-solid fa-chevron-right text-[10px]"></i>
-      </a>
+      <div class="flex items-center gap-3 self-start sm:self-auto">
+        <span id="catalog-counter" class="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-dark-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-dark-700">
+          Menampilkan {{len .Movies}} film
+        </span>
+        <a href="/filter" class="inline-flex items-center gap-1 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-brand-500 transition">
+          <span>Semua Katalog</span>
+          <i class="fa-solid fa-chevron-right text-[10px]"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- Loading Indicator / Skeleton Overlay -->
+    <div id="home-movies-loading" class="hidden py-16 text-center">
+      <div class="inline-flex items-center gap-3 px-5 py-3 rounded-2xl bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 shadow-xl">
+        <div class="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+        <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Memuat film via AJAX...</span>
+      </div>
+    </div>
+
+    <!-- Empty State (Jika tidak ada film yang cocok) -->
+    <div id="home-movies-empty" class="hidden py-16 text-center space-y-3 bg-white dark:bg-dark-900 rounded-3xl border border-slate-200 dark:border-dark-800 p-8 shadow-xs">
+      <div class="w-16 h-16 rounded-full bg-slate-100 dark:bg-dark-800 text-slate-400 flex items-center justify-center text-2xl mx-auto">
+        <i class="fa-solid fa-magnifying-glass"></i>
+      </div>
+      <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Film Tidak Ditemukan</h3>
+      <p class="text-xs text-slate-400 max-w-md mx-auto">Coba gunakan kata kunci yang lebih umum, periksa ejaan, atau reset filter genre dan tahun.</p>
+      <button type="button" onclick="resetHomeFilter()" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-500 text-white text-xs font-bold hover:bg-brand-600 transition shadow-md shadow-brand-500/20">
+        <i class="fa-solid fa-rotate-left"></i> Reset Filter
+      </button>
     </div>
 
     <!-- Movie Grid: 2 kolom (HP), 3 (Tablet), 4 (Laptop), 6 (Desktop) -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+    <div id="home-movies-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 transition-opacity duration-300">
       {{range .Movies}}
       <a href="/movie/{{.Slug}}" class="group bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl overflow-hidden hover:border-brand-500 transition duration-300 flex flex-col shadow-xs hover:shadow-xl">
         <div class="relative aspect-[2/3] overflow-hidden bg-slate-200 dark:bg-dark-800">
@@ -487,6 +518,9 @@
       </a>
       {{end}}
     </div>
+
+    <!-- AJAX Pagination Controls -->
+    <div id="home-movies-pagination" class="hidden pt-6 pb-2 flex items-center justify-center gap-2"></div>
   </div>
 
 </div>
@@ -621,6 +655,288 @@
     }
 
     startAutoPlay();
+  })();
+
+  // ==================== 10. AJAX POST LIVE SEARCH & FILTER CONTROLLER ====================
+  (function() {
+    const form = document.getElementById('home-filter-form');
+    const searchInput = document.getElementById('home-search-input');
+    const searchClear = document.getElementById('home-search-clear');
+    const genreSelect = document.getElementById('home-genre-select');
+    const yearSelect = document.getElementById('home-year-select');
+    const liveBadge = document.getElementById('ajax-live-badge');
+    const catalogTitle = document.getElementById('catalog-title');
+    const catalogSubtitle = document.getElementById('catalog-subtitle');
+    const catalogCounter = document.getElementById('catalog-counter');
+    const moviesGrid = document.getElementById('home-movies-grid');
+    const moviesLoading = document.getElementById('home-movies-loading');
+    const moviesEmpty = document.getElementById('home-movies-empty');
+    const moviesPagination = document.getElementById('home-movies-pagination');
+
+    if (!form || !moviesGrid) return;
+
+    let debounceTimer = null;
+    let currentAbortController = null;
+    let currentPage = 1;
+
+    // Helper debounce
+    function debounce(callback, delay) {
+      return function(...args) {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => callback.apply(this, args), delay);
+      };
+    }
+
+    // Escape HTML string
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Generate Single Movie Card HTML
+    function buildMovieCard(m) {
+      const imgUrl = m.poster_thumb_url || m.poster_url || m.thumbnail_url || '/img/poster-placeholder.svg';
+      const fallbackUrl = m.thumbnail_url || '/img/poster-placeholder.svg';
+      const rating = m.rating > 0 ? m.rating.toFixed(1) : 'N/A';
+      const quality = m.quality || 'HD';
+      const freeBadge = m.is_free ? '<span class="bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">GRATIS</span>' : '';
+
+      return `
+      <a href="/movie/${encodeURIComponent(m.slug)}" class="group bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl overflow-hidden hover:border-brand-500 transition duration-300 flex flex-col shadow-xs hover:shadow-xl transform hover:-translate-y-1">
+        <div class="relative aspect-[2/3] overflow-hidden bg-slate-200 dark:bg-dark-800">
+          <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(m.title)}" data-fallback="${escapeHtml(fallbackUrl)}" onerror="if (this.dataset.fallback && this.src !== this.dataset.fallback) { this.src = this.dataset.fallback; } else { this.onerror=null; this.src='/img/poster-placeholder.svg'; }" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" loading="lazy">
+
+          <div class="absolute top-2 left-2 flex flex-col gap-1">
+            ${freeBadge}
+            <span class="bg-slate-950/80 text-white text-[9px] font-bold px-1.5 py-0.5 rounded border border-slate-700 shadow">${escapeHtml(quality)}</span>
+          </div>
+
+          <div class="absolute top-2 right-2 bg-black/80 text-yellow-400 text-[10px] font-black px-1.5 py-0.5 rounded flex items-center gap-1 shadow">
+            <i class="fa-solid fa-star text-[9px]"></i> ${rating}
+          </div>
+
+          <div class="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+            <div class="w-10 h-10 rounded-full bg-brand-500 text-white flex items-center justify-center text-xs shadow-lg shadow-brand-500/50 transform scale-75 group-hover:scale-100 transition-transform">
+              <i class="fa-solid fa-play ml-0.5"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-3 flex-1 flex flex-col justify-between">
+          <h3 class="text-xs font-bold text-slate-800 dark:text-slate-100 group-hover:text-brand-500 line-clamp-1 transition">${escapeHtml(m.title)}</h3>
+          <div class="flex items-center justify-between text-[11px] text-slate-400 mt-2 font-medium">
+            <span>${m.year || '-'}</span>
+            <span class="text-brand-500 font-bold text-[10px] flex items-center gap-1">
+              <i class="fa-solid fa-play text-[9px]"></i> Nonton
+            </span>
+          </div>
+        </div>
+      </a>`;
+    }
+
+    // Render Pagination Bar
+    function renderPagination(page, totalPages) {
+      if (!moviesPagination) return;
+      if (totalPages <= 1) {
+        moviesPagination.innerHTML = '';
+        moviesPagination.classList.add('hidden');
+        return;
+      }
+
+      let html = '';
+
+      // Tombol Previous
+      if (page > 1) {
+        html += `
+        <button type="button" onclick="window.fetchMoviesAjax(${page - 1})" class="px-3 h-8 flex items-center gap-1 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white transition shadow-xs">
+          <i class="fa-solid fa-chevron-left text-[10px]"></i> Prev
+        </button>`;
+      }
+
+      // Page numbers (maks 5 nomor terlihat)
+      let startP = Math.max(1, page - 2);
+      let endP = Math.min(totalPages, startP + 4);
+      if (endP - startP < 4) {
+        startP = Math.max(1, endP - 4);
+      }
+
+      for (let p = startP; p <= endP; p++) {
+        if (p === page) {
+          html += `<span class="w-8 h-8 flex items-center justify-center bg-brand-500 text-white rounded-xl text-xs font-black shadow-md shadow-brand-500/30">${p}</span>`;
+        } else {
+          html += `<button type="button" onclick="window.fetchMoviesAjax(${p})" class="w-8 h-8 flex items-center justify-center bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white transition shadow-xs">${p}</button>`;
+        }
+      }
+
+      // Tombol Next
+      if (page < totalPages) {
+        html += `
+        <button type="button" onclick="window.fetchMoviesAjax(${page + 1})" class="px-3 h-8 flex items-center gap-1 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white transition shadow-xs">
+          Next <i class="fa-solid fa-chevron-right text-[10px]"></i>
+        </button>`;
+      }
+
+      moviesPagination.innerHTML = html;
+      moviesPagination.classList.remove('hidden');
+    }
+
+    // Main AJAX Fetch Function via POST
+    window.fetchMoviesAjax = function(page = 1) {
+      currentPage = page;
+      const q = (searchInput ? searchInput.value.trim() : '');
+      const genre = (genreSelect ? genreSelect.value : '');
+      const year = (yearSelect ? yearSelect.value : '');
+
+      // Toggle Clear Button
+      if (searchClear) {
+        if (q.length > 0) {
+          searchClear.classList.remove('hidden');
+        } else {
+          searchClear.classList.add('hidden');
+        }
+      }
+
+      // Live Badge indicator
+      const isFiltered = (q.length > 0 || genre !== '' || year !== '');
+      if (liveBadge) {
+        if (isFiltered) {
+          liveBadge.classList.remove('hidden');
+        } else {
+          liveBadge.classList.add('hidden');
+        }
+      }
+
+      // Abort previous running request if any
+      if (currentAbortController) {
+        currentAbortController.abort();
+      }
+      currentAbortController = new AbortController();
+
+      // UI Loading state
+      moviesGrid.classList.add('opacity-40');
+      if (moviesLoading) moviesLoading.classList.remove('hidden');
+      if (moviesEmpty) moviesEmpty.classList.add('hidden');
+
+      // Siapkan payload POST Form Data / URLSearchParams
+      const params = new URLSearchParams();
+      params.append('q', q);
+      params.append('genre', genre);
+      params.append('year', year);
+      params.append('p', String(page));
+      params.append('limit', '24');
+
+      fetch('/api/movies/filter', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+        },
+        body: params.toString(),
+        signal: currentAbortController.signal
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('HTTP error ' + res.status);
+        return res.json();
+      })
+      .then(data => {
+        moviesGrid.classList.remove('opacity-40');
+        if (moviesLoading) moviesLoading.classList.add('hidden');
+
+        if (!data || !data.movies || data.movies.length === 0) {
+          moviesGrid.innerHTML = '';
+          if (moviesEmpty) moviesEmpty.classList.remove('hidden');
+          if (catalogCounter) catalogCounter.textContent = '0 film ditemukan';
+          if (moviesPagination) moviesPagination.classList.add('hidden');
+          return;
+        }
+
+        // Render hasil film
+        let gridHtml = '';
+        data.movies.forEach(m => {
+          gridHtml += buildMovieCard(m);
+        });
+        moviesGrid.innerHTML = gridHtml;
+
+        // Update header & counter
+        if (catalogTitle) {
+          catalogTitle.textContent = isFiltered ? 'Hasil Filter Katalog' : 'Katalog Rilis Terbaru';
+        }
+        if (catalogSubtitle) {
+          catalogSubtitle.textContent = isFiltered 
+            ? `Pencarian untuk "${q || 'Semua'}" | Genre: ${genre || 'Semua'} | Tahun: ${year || 'Semua'}`
+            : 'Diurutkan dari tanggal & tahun rilis terkini siap streaming & download';
+        }
+        if (catalogCounter) {
+          catalogCounter.textContent = `Menampilkan ${data.movies.length} dari ${data.total_count} film`;
+        }
+
+        // Render Pagination
+        renderPagination(data.page, data.total_pages);
+
+        // Jika page > 1, scroll halus ke judul katalog
+        if (page > 1) {
+          const anchor = document.getElementById('catalog-anchor');
+          if (anchor) {
+            anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
+      })
+      .catch(err => {
+        if (err.name === 'AbortError') return;
+        console.error('Gagal mengambil data film via AJAX:', err);
+        moviesGrid.classList.remove('opacity-40');
+        if (moviesLoading) moviesLoading.classList.add('hidden');
+      });
+    };
+
+    // Reset filter helper
+    window.resetHomeFilter = function() {
+      if (searchInput) searchInput.value = '';
+      if (genreSelect) genreSelect.value = '';
+      if (yearSelect) yearSelect.value = '';
+      if (searchClear) searchClear.classList.add('hidden');
+      if (liveBadge) liveBadge.classList.add('hidden');
+      window.fetchMoviesAjax(1);
+    };
+
+    // Event Listeners
+    const debouncedSearch = debounce(() => window.fetchMoviesAjax(1), 350);
+
+    if (searchInput) {
+      searchInput.addEventListener('input', debouncedSearch);
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          window.fetchMoviesAjax(1);
+        }
+      });
+    }
+
+    if (searchClear) {
+      searchClear.addEventListener('click', () => {
+        if (searchInput) searchInput.value = '';
+        searchClear.classList.add('hidden');
+        window.fetchMoviesAjax(1);
+      });
+    }
+
+    if (genreSelect) {
+      genreSelect.addEventListener('change', () => window.fetchMoviesAjax(1));
+    }
+
+    if (yearSelect) {
+      yearSelect.addEventListener('change', () => window.fetchMoviesAjax(1));
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      window.fetchMoviesAjax(1);
+    });
+
   })();
 </script>
 {{end}}

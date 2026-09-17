@@ -93,6 +93,10 @@ type PageData struct {
 	CustomFooterCode           template.HTML
 	EnableAdblockNotice        bool
 	EnableDownloadInterstitial bool
+
+	// Anti-Banned & Domain Migration Banner
+	DomainNoticeEnabled bool
+	DomainNoticeText    template.HTML
 }
 
 // PopulatePageData automatically sets dynamic settings from database into PageData
@@ -150,6 +154,16 @@ func (s *Server) PopulatePageData(r *http.Request, data *PageData) {
 
 	interVal := settings["download_interstitial_enabled"]
 	data.EnableDownloadInterstitial = interVal != "false" && interVal != "0"
+
+	noticeVal := settings["domain_notice_enabled"]
+	data.DomainNoticeEnabled = noticeVal == "true" || noticeVal == "1"
+	if data.DomainNoticeEnabled {
+		text := settings["domain_notice_text"]
+		if strings.TrimSpace(text) == "" {
+			text = "Perhatian: Jika domain ini terkena blokir, simpan domain resmi alternatif kami dan bergabung ke channel resmi kami."
+		}
+		data.DomainNoticeText = template.HTML(text)
+	}
 }
 
 // HandleHome displays home page with top 10 movies slider & multi-filter dropdown bar
@@ -159,11 +173,11 @@ func (s *Server) HandleHome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 1. Top 10 latest/popular movies for Big Hero Carousel
+	// 1. Top 10 latest & highest quality movies for Big Hero Carousel (Prioritas Rilis Terbaru)
 	var slides []model.Movie
 	s.db.Preload("Genres").Preload("Directors").
 		Where("backdrop_url <> '' OR poster_url <> ''").
-		Order("year desc, rating desc, id desc").
+		Order("year desc, release_date desc, id desc").
 		Limit(10).
 		Find(&slides)
 
@@ -184,7 +198,7 @@ func (s *Server) HandleHome(w http.ResponseWriter, r *http.Request) {
 		featured = &slides[0]
 	}
 
-	// 2. Box Office & Populer movies for horizontal slider 1
+	// 2. Box Office & Populer movies for horizontal slider 1 (Tahun rilis terbaru diutamakan)
 	var boxOffice []model.Movie
 	s.db.Preload("Genres").
 		Where("poster_url <> ''").
@@ -192,35 +206,35 @@ func (s *Server) HandleHome(w http.ResponseWriter, r *http.Request) {
 		Limit(12).
 		Find(&boxOffice)
 
-	// 3. Top Rated movies for horizontal slider 2
+	// 3. Top Rated movies for horizontal slider 2 (Rating terbaik di tahun-tahun terbaru)
 	var topRated []model.Movie
 	s.db.Preload("Genres").
 		Where("poster_url <> '' AND rating > 0").
-		Order("rating desc, id desc").
+		Order("year desc, rating desc, views desc").
 		Limit(12).
 		Find(&topRated)
 
-	// 4. Free & Legal movies for horizontal slider 3
+	// 4. Free & Legal movies for horizontal slider 3 (Rilis terbaru gratis)
 	var freeMovies []model.Movie
 	s.db.Preload("Genres").
 		Where("is_free = ? AND poster_url <> ''", true).
-		Order("views desc, id desc").
+		Order("year desc, views desc, id desc").
 		Limit(12).
 		Find(&freeMovies)
 
-	// 5. Anime Populer & Paling Banyak Ditonton
+	// 5. Anime Populer & Paling Banyak Ditonton (Tahun rilis terkini)
 	var animePopular []model.Movie
 	s.db.Preload("Genres").
 		Where("type = 'anime' AND poster_url <> ''").
-		Order("views desc, rating desc, id desc").
+		Order("year desc, views desc, id desc").
 		Limit(12).
 		Find(&animePopular)
 
-	// 6. Drama Pendek Asia Populer
+	// 6. Drama Pendek Asia Populer (Rilis terbaru)
 	var dramaPopular []model.Movie
 	s.db.Preload("Genres").
 		Where("type = 'drama_pendek' AND poster_url <> ''").
-		Order("views desc, rating desc, id desc").
+		Order("year desc, views desc, id desc").
 		Limit(12).
 		Find(&dramaPopular)
 
@@ -232,9 +246,9 @@ func (s *Server) HandleHome(w http.ResponseWriter, r *http.Request) {
 		Limit(12).
 		Find(&hollywoodPopular)
 
-	// 8. Latest movie catalog grid
+	// 8. Latest movie catalog grid (Wajib tanggal & tahun rilis terbaru: 2026/2025 di paling atas)
 	var movies []model.Movie
-	s.db.Preload("Genres").Order("id desc").Limit(24).Find(&movies)
+	s.db.Preload("Genres").Order("year desc, release_date desc, id desc").Limit(24).Find(&movies)
 
 	// 9. Dropdown filter datasets
 	var genres []model.Genre
@@ -1256,4 +1270,229 @@ func (s *Server) HandleRefreshStreamLink(w http.ResponseWriter, r *http.Request)
 		"message":        "Server streaming sudah versi terbaru dan sama persis. Tombol dinonaktifkan selama 24 jam.",
 	})
 }
+
+// APIMovieItem represents a compact movie payload for smooth AJAX frontend rendering
+type APIMovieItem struct {
+	ID                uint     `json:"id"`
+	Slug              string   `json:"slug"`
+	Title             string   `json:"title"`
+	Year              int      `json:"year"`
+	PosterURL         string   `json:"poster_url"`
+	PosterThumbURL    string   `json:"poster_thumb_url"`
+	ThumbnailURL      string   `json:"thumbnail_url"`
+	Rating            float64  `json:"rating"`
+	Quality           string   `json:"quality"`
+	IsFree            bool     `json:"is_free"`
+	Type              string   `json:"type"`
+	Genres            []string `json:"genres"`
+	DurationFormatted string   `json:"duration_formatted,omitempty"`
+}
+
+// APIMoviesFilterResponse wraps the JSON response for dynamic AJAX filtering
+type APIMoviesFilterResponse struct {
+	Success    bool           `json:"success"`
+	Page       int            `json:"page"`
+	TotalPages int            `json:"total_pages"`
+	TotalCount int64          `json:"total_count"`
+	Movies     []APIMovieItem `json:"movies"`
+	Message    string         `json:"message,omitempty"`
+}
+
+// HandleAPIMoviesFilter processes search and filtering requests via POST and AJAX for ultra-fast, smooth SPA experience
+func (s *Server) HandleAPIMoviesFilter(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	// Parse form values if application/x-www-form-urlencoded or multipart/form-data
+	_ = r.ParseForm()
+
+	// Cek apakah payload berupa application/json
+	var jsonPayload struct {
+		Keyword  string `json:"q"`
+		Type     string `json:"type"`
+		Year     string `json:"year"`
+		Genre    string `json:"genre"`
+		Country  string `json:"country"`
+		Category string `json:"category"`
+		Rating   string `json:"rating"`
+		Sort     string `json:"sort"`
+		Page     string `json:"p"`
+		Limit    int    `json:"limit"`
+	}
+
+	if strings.Contains(r.Header.Get("Content-Type"), "application/json") {
+		_ = json.NewDecoder(r.Body).Decode(&jsonPayload)
+	}
+
+	// Helper to get value from JSON payload first, then fallback to Form/Query
+	getVal := func(jsonVal, key string) string {
+		if strings.TrimSpace(jsonVal) != "" {
+			return strings.TrimSpace(jsonVal)
+		}
+		if v := strings.TrimSpace(r.FormValue(key)); v != "" {
+			return v
+		}
+		return strings.TrimSpace(r.URL.Query().Get(key))
+	}
+
+	rawKeyword := getVal(jsonPayload.Keyword, "q")
+	if rawKeyword == "" {
+		rawKeyword = getVal("", "keyword")
+	}
+	keyword := SanitizeSearchQuery(rawKeyword)
+
+	typeStr := getVal(jsonPayload.Type, "type")
+	yearStr := getVal(jsonPayload.Year, "year")
+	genreStr := getVal(jsonPayload.Genre, "genre")
+	countryStr := getVal(jsonPayload.Country, "country")
+	catStr := getVal(jsonPayload.Category, "category")
+	ratingStr := getVal(jsonPayload.Rating, "rating")
+	sortStr := getVal(jsonPayload.Sort, "sort")
+	pageStr := getVal(jsonPayload.Page, "p")
+	if pageStr == "" {
+		pageStr = getVal("", "page")
+	}
+
+	page := SanitizePageNumber(pageStr, 500)
+	pageSize := 24
+	if jsonPayload.Limit > 0 && jsonPayload.Limit <= 60 {
+		pageSize = jsonPayload.Limit
+	} else if limStr := r.FormValue("limit"); limStr != "" {
+		if l, err := strconv.Atoi(limStr); err == nil && l > 0 && l <= 60 {
+			pageSize = l
+		}
+	}
+
+	query := s.db.Model(&model.Movie{}).Preload("Genres")
+
+	// 1. Filter Kata Kunci
+	if keyword != "" {
+		kwPattern := "%" + keyword + "%"
+		query = query.Where("title LIKE ? OR original_title LIKE ? OR alternative_titles LIKE ? OR synopsis LIKE ?",
+			kwPattern, kwPattern, kwPattern, kwPattern)
+	}
+
+	// 2. Filter Jenis Film
+	if typeStr != "" && typeStr != "all" {
+		if typeStr == "hollywood" {
+			query = query.Where("type = ? OR (type = 'movie' AND (country LIKE '%United States%' OR country LIKE '%USA%' OR country LIKE '%UK%' OR country LIKE '%Amerika%' OR language LIKE '%English%' OR language = 'en'))", "hollywood")
+		} else {
+			query = query.Where("type = ?", typeStr)
+		}
+	}
+
+	// 3. Filter Tahun Rilis
+	if yearStr != "" {
+		if y, err := strconv.Atoi(yearStr); err == nil && y > 0 {
+			query = query.Where("year = ?", y)
+		}
+	}
+
+	// 4. Filter Genre
+	if genreStr != "" {
+		var genre model.Genre
+		if err := s.db.Where("slug = ? OR name = ?", genreStr, genreStr).First(&genre).Error; err == nil {
+			query = query.Joins("JOIN movie_genres ON movie_genres.movie_id = movies.id").
+				Where("movie_genres.genre_id = ?", genre.ID)
+		}
+	}
+
+	// 5. Filter Negara
+	if countryStr != "" {
+		query = query.Where("country LIKE ?", "%"+countryStr+"%")
+	}
+
+	// 6. Filter Kategori Lisensi
+	if catStr != "" {
+		switch catStr {
+		case "free", "100% Gratis & Legal":
+			query = query.Where("is_free = ?", true)
+		case "public_domain", "Public Domain":
+			query = query.Where("license_type = ?", "Public Domain")
+		case "creative_commons", "Creative Commons":
+			query = query.Where("license_type = ?", "Creative Commons")
+		case "commercial", "Berlisensi Komersil":
+			query = query.Where("is_free = ?", false)
+		}
+	}
+
+	// 7. Filter Rating
+	if ratingStr != "" {
+		if minR, err := strconv.ParseFloat(ratingStr, 64); err == nil && minR > 0 {
+			query = query.Where("rating >= ?", minR)
+		}
+	}
+
+	var totalCount int64
+	query.Count(&totalCount)
+
+	// 8. Sorting (Default: Rilis Terbaru & Tahun Terbaru)
+	switch sortStr {
+	case "rating_desc":
+		query = query.Order("rating desc, id desc")
+	case "rating_asc":
+		query = query.Order("rating asc, id desc")
+	case "year_asc":
+		query = query.Order("year asc, id desc")
+	case "title_asc":
+		query = query.Order("title asc")
+	case "views_desc":
+		query = query.Order("views desc, id desc")
+	default:
+		query = query.Order("year desc, release_date desc, id desc") // Default: Tanggal Rilis & Tahun Terbaru
+	}
+
+	// Hitung total halaman
+	totalPages := int(math.Ceil(float64(totalCount) / float64(pageSize)))
+	if totalPages < 1 {
+		totalPages = 1
+	}
+	if page > totalPages {
+		page = totalPages
+	}
+	offset := (page - 1) * pageSize
+
+	var rawMovies []model.Movie
+	query.Offset(offset).Limit(pageSize).Find(&rawMovies)
+
+	// Petakan ke DTO bersih
+	items := make([]APIMovieItem, 0, len(rawMovies))
+	for _, m := range rawMovies {
+		genreNames := make([]string, 0, len(m.Genres))
+		for _, g := range m.Genres {
+			genreNames = append(genreNames, g.Name)
+		}
+
+		quality := m.Quality
+		if quality == "" {
+			quality = "HD"
+		}
+
+		items = append(items, APIMovieItem{
+			ID:                m.ID,
+			Slug:              m.Slug,
+			Title:             m.Title,
+			Year:              m.Year,
+			PosterURL:         m.PosterURL,
+			PosterThumbURL:    m.PosterThumbURL,
+			ThumbnailURL:      m.ThumbnailURL,
+			Rating:            m.Rating,
+			Quality:           quality,
+			IsFree:            m.IsFree,
+			Type:              m.Type,
+			Genres:            genreNames,
+			DurationFormatted: m.DurationFormatted,
+		})
+	}
+
+	resp := APIMoviesFilterResponse{
+		Success:    true,
+		Page:       page,
+		TotalPages: totalPages,
+		TotalCount: totalCount,
+		Movies:     items,
+	}
+
+	_ = json.NewEncoder(w).Encode(resp)
+}
+
 

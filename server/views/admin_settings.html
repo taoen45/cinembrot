@@ -346,22 +346,80 @@
         </div>
       </div>
 
-      <!-- URL PUBLIK UTAMA & META DEFAULT -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
-            Canonical Site URL (Domain Publik)
-          </label>
-          <input type="url" name="site_url" value="{{index .Settings "site_url"}}" class="w-full text-xs bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500 font-mono" placeholder="https://cinembrot.my.id">
-          <p class="text-[10px] text-slate-400 mt-1">Digunakan untuk Canonical Link, OpenGraph, dan XML Sitemap</p>
+      <!-- URL PUBLIK UTAMA & SISTEM ANTI-BANNED (GANTI DOMAIN CEPAT) -->
+      <div class="p-5 bg-gradient-to-br from-amber-500/5 via-slate-50 to-brand-500/5 dark:from-dark-950 dark:via-dark-900 dark:to-dark-950 rounded-2xl border border-amber-500/20 dark:border-amber-500/20 space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center text-sm font-black">
+              <i class="fa-solid fa-globe"></i>
+            </span>
+            <div>
+              <h4 class="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Domain Utama & Anti-Banned (Solusi Nawala / Blokir)</h4>
+              <p class="text-[11px] text-slate-400">Atur domain situs dan mode perpindahan instan saat domain diblokir internet positif</p>
+            </div>
+          </div>
+          <span class="text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-full border border-amber-500/20">
+            Multi-Domain Ready
+          </span>
         </div>
-        <div class="md:col-span-2">
-          <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
-            Default Meta Keywords
-          </label>
-          <input type="text" name="meta_keywords" value="{{index .Settings "meta_keywords"}}" class="w-full text-xs bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="nonton film sub indo, streaming movie, download film gratis, nonton anime, drama pendek, cinembrot">
-          <p class="text-[10px] text-slate-400 mt-1">Pisahkan kata kunci dengan tanda koma (,)</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+          <div>
+            <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+              Mode Deteksi Domain
+            </label>
+            <select name="site_url_mode" class="w-full text-xs bg-white dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500 font-semibold">
+              <option value="auto" {{if ne (index .Settings "site_url_mode") "custom"}}selected{{end}}>⚡ Otomatis (Auto-Detect Host Pengunjung)</option>
+              <option value="custom" {{if eq (index .Settings "site_url_mode") "custom"}}selected{{end}}>🔒 Kunci Domain Tetap (Custom URL)</option>
+            </select>
+            <p class="text-[10px] text-slate-400 mt-1">Mode <strong>Otomatis</strong> membuat web langsung aktif di domain baru manapun tanpa edit database.</p>
+          </div>
+
+          <div class="md:col-span-2">
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-xs font-bold text-slate-800 dark:text-slate-200">
+                URL Domain Utama (Fallback / Kunci)
+              </label>
+              <button type="button" onclick="document.querySelector('input[name=site_url]').value = window.location.origin" class="text-[10px] font-bold text-brand-500 hover:underline flex items-center gap-1">
+                <i class="fa-solid fa-crosshairs"></i> Gunakan Domain Aktif Ini
+              </button>
+            </div>
+            <input type="url" name="site_url" value="{{index .Settings "site_url"}}" class="w-full text-xs bg-white dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500 font-mono" placeholder="https://cinembrot.my.id">
+            <p class="text-[10px] text-slate-400 mt-1">Digunakan untuk Canonical Link, OpenGraph, dan XML Sitemap (Default: https://cinembrot.my.id)</p>
+          </div>
         </div>
+
+        <!-- Banner Pindah Domain -->
+        <div class="p-4 bg-white/70 dark:bg-dark-950/70 rounded-xl border border-slate-200 dark:border-dark-800 space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <span class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <i class="fa-solid fa-bullhorn text-brand-500"></i> Banner Notifikasi Pindah Domain (Header Pengumuman)
+              </span>
+              <p class="text-[11px] text-slate-400">Tampilkan bar notifikasi peringatan di bagian atas website jika domain resmi berganti.</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer select-none shrink-0">
+              <input type="checkbox" name="domain_notice_enabled" value="true" class="sr-only peer" {{if eq (index .Settings "domain_notice_enabled") "true"}}checked{{end}}>
+              <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-dark-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-500"></div>
+              <span class="ml-3 text-xs font-bold text-slate-700 dark:text-slate-300">
+                {{if eq (index .Settings "domain_notice_enabled") "true"}}Aktif (ON){{else}}Mati (OFF){{end}}
+              </span>
+            </label>
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Teks Pesan Pengumuman (Mendukung HTML tebal/link):</label>
+            <input type="text" name="domain_notice_text" value="{{index .Settings "domain_notice_text"}}" class="w-full text-xs bg-slate-50 dark:bg-dark-900 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="Perhatian: Domain kami berpindah ke cinembrot-baru.com. Mohon bookmark alamat baru ini!">
+          </div>
+        </div>
+      </div>
+
+      <!-- META DEFAULT -->
+      <div>
+        <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+          Default Meta Keywords
+        </label>
+        <input type="text" name="meta_keywords" value="{{index .Settings "meta_keywords"}}" class="w-full text-xs bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500" placeholder="nonton film sub indo, streaming movie, download film gratis, nonton anime, drama pendek, cinembrot">
+        <p class="text-[10px] text-slate-400 mt-1">Pisahkan kata kunci dengan tanda koma (,)</p>
       </div>
 
       <div>

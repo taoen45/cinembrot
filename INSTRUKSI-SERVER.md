@@ -287,6 +287,24 @@ Tambah folder lain (contoh `blog`): buat `~/docker/html/blog/`, copy pola `/test
 3. Untuk urusan database (terutama `delete`, `restore`, `edit` data atau skema): **Wajib meminta izin eksplisit dari user** sebelum eksekusi.
 4. Jika tidak paham, tanya user — jangan mengarang tujuan.
 5. Ubah sesedikit mungkin; jangan merombak stack yang sudah jalan.
+### SOP 3 Menit: Cara Cepat Mengganti Domain Jika Terkena Blokir (Anti-Banned)
+
+Jika domain yang sedang dipakai terkena blokir Trust Positif / Nawala / Kominfo:
+
+1. **Beli Domain Baru** di registrar mana saja (misal: `cinembrot-baru.com` atau `cinembrot.vip`).
+2. **Arahkan ke Cloudflare**:
+   - Tambahkan domain ke akun Cloudflare.
+   - Di menu **Zero Trust** → **Networks** → **Tunnels** → pilih tunnel server ini → **Public hostname**:
+     - Klik **Add a public hostname**.
+     - Domain: `cinembrot-baru.com` (Path: **kosong**).
+     - Type: `HTTP`, URL: `http://localhost:80`.
+     - Klik **Save hostname**.
+3. **Selesai Seketika (Zero Downtime)**:
+   - Karena Go CINEMBROT telah dilengkapi **Auto-Detect Domain Mode** di `GetSiteURL()`, website akan **LANGSUNG berjalan normal dan mengenali domain baru tersebut secara otomatis**, termasuk seluruh canonical link, sitemap, OpenGraph, dan streaming player tanpa perlu restart server atau utak-atik tabel database!
+   - (Opsional) Buka CMS `/admin/settings` untuk mengaktifkan **Banner Notifikasi Pindah Domain** agar penonton di domain lama mengetahui alamat domain baru.
+
+---
+
 6. Setelah menambah aplikasi, fitur, cron/timer, port, atau profil Docker:
    - tambahkan ke daftar di atas
    - isi **Riwayat perubahan**
@@ -343,6 +361,7 @@ Tambah folder lain (contoh `blog`): buat `~/docker/html/blog/`, copy pola `/test
 | 2026-09-17 | **Pemulihan Ruang Disk Root & Penyelesaian Error APT Upgrade:** (1) Pembersihan Docker BuildKit build cache (`docker builder prune -a -f`) yang membebaskan **78.79 GB** ruang disk di partisi root (`/dev/mapper/ubuntu--vg-ubuntu--lv`), mengembalikan sisa kapasitas bebas dari 0% menjadi 69 GB (26% used). (2) Pendaftaran SSH Public Key pengembang (`id_rsa.pub`) ke file `~/.ssh/authorized_keys` untuk user `root` dan `taoen45`, memungkinkan remote akses langsung tanpa hambatan dari Antigravity IDE / SSH CLI. (3) Pengalihan mirror repositori di `/etc/apt/sources.list.d/ubuntu.sources` dari mirror lokal yang error/HTTP 403 (`id.archive.ubuntu.com`) ke repositori resmi Ubuntu (`archive.ubuntu.com`). (4) Penyelesaian proses `apt update` dan `apt full-upgrade -y` serta pembersihan `apt autoremove --purge -y && apt clean` hingga 100% tuntas tanpa error. (5) Verifikasi keempat container Docker (`app`, `caddy`, `mysql`, `redis`) berjalan normal dan web server merespons HTTP 200. |
 | 2026-09-17 | **Pembersihan Syntax Error & Linter Editor pada Template detail.html (isInterstitialEnabled):** Memindahkan evaluasi kondisi Go template `{{if and .EnableAds .EnableDownloadInterstitial}}` ke data attribute HTML `data-interstitial-enabled` pada elemen `#movie-client-meta`, dan membaca nilainya via `metaEl.dataset.interstitialEnabled`. Menghilangkan peringatan syntax error `Property assignment expected.` di VS Code / Cursor IDE sehingga blok `<script>` tetap 100% JavaScript valid. |
 | 2026-09-17 | **Redesain Beranda Sinematik, Pembersihan Navigasi & Hardening Keamanan URL/Server:** (1) Pembersihan navigasi navbar: menghapus menu "Popular" dari navbar desktop dan sub-navbar mobile (`layout.html`). (2) Redesain total beranda (`home.html`): Hero Spotlight sinematik dengan mini-thumbnail navigation strip, baris Quick Access Category Pills (Hollywood, Anime, Drama, Rating 8.0+, Gratis), dan 5 rak horisontal (*carousel shelves* bergaya Netflix) untuk Box Office (#1-#12), Top Rated pilihan kritikus, Anime populer, dan Drama Asia populer dengan kontrol geser mulus. (3) Modul keamanan baru `server/security.go`: Global HTTP Security Headers (X-Frame-Options SAMEORIGIN, X-Content-Type-Options nosniff, X-XSS-Protection, Referrer-Policy, Permissions-Policy, HSTS) dan In-Memory Token Bucket Rate Limiter per IP (mencegah scraping bot, brute force login admin, dan DDoS). (4) Sanitasi dan validasi parameter URL: validasi regex slug anti-path traversal/SQLi, pembatasan integer pagination `?p=` (maks 500), sanitasi panjang query `?q=` (maks 100 char), validasi integer ID API, SameSite Lax session cookie, dan proteksi anti-open-redirect pada ganti bahasa/login. |
+| 2026-09-17 | **Prioritas Rilis Terbaru di Beranda, Pencarian/Filter AJAX POST (Golang), & Sistem Anti-Banned Ganti Domain Cepat:** (1) Pengurutan Rilis Terbaru di Beranda: Memperbarui query di `HandleHome` (`server/handlers.go`) sehingga carousel Spotlight, 5 rak horisontal, dan katalog 24 film utama mengedepankan tanggal dan tahun rilis terbaru (`year desc, release_date desc, id desc`), menempatkan film 2026/2025 di baris teratas. (2) AJAX POST Live Search & Dynamic Filter di Golang: Route baru `POST /api/movies/filter` dan `GET /api/movies/filter` dengan handler `HandleAPIMoviesFilter` di `server/handlers.go` yang memproses parameter JSON/Form secara sub-milidetik, dilengkapi script client-side di `home.html` (live search debounce 350ms, instant dropdown switch, skeleton loading indicator, dan pagination tanpa reload halaman). (3) Sistem Anti-Banned & Ganti Domain Cepat (Zero Downtime): Pembaruan `GetSiteURL` di `server/seo.go` yang otomatis mendeteksi header `Host` dan `X-Forwarded-Host` saat `site_url_mode = 'auto'`, sehingga jika domain terblokir Trust Positif / Nawala, admin cukup menambahkan domain baru di Cloudflare Tunnel dan situs langsung aktif 100% tanpa ubah DB atau restart server. Dilengkapi kartu pengaturan domain di CMS Admin (`admin_settings.html` & `admin_settings_handlers.go`), serta banner notifikasi migrasi domain di `layout.html`. |
 
 
 
