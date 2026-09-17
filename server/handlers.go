@@ -797,7 +797,7 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 	var genres []model.Genre
 	s.db.Find(&genres)
 
-	// Embed & Streaming Resolver: populate multi-server streams if not present in database
+	// Embed & Streaming Resolver: populate multi-server streams if not present in database or contains dead domains
 	tmdbID := embed.ExtractTMDbID(&movie)
 	if tmdbID == 0 && s.tmdbCli != nil {
 		// Try resolving TMDb ID by searching title
@@ -814,7 +814,16 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if len(movie.StreamLinks) == 0 {
+	// Check if existing streams are empty or contain dead/unreachable domains (e.g. vidsrc.xyz, autoembed.cc)
+	hasDeadStream := false
+	for _, sl := range movie.StreamLinks {
+		if embed.IsDeadStreamURL(sl.EmbedURL) {
+			hasDeadStream = true
+			break
+		}
+	}
+
+	if len(movie.StreamLinks) == 0 || hasDeadStream {
 		movie.StreamLinks = embed.GenerateMultiServerStreams(&movie, tmdbID, 1, 1)
 	}
 
@@ -1261,6 +1270,14 @@ func (s *Server) HandleRefreshStreamLink(w http.ResponseWriter, r *http.Request)
 			if searchRes, err := s.tmdbCli.SearchMovie(movie.Title, movie.Year); err == nil && len(searchRes.Results) > 0 {
 				tmdbID = searchRes.Results[0].ID
 			}
+		}
+	}
+
+	// Bersihkan referensi URL lama yang domainnya sudah mati
+	for _, sl := range movie.StreamLinks {
+		if embed.IsDeadStreamURL(sl.EmbedURL) {
+			s.db.Model(&model.StreamLink{}).Where("id = ?", sl.ID).Update("status", "DEAD")
+			delete(existingURLs, strings.TrimSpace(sl.EmbedURL))
 		}
 	}
 

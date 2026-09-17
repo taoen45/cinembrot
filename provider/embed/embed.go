@@ -24,17 +24,64 @@ func ExtractTMDbID(movie *model.Movie) int {
 		}
 	}
 
-	// 2. From RawMetadata JSON: "id": 12345
+	// 2. From RawMetadata JSON: "id": 12345 or "tmdb_id": 12345
 	if movie.RawMetadata != "" {
 		var meta struct {
-			ID int `json:"id"`
+			ID     int `json:"id"`
+			TMDbID int `json:"tmdb_id"`
 		}
-		if err := json.Unmarshal([]byte(movie.RawMetadata), &meta); err == nil && meta.ID > 0 {
-			return meta.ID
+		if err := json.Unmarshal([]byte(movie.RawMetadata), &meta); err == nil {
+			if meta.ID > 0 {
+				return meta.ID
+			}
+			if meta.TMDbID > 0 {
+				return meta.TMDbID
+			}
 		}
 	}
 
 	return 0
+}
+
+// ExtractIMDbID attempts to extract the IMDb ID (tt...) from SourceURL or RawMetadata
+func ExtractIMDbID(movie *model.Movie) string {
+	if movie == nil {
+		return ""
+	}
+
+	// 1. From SourceURL: imdb.com/title/tt1234567
+	reIMDb := regexp.MustCompile(`(tt\d{7,10})`)
+	if matches := reIMDb.FindStringSubmatch(movie.SourceURL); len(matches) > 1 {
+		return matches[1]
+	}
+
+	// 2. From RawMetadata JSON: "imdb_id": "tt1234567"
+	if movie.RawMetadata != "" {
+		var meta struct {
+			IMDbID string `json:"imdb_id"`
+			IMDb   string `json:"imdbId"`
+		}
+		if err := json.Unmarshal([]byte(movie.RawMetadata), &meta); err == nil {
+			if meta.IMDbID != "" && strings.HasPrefix(meta.IMDbID, "tt") {
+				return meta.IMDbID
+			}
+			if meta.IMDb != "" && strings.HasPrefix(meta.IMDb, "tt") {
+				return meta.IMDb
+			}
+		}
+	}
+
+	return ""
+}
+
+// IsDeadStreamURL checks if a streaming embed URL points to a known dead or DNS-failed domain
+func IsDeadStreamURL(rawURL string) bool {
+	u := strings.ToLower(rawURL)
+	return strings.Contains(u, "vidsrc.xyz") ||
+		strings.Contains(u, "autoembed.cc") ||
+		strings.Contains(u, "embed.su") ||
+		strings.Contains(u, "moviesapi.club") ||
+		strings.Contains(u, "streamembed.cc")
 }
 
 // ExtractEpisodeCount determines the number of episodes for an anime or drama
@@ -70,6 +117,7 @@ func ExtractEpisodeCount(movie *model.Movie) int {
 }
 
 // GenerateMultiServerStreams creates a list of stream server links for a given movie/episode
+// Uses fast, resilient, and active streaming providers (VidLink HD, VidSrc Pro, VidSrc Mirror, 2Embed, MultiEmbed)
 func GenerateMultiServerStreams(movie *model.Movie, tmdbID int, season int, episode int) []model.StreamLink {
 	if movie == nil {
 		return nil
@@ -78,6 +126,7 @@ func GenerateMultiServerStreams(movie *model.Movie, tmdbID int, season int, epis
 	if tmdbID <= 0 {
 		tmdbID = ExtractTMDbID(movie)
 	}
+	imdbID := ExtractIMDbID(movie)
 
 	isTV := movie.Type == "anime" || movie.Type == "drama_pendek" || movie.Type == "series"
 	if season <= 0 {
@@ -89,98 +138,116 @@ func GenerateMultiServerStreams(movie *model.Movie, tmdbID int, season int, epis
 
 	var servers []model.StreamLink
 
+	// Tentukan ID video yang dapat diputar (prioritas TMDb ID, cadangan IMDb ID)
+	var videoIDStr string
 	if tmdbID > 0 {
+		videoIDStr = strconv.Itoa(tmdbID)
+	} else if imdbID != "" {
+		videoIDStr = imdbID
+	}
+
+	if videoIDStr != "" {
 		if isTV {
 			// TV Show / Anime / Drama embeds
+			// Server 1: VidLink HD (Next.js player, sangat cepat, HD 1080p, minim iklan)
 			servers = append(servers, model.StreamLink{
 				MovieID:    movie.ID,
-				Provider:   "VidSrc HD",
-				ServerName: "Server 1 (VidSrc)",
+				Provider:   "VidLink HD",
+				ServerName: "Server 1 (VidLink HD)",
 				Quality:    "HD 1080p",
-				EmbedURL:   fmt.Sprintf("https://vidsrc.xyz/embed/tv/%d/%d/%d", tmdbID, season, episode),
+				EmbedURL:   fmt.Sprintf("https://vidlink.pro/tv/%s/%d/%d", videoIDStr, season, episode),
 				IsValid:    true,
 				Status:     "ACTIVE",
 			})
+			// Server 2: VidSrc Pro (Domain resmi vidsrc.to yang aktif dan stabil)
 			servers = append(servers, model.StreamLink{
 				MovieID:    movie.ID,
-				Provider:   "AutoEmbed Fast",
-				ServerName: "Server 2 (AutoEmbed)",
+				Provider:   "VidSrc Pro",
+				ServerName: "Server 2 (VidSrc Pro)",
 				Quality:    "HD 1080p",
-				EmbedURL:   fmt.Sprintf("https://player.autoembed.cc/embed/tv/%d/%d/%d", tmdbID, season, episode),
+				EmbedURL:   fmt.Sprintf("https://vidsrc.to/embed/tv/%s/%d/%d", videoIDStr, season, episode),
 				IsValid:    true,
 				Status:     "ACTIVE",
 			})
+			// Server 3: VidSrc Mirror (Mirror resmi vidsrc.pm, cadangan jika server 2 padat)
+			servers = append(servers, model.StreamLink{
+				MovieID:    movie.ID,
+				Provider:   "VidSrc Mirror",
+				ServerName: "Server 3 (VidSrc Mirror)",
+				Quality:    "HD 1080p",
+				EmbedURL:   fmt.Sprintf("https://vidsrc.pm/embed/tv/%s/%d/%d", videoIDStr, season, episode),
+				IsValid:    true,
+				Status:     "ACTIVE",
+			})
+			// Server 4: 2Embed VIP (2embed.cc - format TV embed stabil)
 			servers = append(servers, model.StreamLink{
 				MovieID:    movie.ID,
 				Provider:   "2Embed VIP",
-				ServerName: "Server 3 (2Embed)",
+				ServerName: "Server 4 (2Embed VIP)",
 				Quality:    "HD 720p",
-				EmbedURL:   fmt.Sprintf("https://www.2embed.cc/embedtv/%d&s=%d&e=%d", tmdbID, season, episode),
+				EmbedURL:   fmt.Sprintf("https://www.2embed.cc/embedtv/%s&s=%d&e=%d", videoIDStr, season, episode),
 				IsValid:    true,
 				Status:     "ACTIVE",
 			})
+			// Server 5: MultiEmbed (multiembed.mov - Multi provider)
 			servers = append(servers, model.StreamLink{
 				MovieID:    movie.ID,
-				Provider:   "VidLink Pro",
-				ServerName: "Server 4 (VidLink)",
-				Quality:    "HD 1080p",
-				EmbedURL:   fmt.Sprintf("https://vidlink.pro/tv/%d/%d/%d", tmdbID, season, episode),
-				IsValid:    true,
-				Status:     "ACTIVE",
-			})
-			servers = append(servers, model.StreamLink{
-				MovieID:    movie.ID,
-				Provider:   "SuperEmbed",
-				ServerName: "Server 5 (Multi)",
+				Provider:   "MultiEmbed",
+				ServerName: "Server 5 (MultiEmbed)",
 				Quality:    "HD 720p",
-				EmbedURL:   fmt.Sprintf("https://multiembed.mov/?video_id=%d&tmdb=1&s=%d&e=%d", tmdbID, season, episode),
+				EmbedURL:   fmt.Sprintf("https://multiembed.mov/?video_id=%s&tmdb=1&s=%d&e=%d", videoIDStr, season, episode),
 				IsValid:    true,
 				Status:     "ACTIVE",
 			})
 		} else {
 			// Regular Movie embeds
+			// Server 1: VidLink HD (Utama - Super Cepat, HD 1080p)
 			servers = append(servers, model.StreamLink{
 				MovieID:    movie.ID,
-				Provider:   "VidSrc HD",
-				ServerName: "Server 1 (VidSrc)",
+				Provider:   "VidLink HD",
+				ServerName: "Server 1 (VidLink HD)",
 				Quality:    "HD 1080p",
-				EmbedURL:   fmt.Sprintf("https://vidsrc.xyz/embed/movie/%d", tmdbID),
+				EmbedURL:   fmt.Sprintf("https://vidlink.pro/movie/%s", videoIDStr),
 				IsValid:    true,
 				Status:     "ACTIVE",
 			})
+			// Server 2: VidSrc Pro (vidsrc.to - Subtitle Lengkap)
 			servers = append(servers, model.StreamLink{
 				MovieID:    movie.ID,
-				Provider:   "AutoEmbed Fast",
-				ServerName: "Server 2 (AutoEmbed)",
+				Provider:   "VidSrc Pro",
+				ServerName: "Server 2 (VidSrc Pro)",
 				Quality:    "HD 1080p",
-				EmbedURL:   fmt.Sprintf("https://player.autoembed.cc/embed/movie/%d", tmdbID),
+				EmbedURL:   fmt.Sprintf("https://vidsrc.to/embed/movie/%s", videoIDStr),
 				IsValid:    true,
 				Status:     "ACTIVE",
 			})
+			// Server 3: VidSrc Mirror (vidsrc.pm - Cadangan Resmi)
+			servers = append(servers, model.StreamLink{
+				MovieID:    movie.ID,
+				Provider:   "VidSrc Mirror",
+				ServerName: "Server 3 (VidSrc Mirror)",
+				Quality:    "HD 1080p",
+				EmbedURL:   fmt.Sprintf("https://vidsrc.pm/embed/movie/%s", videoIDStr),
+				IsValid:    true,
+				Status:     "ACTIVE",
+			})
+			// Server 4: 2Embed VIP (2embed.cc)
 			servers = append(servers, model.StreamLink{
 				MovieID:    movie.ID,
 				Provider:   "2Embed VIP",
-				ServerName: "Server 3 (2Embed)",
+				ServerName: "Server 4 (2Embed VIP)",
 				Quality:    "HD 720p",
-				EmbedURL:   fmt.Sprintf("https://www.2embed.cc/embed/%d", tmdbID),
+				EmbedURL:   fmt.Sprintf("https://www.2embed.cc/embed/%s", videoIDStr),
 				IsValid:    true,
 				Status:     "ACTIVE",
 			})
+			// Server 5: MultiEmbed (multiembed.mov)
 			servers = append(servers, model.StreamLink{
 				MovieID:    movie.ID,
-				Provider:   "VidLink Pro",
-				ServerName: "Server 4 (VidLink)",
-				Quality:    "HD 1080p",
-				EmbedURL:   fmt.Sprintf("https://vidlink.pro/movie/%d", tmdbID),
-				IsValid:    true,
-				Status:     "ACTIVE",
-			})
-			servers = append(servers, model.StreamLink{
-				MovieID:    movie.ID,
-				Provider:   "SuperEmbed",
-				ServerName: "Server 5 (Multi)",
+				Provider:   "MultiEmbed",
+				ServerName: "Server 5 (MultiEmbed)",
 				Quality:    "HD 720p",
-				EmbedURL:   fmt.Sprintf("https://multiembed.mov/?video_id=%d&tmdb=1", tmdbID),
+				EmbedURL:   fmt.Sprintf("https://multiembed.mov/?video_id=%s&tmdb=1", videoIDStr),
 				IsValid:    true,
 				Status:     "ACTIVE",
 			})

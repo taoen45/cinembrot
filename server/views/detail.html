@@ -172,6 +172,10 @@
         </button>
         {{end}}
       </div>
+      <div class="mt-2.5 pt-2 border-t border-slate-900 flex items-center gap-1.5 text-[11px] text-slate-400">
+        <i class="fa-solid fa-circle-info text-brand-400"></i>
+        <span>Server 1 (VidLink HD) adalah server utama super cepat. Jika buffering atau lambat di ISP Anda, beralihlah ke Server 2 (VidSrc Pro) atau Server 3.</span>
+      </div>
     </div>
     {{end}}
 
@@ -657,17 +661,17 @@
 
       switch (serverIdx) {
         case 0:
-          return `https://vidsrc.xyz/embed/tv/${tmdbID}/1/${epNum}`;
-        case 1:
-          return `https://player.autoembed.cc/embed/tv/${tmdbID}/1/${epNum}`;
-        case 2:
-          return `https://www.2embed.cc/embedtv/${tmdbID}&s=1&e=${epNum}`;
-        case 3:
           return `https://vidlink.pro/tv/${tmdbID}/1/${epNum}`;
+        case 1:
+          return `https://vidsrc.to/embed/tv/${tmdbID}/1/${epNum}`;
+        case 2:
+          return `https://vidsrc.pm/embed/tv/${tmdbID}/1/${epNum}`;
+        case 3:
+          return `https://www.2embed.cc/embedtv/${tmdbID}&s=1&e=${epNum}`;
         case 4:
           return `https://multiembed.mov/?video_id=${tmdbID}&tmdb=1&s=1&e=${epNum}`;
         default:
-          return `https://vidsrc.xyz/embed/tv/${tmdbID}/1/${epNum}`;
+          return `https://vidlink.pro/tv/${tmdbID}/1/${epNum}`;
       }
     }
 
