@@ -123,7 +123,7 @@
             <td class="py-3 px-4 text-center font-bold text-slate-400">{{.ID}}</td>
             <td class="py-3 px-4">
               <div class="flex items-center gap-3">
-                <img src="{{if .PosterThumbURL}}{{.PosterThumbURL}}{{else}}{{.PosterURL}}{{end}}" class="w-9 h-12 object-cover rounded-lg bg-slate-200 dark:bg-dark-800 shrink-0">
+                <img src="{{if .PosterThumbURL}}{{.PosterThumbURL}}{{else if .PosterURL}}{{.PosterURL}}{{else}}{{.ThumbnailURL}}{{end}}" alt="{{.Title}}" data-fallback="{{if .ThumbnailURL}}{{.ThumbnailURL}}{{else if .PosterURL}}{{.PosterURL}}{{end}}" onerror="if (this.dataset.fallback && this.src !== this.dataset.fallback) { this.src = this.dataset.fallback; } else { this.onerror=null; this.src='/img/poster-placeholder.svg'; }" class="w-9 h-12 object-cover rounded-lg bg-slate-200 dark:bg-dark-800 shrink-0" loading="lazy">
                 <div class="overflow-hidden max-w-xs">
                   <a href="/movie/{{.Slug}}" target="_blank" class="font-bold text-slate-900 dark:text-white hover:text-brand-500 transition truncate block">
                     {{.Title}}

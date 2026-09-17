@@ -492,7 +492,7 @@ func (s *Server) HandleHollywood(w http.ResponseWriter, r *http.Request) {
 	case "views_desc":
 		query = query.Order("views desc, id desc")
 	default:
-		query = query.Order("id desc") // Default: Terbaru ditambahkan
+		query = query.Order("year desc, release_date desc, id desc") // Default: Rilis Terbaru
 	}
 
 	var totalCount int64
@@ -585,7 +585,7 @@ func (s *Server) HandleAnime(w http.ResponseWriter, r *http.Request) {
 	case "views_desc":
 		query = query.Order("views desc, id desc")
 	default:
-		query = query.Order("id desc") // Default: Terbaru ditambahkan
+		query = query.Order("year desc, release_date desc, id desc") // Default: Rilis Terbaru
 	}
 
 	var totalCount int64
@@ -674,7 +674,7 @@ func (s *Server) HandleDramaPendek(w http.ResponseWriter, r *http.Request) {
 	case "views_desc":
 		query = query.Order("views desc, id desc")
 	default:
-		query = query.Order("id desc") // Default: Terbaru ditambahkan
+		query = query.Order("year desc, release_date desc, id desc") // Default: Rilis Terbaru
 	}
 
 	var totalCount int64

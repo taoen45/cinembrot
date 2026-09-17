@@ -202,7 +202,7 @@ func (s *Server) HandleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 	stats["total_drama_pendek"] = totalDramaPendek
 
 	var recentMovies []model.Movie
-	s.db.Preload("Genres").Order("id desc").Limit(6).Find(&recentMovies)
+	s.db.Preload("Genres").Order("year desc, release_date desc, id desc").Limit(6).Find(&recentMovies)
 
 	var recentComments []model.Comment
 	s.db.Order("id desc").Limit(5).Find(&recentComments)
@@ -272,7 +272,7 @@ func (s *Server) HandleAdminHollywood(w http.ResponseWriter, r *http.Request) {
 	query.Count(&totalCount)
 
 	var movies []model.Movie
-	query.Order("id desc").Offset(offset).Limit(pageSize).Find(&movies)
+	query.Order("year desc, release_date desc, id desc").Offset(offset).Limit(pageSize).Find(&movies)
 
 	totalPages := int((totalCount + int64(pageSize) - 1) / int64(pageSize))
 	if totalPages == 0 {
@@ -368,7 +368,7 @@ func (s *Server) HandleAdminAnime(w http.ResponseWriter, r *http.Request) {
 	query.Count(&totalCount)
 
 	var movies []model.Movie
-	query.Order("id desc").Offset(offset).Limit(pageSize).Find(&movies)
+	query.Order("year desc, release_date desc, id desc").Offset(offset).Limit(pageSize).Find(&movies)
 
 	totalPages := int((totalCount + int64(pageSize) - 1) / int64(pageSize))
 	if totalPages == 0 {
@@ -464,7 +464,7 @@ func (s *Server) HandleAdminDramaPendek(w http.ResponseWriter, r *http.Request) 
 	query.Count(&totalCount)
 
 	var movies []model.Movie
-	query.Order("id desc").Offset(offset).Limit(pageSize).Find(&movies)
+	query.Order("year desc, release_date desc, id desc").Offset(offset).Limit(pageSize).Find(&movies)
 
 	totalPages := int((totalCount + int64(pageSize) - 1) / int64(pageSize))
 	if totalPages == 0 {
@@ -595,7 +595,7 @@ func (s *Server) HandleAdminMovies(w http.ResponseWriter, r *http.Request) {
 	query.Count(&totalCount)
 
 	var movies []model.Movie
-	query.Order("id desc").Offset(offset).Limit(pageSize).Find(&movies)
+	query.Order("year desc, release_date desc, id desc").Offset(offset).Limit(pageSize).Find(&movies)
 
 	totalPages := int((totalCount + int64(pageSize) - 1) / int64(pageSize))
 	if totalPages == 0 {

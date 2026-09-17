@@ -28,15 +28,18 @@
   <div class="flex items-center justify-between mb-4">
     <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
       <i class="fa-solid fa-sliders text-brand-500"></i> {{t $.Lang "filter.title"}}
+      <span id="anime-live-badge" class="hidden text-[10px] font-bold bg-purple-500/10 text-purple-500 border border-purple-500/20 px-2 py-0.5 rounded-full animate-pulse">
+        Live Filter
+      </span>
     </h2>
-    <span class="text-xs text-slate-400 font-medium">{{.TotalCount}} anime</span>
+    <span id="anime-counter-badge" class="text-xs text-slate-400 font-medium">{{.TotalCount}} anime</span>
   </div>
 
-  <form action="/anime" method="GET" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+  <form id="anime-filter-form" action="/anime" method="GET" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
     <!-- DROPDOWN 1: TAHUN -->
     <div>
       <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">📅 {{t $.Lang "filter.year"}}</label>
-      <select name="year" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-purple-500 transition">
+      <select id="anime-year-select" name="year" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-purple-500 transition">
         <option value="">{{t $.Lang "filter.all_years"}}</option>
         {{range .Years}}
         <option value="{{.}}" {{if eq $.CurrentYear .}}selected{{end}}>{{.}}</option>
@@ -47,7 +50,7 @@
     <!-- DROPDOWN 2: GENRE -->
     <div>
       <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">🎭 {{t $.Lang "filter.genre"}}</label>
-      <select name="genre" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-purple-500 transition">
+      <select id="anime-genre-select" name="genre" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-purple-500 transition">
         <option value="">{{t $.Lang "filter.all_genres"}}</option>
         {{range .Genres}}
         <option value="{{.Slug}}" {{if eq $.CurrentGenre .Slug}}selected{{end}}>{{.Name}}</option>
@@ -58,7 +61,7 @@
     <!-- DROPDOWN 3: NEGARA / ASAL -->
     <div>
       <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">🌍 {{t $.Lang "filter.country"}}</label>
-      <select name="country" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-purple-500 transition">
+      <select id="anime-country-select" name="country" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-purple-500 transition">
         <option value="">{{t $.Lang "filter.all_country"}}</option>
         {{range .Countries}}
         <option value="{{.}}" {{if eq $.CurrentCountry .}}selected{{end}}>{{.}}</option>
@@ -69,7 +72,7 @@
     <!-- DROPDOWN 4: URUTKAN -->
     <div>
       <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">⚡ {{t $.Lang "filter.sort"}}</label>
-      <select name="sort" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-purple-500 transition">
+      <select id="anime-sort-select" name="sort" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-purple-500 transition">
         <option value="year_desc" {{if eq $.CurrentSort "year_desc"}}selected{{end}}>{{t $.Lang "filter.sort_newest"}}</option>
         <option value="rating_desc" {{if eq $.CurrentSort "rating_desc"}}selected{{end}}>{{t $.Lang "filter.sort_rating"}} ★</option>
         <option value="views_desc" {{if eq $.CurrentSort "views_desc"}}selected{{end}}>{{t $.Lang "filter.sort_popular"}}</option>
@@ -79,31 +82,45 @@
 
     <!-- TOMBOL SUBMIT & RESET -->
     <div class="col-span-2 sm:col-span-2 md:col-span-4 lg:col-span-1 flex items-end gap-2">
-      <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-md">
+      <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-md active:scale-95">
         <i class="fa-solid fa-filter"></i> {{t $.Lang "filter.btn_apply"}}
       </button>
-      <a href="/anime" class="bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-600 dark:text-slate-300 p-2.5 rounded-xl text-xs transition flex items-center justify-center border border-slate-200 dark:border-dark-700" title="Reset Filter">
+      <button type="button" onclick="resetAnimeFilter()" class="bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-600 dark:text-slate-300 p-2.5 rounded-xl text-xs transition flex items-center justify-center border border-slate-200 dark:border-dark-700 active:scale-95" title="Reset Filter">
         <i class="fa-solid fa-rotate-left"></i>
-      </a>
+      </button>
     </div>
   </form>
 </div>
 
-<!-- ==================== 3. ANIME GRID ==================== -->
-{{if .Movies}}
-<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+<!-- ==================== 3. ANIME GRID & AJAX CONTAINER ==================== -->
+<!-- Loading Spinner Overlay -->
+<div id="anime-movies-loading" class="hidden py-16 text-center">
+  <div class="inline-flex items-center gap-3 px-5 py-3 rounded-2xl bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 shadow-xl">
+    <div class="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+    <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Memuat anime via AJAX...</span>
+  </div>
+</div>
+
+<!-- Empty State -->
+<div id="anime-movies-empty" class="{{if .Movies}}hidden{{end}} bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-12 text-center my-6">
+  <div class="w-20 h-20 rounded-full bg-purple-500/10 text-purple-500 flex items-center justify-center text-3xl mx-auto mb-4">
+    <i class="fa-solid fa-wand-magic-sparkles"></i>
+  </div>
+  <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-2">Anime Tidak Ditemukan</h3>
+  <p class="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
+    Tidak ada anime yang cocok dengan kriteria filter saat ini. Coba ganti tahun rilis atau reset filter genre.
+  </p>
+  <button type="button" onclick="resetAnimeFilter()" class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition shadow">
+    <i class="fa-solid fa-rotate-left mr-1"></i> Reset Semua Filter
+  </button>
+</div>
+
+<!-- Anime Grid -->
+<div id="anime-movies-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 transition-opacity duration-300">
   {{range .Movies}}
   <a href="/movie/{{.Slug}}" class="group bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-xl overflow-hidden hover:border-purple-500 hover:shadow-lg dark:hover:border-purple-500 transition duration-300 flex flex-col shadow-sm">
     <div class="relative aspect-[2/3] overflow-hidden bg-slate-200 dark:bg-dark-800">
-      {{if .PosterThumbURL}}
-      <img src="{{.PosterThumbURL}}" alt="{{.Title}}" data-fallback="{{if .ThumbnailURL}}{{.ThumbnailURL}}{{else if .PosterURL}}{{.PosterURL}}{{end}}" onerror="if (this.dataset.fallback && this.src !== this.dataset.fallback) { this.src = this.dataset.fallback; } else { this.onerror=null; this.src='/img/poster-placeholder.svg'; }" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" loading="lazy">
-      {{else if .PosterURL}}
-      <img src="{{.PosterURL}}" alt="{{.Title}}" data-fallback="{{.ThumbnailURL}}" onerror="if (this.dataset.fallback && this.src !== this.dataset.fallback) { this.src = this.dataset.fallback; } else { this.onerror=null; this.src='/img/poster-placeholder.svg'; }" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" loading="lazy">
-      {{else if .ThumbnailURL}}
-      <img src="{{.ThumbnailURL}}" alt="{{.Title}}" onerror="this.onerror=null; this.src='/img/poster-placeholder.svg';" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" loading="lazy">
-      {{else}}
-      <img src="/img/poster-placeholder.svg" alt="{{.Title}}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" loading="lazy">
-      {{end}}
+      <img src="{{if .PosterThumbURL}}{{.PosterThumbURL}}{{else if .PosterURL}}{{.PosterURL}}{{else}}{{.ThumbnailURL}}{{end}}" alt="{{.Title}}" data-fallback="{{if .ThumbnailURL}}{{.ThumbnailURL}}{{else if .PosterURL}}{{.PosterURL}}{{end}}" onerror="if (this.dataset.fallback && this.src !== this.dataset.fallback) { this.src = this.dataset.fallback; } else { this.onerror=null; this.src='/img/poster-placeholder.svg'; }" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" loading="lazy">
 
       <!-- Badges -->
       <div class="absolute top-2 left-2 flex flex-col gap-1">
@@ -121,6 +138,13 @@
       <div class="absolute top-2 right-2 bg-black/80 text-yellow-400 text-xs font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shadow">
         <i class="fa-solid fa-star text-[10px]"></i> {{.Rating}}
       </div>
+
+      <!-- Glowing Play Icon on Hover -->
+      <div class="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+        <div class="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs shadow-lg shadow-purple-600/50 transform scale-75 group-hover:scale-100 transition-transform">
+          <i class="fa-solid fa-play ml-0.5"></i>
+        </div>
+      </div>
     </div>
 
     <div class="p-3 flex-1 flex flex-col justify-between">
@@ -133,24 +157,168 @@
   </a>
   {{end}}
 </div>
-{{else}}
-<!-- Empty State -->
-<div class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-12 text-center my-6">
-  <div class="w-20 h-20 rounded-full bg-purple-500/10 text-purple-500 flex items-center justify-center text-3xl mx-auto mb-4">
-    <i class="fa-solid fa-wand-magic-sparkles"></i>
-  </div>
-  <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-2">Belum Ada Judul Anime</h3>
-  <p class="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
-    Katalog anime saat ini masih dalam proses kurasi dan pengisian. Anda dapat menambahkan tayangan anime baru secara instan melalui CMS Admin.
-  </p>
-  <div class="flex items-center justify-center gap-3">
-    <a href="/" class="bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-700 dark:text-slate-200 px-5 py-2.5 rounded-xl text-xs font-bold transition">
-      <i class="fa-solid fa-arrow-left mr-1"></i> Kembali ke Beranda
-    </a>
-    <a href="/admin/movies/new?type=anime" class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition shadow">
-      <i class="fa-solid fa-plus mr-1"></i> Tambah Anime via CMS
-    </a>
-  </div>
-</div>
-{{end}}
+
+<!-- ==================== 4. JAVASCRIPT AJAX CONTROLLER ==================== -->
+<script>
+(function() {
+  const form = document.getElementById('anime-filter-form');
+  const yearSelect = document.getElementById('anime-year-select');
+  const genreSelect = document.getElementById('anime-genre-select');
+  const countrySelect = document.getElementById('anime-country-select');
+  const sortSelect = document.getElementById('anime-sort-select');
+  const liveBadge = document.getElementById('anime-live-badge');
+  const counterBadge = document.getElementById('anime-counter-badge');
+  const grid = document.getElementById('anime-movies-grid');
+  const loading = document.getElementById('anime-movies-loading');
+  const emptyState = document.getElementById('anime-movies-empty');
+
+  if (!form || !grid) return;
+
+  let currentAbortController = null;
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+
+  function buildAnimeCard(m) {
+    const imgUrl = m.poster_thumb_url || m.poster_url || m.thumbnail_url || '/img/poster-placeholder.svg';
+    const fallbackUrl = m.thumbnail_url || m.poster_url || '/img/poster-placeholder.svg';
+    const rating = m.rating > 0 ? m.rating.toFixed(1) : '0';
+    const quality = m.quality || 'HD';
+    const freeBadge = m.is_free ? '<span class="bg-green-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">GRATIS</span>' : '';
+
+    return `
+    <a href="/movie/${encodeURIComponent(m.slug)}" class="group bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-xl overflow-hidden hover:border-purple-500 hover:shadow-lg dark:hover:border-purple-500 transition duration-300 flex flex-col shadow-sm">
+      <div class="relative aspect-[2/3] overflow-hidden bg-slate-200 dark:bg-dark-800">
+        <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(m.title)}" data-fallback="${escapeHtml(fallbackUrl)}" onerror="if (this.dataset.fallback && this.src !== this.dataset.fallback) { this.src = this.dataset.fallback; } else { this.onerror=null; this.src='/img/poster-placeholder.svg'; }" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" loading="lazy">
+
+        <div class="absolute top-2 left-2 flex flex-col gap-1">
+          <span class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[9px] font-black px-2 py-0.5 rounded shadow flex items-center gap-1">
+            <i class="fa-solid fa-wand-magic-sparkles text-[8px]"></i> ANIME
+          </span>
+          ${freeBadge}
+          <span class="bg-slate-900/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded border border-slate-700 shadow">${escapeHtml(quality)}</span>
+        </div>
+
+        <div class="absolute top-2 right-2 bg-black/80 text-yellow-400 text-xs font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shadow">
+          <i class="fa-solid fa-star text-[10px]"></i> ${rating}
+        </div>
+
+        <div class="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+          <div class="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs shadow-lg shadow-purple-600/50 transform scale-75 group-hover:scale-100 transition-transform">
+            <i class="fa-solid fa-play ml-0.5"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-3 flex-1 flex flex-col justify-between">
+        <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-purple-500 line-clamp-1 transition">${escapeHtml(m.title)}</h3>
+        <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+          <span>${m.year || '-'}</span>
+          <span><i class="fa-solid fa-eye text-[10px]"></i> Nonton</span>
+        </div>
+      </div>
+    </a>`;
+  }
+
+  window.fetchAnimeAjax = function() {
+    const year = yearSelect ? yearSelect.value : '';
+    const genre = genreSelect ? genreSelect.value : '';
+    const country = countrySelect ? countrySelect.value : '';
+    const sort = sortSelect ? sortSelect.value : '';
+
+    const isFiltered = (year !== '' || genre !== '' || country !== '' || sort !== 'year_desc');
+    if (liveBadge) {
+      if (isFiltered) liveBadge.classList.remove('hidden');
+      else liveBadge.classList.add('hidden');
+    }
+
+    // Abort request sebelumnya jika masih berjalan
+    if (currentAbortController) currentAbortController.abort();
+    currentAbortController = new AbortController();
+
+    // UI Loading state
+    grid.classList.add('opacity-30');
+    if (loading) loading.classList.remove('hidden');
+    if (emptyState) emptyState.classList.add('hidden');
+
+    const params = new URLSearchParams();
+    params.append('type', 'anime');
+    params.append('year', year);
+    params.append('genre', genre);
+    params.append('country', country);
+    params.append('sort', sort);
+    params.append('limit', '60');
+
+    // Update URL di browser tanpa reload
+    const queryParams = new URLSearchParams();
+    if (year) queryParams.set('year', year);
+    if (genre) queryParams.set('genre', genre);
+    if (country) queryParams.set('country', country);
+    if (sort) queryParams.set('sort', sort);
+    const newUrl = window.location.pathname + (queryParams.toString() ? '?' + queryParams.toString() : '');
+    window.history.pushState(null, '', newUrl);
+
+    fetch('/api/movies/filter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+      body: params.toString(),
+      signal: currentAbortController.signal
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('HTTP error ' + res.status);
+      return res.json();
+    })
+    .then(data => {
+      grid.classList.remove('opacity-30');
+      if (loading) loading.classList.add('hidden');
+
+      if (!data || !data.movies || data.movies.length === 0) {
+        grid.innerHTML = '';
+        if (emptyState) emptyState.classList.remove('hidden');
+        if (counterBadge) counterBadge.textContent = '0 anime';
+        return;
+      }
+
+      let html = '';
+      data.movies.forEach(m => {
+        html += buildAnimeCard(m);
+      });
+      grid.innerHTML = html;
+
+      if (counterBadge) {
+        counterBadge.textContent = `${data.total_count} anime`;
+      }
+    })
+    .catch(err => {
+      if (err.name === 'AbortError') return;
+      console.error('Gagal memuat anime via AJAX:', err);
+      grid.classList.remove('opacity-30');
+      if (loading) loading.classList.add('hidden');
+    });
+  };
+
+  window.resetAnimeFilter = function() {
+    if (yearSelect) yearSelect.value = '';
+    if (genreSelect) genreSelect.value = '';
+    if (countrySelect) countrySelect.value = '';
+    if (sortSelect) sortSelect.value = 'year_desc';
+    if (liveBadge) liveBadge.classList.add('hidden');
+    window.fetchAnimeAjax();
+  };
+
+  // Event Listeners Auto Trigger saat dropdown diganti!
+  if (yearSelect) yearSelect.addEventListener('change', window.fetchAnimeAjax);
+  if (genreSelect) genreSelect.addEventListener('change', window.fetchAnimeAjax);
+  if (countrySelect) countrySelect.addEventListener('change', window.fetchAnimeAjax);
+  if (sortSelect) sortSelect.addEventListener('change', window.fetchAnimeAjax);
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    window.fetchAnimeAjax();
+  });
+
+})();
+</script>
 {{end}}

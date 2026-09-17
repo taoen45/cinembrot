@@ -364,14 +364,12 @@ func (s *Server) Start() error {
 	uploadsDir := filepath.Join("public", "uploads")
 	_ = os.MkdirAll(uploadsDir, 0755)
 	fileServer := http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadsDir)))
-	placeholderPath := filepath.Join("public", "img", "poster-placeholder.svg")
 	mux.HandleFunc("GET /uploads/", func(w http.ResponseWriter, r *http.Request) {
 		relPath := strings.TrimPrefix(r.URL.Path, "/uploads/")
 		fullPath := filepath.Join(uploadsDir, filepath.Clean(relPath))
 		if fi, err := os.Stat(fullPath); os.IsNotExist(err) || fi.IsDir() {
-			w.Header().Set("Content-Type", "image/svg+xml")
-			w.Header().Set("Cache-Control", "no-cache")
-			http.ServeFile(w, r, placeholderPath)
+			// Kembalikan 404 agar event onerror di browser memicu data-fallback (URL asli TMDb)
+			http.NotFound(w, r)
 			return
 		}
 		fileServer.ServeHTTP(w, r)

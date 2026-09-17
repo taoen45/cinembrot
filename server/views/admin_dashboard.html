@@ -106,7 +106,7 @@
         {{range .Movies}}
         <div class="flex items-center justify-between p-2.5 hover:bg-slate-50 dark:hover:bg-dark-800 rounded-xl transition">
           <div class="flex items-center gap-3 overflow-hidden">
-            <img src="{{if .PosterThumbURL}}{{.PosterThumbURL}}{{else}}{{.PosterURL}}{{end}}" class="w-10 h-14 object-cover rounded-lg bg-slate-200 dark:bg-dark-800 shrink-0">
+            <img src="{{if .PosterThumbURL}}{{.PosterThumbURL}}{{else if .PosterURL}}{{.PosterURL}}{{else}}{{.ThumbnailURL}}{{end}}" alt="{{.Title}}" data-fallback="{{if .ThumbnailURL}}{{.ThumbnailURL}}{{else if .PosterURL}}{{.PosterURL}}{{end}}" onerror="if (this.dataset.fallback && this.src !== this.dataset.fallback) { this.src = this.dataset.fallback; } else { this.onerror=null; this.src='/img/poster-placeholder.svg'; }" class="w-10 h-14 object-cover rounded-lg bg-slate-200 dark:bg-dark-800 shrink-0" loading="lazy">
             <div class="overflow-hidden">
               <h4 class="text-xs font-bold text-slate-900 dark:text-white truncate">{{.Title}}</h4>
               <p class="text-[10px] text-slate-400 font-medium">{{.Year}} • Rating: ★ {{.Rating}}</p>
