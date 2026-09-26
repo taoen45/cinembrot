@@ -11,7 +11,9 @@ Sebelum mengubah, memperbaiki, atau menambah apa pun di server ini:
 7. Setiap perubahan pada file instruksi/agent (`AGENTS.md`, aturan Cursor, `INSTRUKSI-SERVER.md`) atau sistem **wajib dicatat** di `INSTRUKSI-SERVER.md` bagian **Riwayat perubahan**.
 
 Stack: **CINEMBROT (Golang)** di `~/docker/html` + MariaDB + Redis + Caddy (proxy ke `:8080`) di `~/docker`. **Golang tidak butuh PHP.** Jellyfin hanya cadangan (profile, tidak aktif).
-Publik: Cloudflare Tunnel → `http://localhost:80` → Caddy → Go `:8080`. Domain uji `test.cinembrot.my.id`; domain utama `cinembrot.my.id` (Path kosong di Zero Trust).
+Publik: Cloudflare Tunnel:
+- Domain Utama: `cinembrot.web.id` → `http://localhost:80` → Caddy → Go `:8080`.
+- Domain Informasi: `cinembrot.my.id` → `http://localhost:81` → Caddy → Go `:8081` (Landing page info resmi gaya filmapik.info).
 `DB_HOST` app = `127.0.0.1` (MariaDB host network).
 Pemeliharaan: update apt **03:40 WIB**, reboot **04:00 WIB**. Timezone **Asia/Jakarta**.
 

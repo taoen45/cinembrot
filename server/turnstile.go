@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -18,8 +19,9 @@ type TurnstileResponse struct {
 	CData       string    `json:"cdata"`
 }
 
-// VerifyTurnstile verifies a Cloudflare Turnstile token with Cloudflare's siteverify API endpoint
-func VerifyTurnstile(secretKey, token, remoteIP string) (bool, error) {
+// VerifyTurnstile verifies a Cloudflare Turnstile token with Cloudflare's siteverify API endpoint.
+// It checks success, expected action, and allowed hostnames if provided.
+func VerifyTurnstile(secretKey, token, remoteIP string, expectedAction string, allowedHostnames []string) (bool, error) {
 	if token == "" {
 		return false, fmt.Errorf("token turnstile kosong")
 	}
@@ -45,6 +47,25 @@ func VerifyTurnstile(secretKey, token, remoteIP string) (bool, error) {
 
 	if !tr.Success {
 		return false, fmt.Errorf("verifikasi ditolak oleh cloudflare: %v", tr.ErrorCodes)
+	}
+
+	// Validate expected action if specified
+	if expectedAction != "" && tr.Action != "" && tr.Action != expectedAction {
+		return false, fmt.Errorf("turnstile action tidak cocok (diharapkan '%s', diterima '%s')", expectedAction, tr.Action)
+	}
+
+	// Validate allowed hostnames if specified
+	if len(allowedHostnames) > 0 && tr.Hostname != "" {
+		matched := false
+		for _, h := range allowedHostnames {
+			if strings.EqualFold(tr.Hostname, h) {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return false, fmt.Errorf("turnstile hostname '%s' tidak ada di daftar yang diizinkan: %v", tr.Hostname, allowedHostnames)
+		}
 	}
 
 	return true, nil

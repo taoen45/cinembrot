@@ -73,7 +73,7 @@ func (s *Server) GetSiteURL(r *http.Request) string {
 		if custom != "" && custom != "auto" {
 			return custom
 		}
-		return "https://cinembrot.my.id"
+		return "https://cinembrot.web.id"
 	}
 
 	// Jika mode custom eksplisit
@@ -81,7 +81,7 @@ func (s *Server) GetSiteURL(r *http.Request) string {
 		return custom
 	}
 
-	return "https://cinembrot.my.id"
+	return "https://cinembrot.web.id"
 }
 
 // PopulateSEO enriches PageData with world-class metadata, OpenGraph, Canonical, and Schema.org
@@ -473,7 +473,7 @@ Sitemap: %s/sitemap.xml
 
 // HandleAdsTXT serves the official ads.txt file dynamically from MariaDB settings
 func (s *Server) HandleAdsTXT(w http.ResponseWriter, r *http.Request) {
-	defaultAdsTxt := "# ads.txt resmi untuk CINEMBROT (cinembrot.my.id)\n# Tambahkan baris otorisasi Adsterra / Google AdSense / partner DSP Anda di CMS Admin Settings (/admin/settings)\n"
+	defaultAdsTxt := "# ads.txt resmi untuk CINEMBROT (cinembrot.web.id)\n# Tambahkan baris otorisasi Adsterra / Google AdSense / partner DSP Anda di CMS Admin Settings (/admin/settings)\n"
 	content := database.GetSetting(s.db, "ads_txt_content", defaultAdsTxt)
 
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")

@@ -98,7 +98,15 @@ func (s *Server) HandleAdminLogin(w http.ResponseWriter, r *http.Request) {
 	if turnstileEnabled && turnstileSecretKey != "" {
 		turnstileToken := r.FormValue("cf-turnstile-response")
 		clientIP := ExtractClientIP(r)
-		valid, err := VerifyTurnstile(turnstileSecretKey, turnstileToken, clientIP)
+		allowedHostnames := []string{"cinembrot.web.id", "cinembrot.my.id", "localhost", "127.0.0.1"}
+		currentHost := r.Host
+		if strings.Contains(currentHost, ":") {
+			currentHost = strings.Split(currentHost, ":")[0]
+		}
+		if currentHost != "" {
+			allowedHostnames = append(allowedHostnames, currentHost)
+		}
+		valid, err := VerifyTurnstile(turnstileSecretKey, turnstileToken, clientIP, "admin_login", allowedHostnames)
 		if err != nil || !valid {
 			log.Printf("[ADMIN AUTH] ⚠️ Verifikasi Cloudflare Turnstile gagal untuk IP %s: %v\n", clientIP, err)
 			http.Redirect(w, r, "/admin/login?error=turnstile", http.StatusSeeOther)

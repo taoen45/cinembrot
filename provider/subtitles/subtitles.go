@@ -72,14 +72,14 @@ func PrepareCandidateSubtitles(title, slug, subDir string) []model.SubtitleOptio
 	subIDContent := fmt.Sprintf("1\n00:00:05,000 --> 00:00:10,000\n<b>CINEMBROT MEMPERSEMBAHKAN</b>\n\n"+
 		"2\n00:00:12,000 --> 00:00:18,000\n<b>\"%s\"</b>\n\n"+
 		"3\n00:00:20,000 --> 00:00:26,000\n<i>Subtitle Bahasa Indonesia Resmi</i>\n\n"+
-		"4\n00:00:28,000 --> 00:00:35,000\nSelamat menyaksikan. Kunjungi cinembrot.my.id untuk rilisan terbaru lainnya.\n",
+		"4\n00:00:28,000 --> 00:00:35,000\nSelamat menyaksikan. Kunjungi cinembrot.web.id untuk rilisan terbaru lainnya.\n",
 		upperTitle)
 
 	// English Subtitle Template
 	subENContent := fmt.Sprintf("1\n00:00:05,000 --> 00:00:10,000\n<b>CINEMBROT PRESENTS</b>\n\n"+
 		"2\n00:00:12,000 --> 00:00:18,000\n<b>\"%s\"</b>\n\n"+
 		"3\n00:00:20,000 --> 00:00:26,000\n<i>Official English Subtitles</i>\n\n"+
-		"4\n00:00:28,000 --> 00:00:35,000\nEnjoy the show. Visit cinembrot.my.id for more streaming and releases.\n",
+		"4\n00:00:28,000 --> 00:00:35,000\nEnjoy the show. Visit cinembrot.web.id for more streaming and releases.\n",
 		upperTitle)
 
 	_ = os.WriteFile(candidates[0].SRTPath, []byte(subIDContent), 0644)

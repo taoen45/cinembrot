@@ -393,17 +393,54 @@ func (s *Server) Start() error {
 	})
 	mux.Handle("GET /img/", http.StripPrefix("/img/", http.FileServer(http.Dir(filepath.Join("public", "img")))))
 
+	// Route Official Info Domain (cinembrot.my.id - gaya filmapik.info)
+	mux.HandleFunc("GET /info", s.HandleInfoDomain)
+	mux.HandleFunc("GET /info/", s.HandleInfoDomain)
+
 	port := s.cfg.ServerPort
 	if port == "" {
 		port = "8080"
 	}
 
+	infoPort := os.Getenv("INFO_SERVER_PORT")
+	if infoPort == "" {
+		infoPort = "8081"
+	}
+
+	// Jalankan Dedicated Info Server (Port 8081) untuk domain cinembrot.my.id (Cloudflare Tunnel :81)
+	go func() {
+		infoMux := http.NewServeMux()
+		infoMux.HandleFunc("/", s.HandleInfoDomain)
+		infoMux.Handle("GET /img/", http.StripPrefix("/img/", http.FileServer(http.Dir(filepath.Join("public", "img")))))
+		infoMux.HandleFunc("GET /favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+			http.ServeFile(w, r, filepath.Join("public", "favicon.png"))
+		})
+		infoMux.HandleFunc("GET /favicon.png", func(w http.ResponseWriter, r *http.Request) {
+			http.ServeFile(w, r, filepath.Join("public", "favicon.png"))
+		})
+		infoHandler := SecurityHeadersMiddleware(infoMux)
+		log.Printf(" ℹ️ CINEMBROT INFO SERVER (cinembrot.my.id) AKTIF DI: http://localhost:%s", infoPort)
+		if err := http.ListenAndServe(":"+infoPort, infoHandler); err != nil {
+			log.Printf("[INFO SERVER WARN] Port %s: %v\n", infoPort, err)
+		}
+	}()
+
 	log.Printf("\n==============================================================")
-	log.Printf(" 🚀 CINEMBROT WEB SERVER AKTIF DI: http://localhost:%s", port)
+	log.Printf(" 🚀 CINEMBROT WEB SERVER (cinembrot.web.id) AKTIF DI: http://localhost:%s", port)
 	log.Printf("==============================================================\n")
 
+	// Host-based routing: jika request datang dengan Host cinembrot.my.id di port utama, sajikan halaman info
+	hostRoutingHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		host := strings.ToLower(r.Host)
+		if strings.Contains(host, "cinembrot.my.id") && !strings.HasPrefix(r.URL.Path, "/uploads/") && !strings.HasPrefix(r.URL.Path, "/img/") && !strings.HasPrefix(r.URL.Path, "/favicon") {
+			s.HandleInfoDomain(w, r)
+			return
+		}
+		mux.ServeHTTP(w, r)
+	})
+
 	// Pasang global security headers & rate limiter per IP
-	securedHandler := SecurityHeadersMiddleware(RateLimitPublicMiddleware(mux))
+	securedHandler := SecurityHeadersMiddleware(RateLimitPublicMiddleware(hostRoutingHandler))
 
 	return http.ListenAndServe(":"+port, securedHandler)
 }
