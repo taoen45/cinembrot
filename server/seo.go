@@ -486,3 +486,67 @@ func (s *Server) HandleAdsTXT(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "public, max-age=3600")
 	w.Write([]byte(content))
 }
+
+// HandleInfoSitemapXML generates an automated XML Sitemap exclusively for the official info hub (cinembrot.my.id)
+func (s *Server) HandleInfoSitemapXML(w http.ResponseWriter, r *http.Request) {
+	infoURL := "https://cinembrot.my.id"
+	nowStr := time.Now().Format("2006-01-02T15:04:05Z07:00")
+
+	urls := []SitemapURL{
+		{
+			Loc:        infoURL + "/",
+			LastMod:    nowStr,
+			ChangeFreq: "daily",
+			Priority:   "1.0",
+			Images: []SitemapImage{
+				{
+					Loc:   infoURL + "/favicon.png",
+					Title: "CINEMBROT Info - Domain Resmi Alternatif Nonton Streaming Film Gratis Subtitle Indonesia",
+				},
+			},
+		},
+		{
+			Loc:        infoURL + "/info",
+			LastMod:    nowStr,
+			ChangeFreq: "daily",
+			Priority:   "0.9",
+		},
+	}
+
+	urlSet := URLSet{
+		XMLNS:      "http://www.sitemaps.org/schemas/sitemap/0.9",
+		XMLNSImage: "http://www.google.com/schemas/sitemap-image/1.1",
+		URLs:       urls,
+	}
+
+	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+	w.Header().Set("X-Robots-Tag", "noindex, follow")
+	w.Header().Set("Cache-Control", "public, max-age=3600")
+
+	w.Write([]byte(xml.Header))
+	enc := xml.NewEncoder(w)
+	enc.Indent("", "  ")
+	_ = enc.Encode(urlSet)
+}
+
+// HandleInfoRobotsTXT outputs a clean crawler instruction file exclusively for the info domain (cinembrot.my.id)
+func (s *Server) HandleInfoRobotsTXT(w http.ResponseWriter, r *http.Request) {
+	infoURL := "https://cinembrot.my.id"
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+
+	robotsContent := fmt.Sprintf(`# Robots.txt for %s
+User-agent: *
+Allow: /
+
+# Crawl Delay untuk crawler ramah
+Crawl-delay: 1
+
+# XML Sitemap Resmi cinembrot.my.id
+Sitemap: %s/sitemap.xml
+`, infoURL, infoURL)
+
+	w.Write([]byte(robotsContent))
+}
+

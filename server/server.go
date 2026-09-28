@@ -299,6 +299,7 @@ func (s *Server) Start() error {
 
 	// SEO & Search Engine Discovery Endpoints
 	mux.HandleFunc("GET /sitemap.xml", s.HandleSitemapXML)
+	mux.HandleFunc("GET /sitemap_index.xml", s.HandleSitemapXML)
 	mux.HandleFunc("GET /robots.txt", s.HandleRobotsTXT)
 	// Daftarkan file verifikasi Google Search Console (cinembrot.web.id) dari folder public/
 	if files, err := filepath.Glob(filepath.Join("public", "google*.html")); err == nil {
@@ -444,6 +445,9 @@ func (s *Server) Start() error {
 	infoMux.HandleFunc("GET /{$}", s.HandleInfoDomain)
 	infoMux.HandleFunc("GET /info", s.HandleInfoDomain)
 	infoMux.HandleFunc("GET /info/", s.HandleInfoDomain)
+	infoMux.HandleFunc("GET /sitemap.xml", s.HandleInfoSitemapXML)
+	infoMux.HandleFunc("GET /sitemap_index.xml", s.HandleInfoSitemapXML)
+	infoMux.HandleFunc("GET /robots.txt", s.HandleInfoRobotsTXT)
 	infoMux.Handle("GET /img/", http.StripPrefix("/img/", http.FileServer(http.Dir(filepath.Join("public", "img")))))
 	infoMux.HandleFunc("GET /favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, filepath.Join("public", "favicon.png"))
