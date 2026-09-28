@@ -79,7 +79,15 @@
   </header>
 
   <!-- ==================== MAIN CONTENT ==================== -->
-  <main class="flex-1 max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 hero-glow w-full">
+  <main class="flex-1 max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 hero-glow w-full">
+
+    <!-- ==================== BANNER ATAS ADSTERRA (728x90 PC / 320x50 HP) ==================== -->
+    <div class="adsterra-box w-full flex flex-col items-center justify-center mb-8">
+      <span class="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-1.5 flex items-center gap-1">
+        <i class="fa-solid fa-rectangle-ad text-[10px]"></i> Iklan Sponsor
+      </span>
+      <div id="adsterra-banner-top" class="min-h-[50px] md:min-h-[90px] flex items-center justify-center"></div>
+    </div>
 
     <!-- ==================== ANNOUNCEMENT HERO CARD (GAYA FILMAPIK.INFO) ==================== -->
     <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/60 border border-brand-500/30 rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden mb-10 text-center">
@@ -113,6 +121,11 @@
             <i class="fa-solid fa-copy"></i>
             <span id="copy-btn-text">Salin Link Domain</span>
           </button>
+          <a href="https://ripenhopperwitty.com/dshsjtw4mm?key=b8e97cccf7d6fdfe0a74963ec89f2ae2" target="_blank" rel="noopener noreferrer" class="w-full sm:w-auto px-5 py-4 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 hover:text-amber-200 text-xs font-bold transition flex items-center justify-center gap-2 group" title="Server Cepat Sponsor">
+            <i class="fa-solid fa-bolt text-amber-400 group-hover:scale-110 transition"></i>
+            <span>Server VIP (Sponsor)</span>
+            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+          </a>
         </div>
 
         <div class="pt-2 flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400">
@@ -226,6 +239,14 @@
           </div>
         </div>
 
+        <!-- ==================== NATIVE BANNER ADSTERRA (TENGAH ARTIKEL) ==================== -->
+        <div class="adsterra-box my-6 p-4 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col items-center justify-center">
+          <span class="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-2 flex items-center gap-1">
+            <i class="fa-solid fa-rectangle-ad text-[10px]"></i> Rekomendasi Sponsor
+          </span>
+          <div id="adsterra-native-banner" class="w-full flex justify-center"></div>
+        </div>
+
         <!-- 2. LK21 -->
         <div class="p-5 bg-slate-800/40 border border-slate-700/60 rounded-2xl">
           <h3 class="text-base font-bold text-white mb-2 flex items-center gap-2">
@@ -295,6 +316,14 @@
       </div>
     </article>
 
+    <!-- ==================== BANNER FOOTER ADSTERRA (300x250) ==================== -->
+    <div class="adsterra-box my-8 flex flex-col items-center justify-center">
+      <span class="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-1.5 flex items-center gap-1">
+        <i class="fa-solid fa-rectangle-ad text-[10px]"></i> Iklan Sponsor
+      </span>
+      <div id="adsterra-banner-footer" class="min-h-[250px] flex items-center justify-center"></div>
+    </div>
+
   </main>
 
   <!-- ==================== FOOTER ==================== -->
@@ -359,6 +388,132 @@
     // Init theme
     var savedTheme = localStorage.getItem('cinembrot_info_theme') || 'dark';
     applyTheme(savedTheme);
+  </script>
+
+  <!-- ==================== PENGATURAN & ENGINE IKLAN ADSTERRA (cinembrot.my.id) ==================== -->
+  <script>
+    /**
+     * =========================================================================
+     * PENGATURAN IKLAN ADSTERRA RESMI (cinembrot.my.id)
+     * =========================================================================
+     */
+    const ADSTERRA_CONFIG = {
+      enableAds: true,
+
+      // 1. POPUNDER SCRIPT
+      popunderScriptUrl: "https://ripenhopperwitty.com/54/e2/d0/54e2d041392f6fe60241fb7998b44e22.js",
+
+      // 2. SOCIAL BAR SCRIPT
+      socialBarScriptUrl: "https://ripenhopperwitty.com/e8/02/6c/e8026c7abe894a6b7c4f480910f52fc3.js",
+
+      // 3. SMARTLINK
+      smartlinkUrl: "https://ripenhopperwitty.com/dshsjtw4mm?key=b8e97cccf7d6fdfe0a74963ec89f2ae2",
+
+      // 4. BANNER ATAS (728x90 di PC / 320x50 di HP)
+      topBannerDesktop: `
+        <script type="text/javascript">
+          atOptions = {
+            'key' : '85fa49a7c78f9d85d42fce646c7003ab',
+            'format' : 'iframe',
+            'height' : 90,
+            'width' : 728,
+            'params' : {}
+          };
+        <\/script>
+        <script type="text/javascript" src="https://ripenhopperwitty.com/85fa49a7c78f9d85d42fce646c7003ab/invoke.js"><\/script>
+      `,
+      topBannerMobile: `
+        <script type="text/javascript">
+          atOptions = {
+            'key' : 'aed924266db38d0d234d16ebd3df5cad',
+            'format' : 'iframe',
+            'height' : 50,
+            'width' : 320,
+            'params' : {}
+          };
+        <\/script>
+        <script type="text/javascript" src="https://ripenhopperwitty.com/aed924266db38d0d234d16ebd3df5cad/invoke.js"><\/script>
+      `,
+
+      // 5. NATIVE BANNER (TENGAH ARTIKEL)
+      nativeBannerCode: `
+        <script async="async" data-cfasync="false" src="https://ripenhopperwitty.com/4436b99755730d92de41c04a72905573/invoke.js"><\/script>
+        <div id="container-4436b99755730d92de41c04a72905573"></div>
+      `,
+
+      // 6. BANNER BAWAH (300x250)
+      footerBannerCode: `
+        <script type="text/javascript">
+          atOptions = {
+            'key' : '4a071f6c776fe2fe0e203dab2f8c93f7',
+            'format' : 'iframe',
+            'height' : 250,
+            'width' : 300,
+            'params' : {}
+          };
+        <\/script>
+        <script type="text/javascript" src="https://ripenhopperwitty.com/4a071f6c776fe2fe0e203dab2f8c93f7/invoke.js"><\/script>
+      `
+    };
+
+    /**
+     * ENGINE INJEKSI IKLAN OTOMATIS
+     */
+    (function initAdsterra() {
+      if (!ADSTERRA_CONFIG.enableAds) {
+        document.addEventListener("DOMContentLoaded", () => {
+          document.querySelectorAll(".adsterra-box").forEach(el => el.style.display = "none");
+        });
+        return;
+      }
+
+      // Pasang Popunder
+      if (ADSTERRA_CONFIG.popunderScriptUrl) {
+        const pop = document.createElement("script");
+        pop.type = "text/javascript";
+        pop.src = ADSTERRA_CONFIG.popunderScriptUrl;
+        pop.async = true;
+        document.head.appendChild(pop);
+      }
+
+      // Pasang Social Bar
+      if (ADSTERRA_CONFIG.socialBarScriptUrl) {
+        const soc = document.createElement("script");
+        soc.type = "text/javascript";
+        soc.src = ADSTERRA_CONFIG.socialBarScriptUrl;
+        soc.async = true;
+        document.head.appendChild(soc);
+      }
+
+      // Helper pasang kode HTML/Script banner
+      function renderAd(targetId, htmlSnippet) {
+        const box = document.getElementById(targetId);
+        if (!box || !htmlSnippet || htmlSnippet.trim() === "") return;
+        box.innerHTML = "";
+
+        const temp = document.createElement("div");
+        temp.innerHTML = htmlSnippet.trim();
+
+        Array.from(temp.childNodes).forEach(node => {
+          if (node.tagName === "SCRIPT") {
+            const s = document.createElement("script");
+            Array.from(node.attributes).forEach(attr => s.setAttribute(attr.name, attr.value));
+            s.text = node.innerHTML;
+            box.appendChild(s);
+          } else {
+            box.appendChild(node.cloneNode(true));
+          }
+        });
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const isMobile = window.innerWidth < 768;
+        const topSnippet = isMobile ? ADSTERRA_CONFIG.topBannerMobile : ADSTERRA_CONFIG.topBannerDesktop;
+        renderAd("adsterra-banner-top", topSnippet);
+        renderAd("adsterra-native-banner", ADSTERRA_CONFIG.nativeBannerCode);
+        renderAd("adsterra-banner-footer", ADSTERRA_CONFIG.footerBannerCode);
+      });
+    })();
   </script>
 </body>
 </html>
