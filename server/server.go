@@ -300,16 +300,30 @@ func (s *Server) Start() error {
 	// SEO & Search Engine Discovery Endpoints
 	mux.HandleFunc("GET /sitemap.xml", s.HandleSitemapXML)
 	mux.HandleFunc("GET /robots.txt", s.HandleRobotsTXT)
-	mux.HandleFunc("GET /yandex_", func(w http.ResponseWriter, r *http.Request) {
-		if !strings.HasSuffix(r.URL.Path, ".html") {
-			http.NotFound(w, r)
-			return
+	// Daftarkan file verifikasi Google Search Console (cinembrot.web.id) dari folder public/
+	if files, err := filepath.Glob(filepath.Join("public", "google*.html")); err == nil {
+		for _, f := range files {
+			base := filepath.Base(f)
+			pattern := fmt.Sprintf("GET /%s", base)
+			mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				http.ServeFile(w, r, filepath.Join("public", base))
+			})
 		}
-		code := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/yandex_"), ".html")
-		w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "<html>\n    <head>\n        <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\n    </head>\n    <body>Verification: %s</body>\n</html>", code)
-	})
+	}
+
+	// Daftarkan file verifikasi Yandex dari folder public/
+	if files, err := filepath.Glob(filepath.Join("public", "yandex_*.html")); err == nil {
+		for _, f := range files {
+			base := filepath.Base(f)
+			pattern := fmt.Sprintf("GET /%s", base)
+			mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+				http.ServeFile(w, r, filepath.Join("public", base))
+			})
+		}
+	}
+
 	mux.HandleFunc("GET /BingSiteAuth.xml", func(w http.ResponseWriter, r *http.Request) {
 		settings := database.GetAllSettings(s.db)
 		code := settings["bing_site_verification"]
@@ -425,39 +439,55 @@ func (s *Server) Start() error {
 		infoPort = "8081"
 	}
 
+	// Inisialisasi Mux Khusus Domain Informasi (cinembrot.my.id)
+	infoMux := http.NewServeMux()
+	infoMux.HandleFunc("GET /{$}", s.HandleInfoDomain)
+	infoMux.HandleFunc("GET /info", s.HandleInfoDomain)
+	infoMux.HandleFunc("GET /info/", s.HandleInfoDomain)
+	infoMux.Handle("GET /img/", http.StripPrefix("/img/", http.FileServer(http.Dir(filepath.Join("public", "img")))))
+	infoMux.HandleFunc("GET /favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, filepath.Join("public", "favicon.png"))
+	})
+	infoMux.HandleFunc("GET /favicon.png", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, filepath.Join("public", "favicon.png"))
+	})
+	infoMux.HandleFunc("GET /BingSiteAuth.xml", func(w http.ResponseWriter, r *http.Request) {
+		settings := database.GetAllSettings(s.db)
+		code := settings["info_bing_site_verification"]
+		if code == "" {
+			code = settings["bing_site_verification"]
+		}
+		if code == "" {
+			code = "1E1C0A8C8D9899F03634DF89E4DAB6D8"
+		}
+		w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+		fmt.Fprintf(w, "<?xml version=\"1.0\"?>\n<users>\n\t<user>%s</user>\n</users>", code)
+	})
+	// Daftarkan file verifikasi Google Search Console khusus info jika ada di public/info/ (tidak berbagi dengan web.id)
+	if files, err := filepath.Glob(filepath.Join("public", "info", "google*.html")); err == nil {
+		for _, f := range files {
+			base := filepath.Base(f)
+			pattern := fmt.Sprintf("GET /%s", base)
+			infoMux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				http.ServeFile(w, r, filepath.Join("public", "info", base))
+			})
+		}
+	}
+	// Daftarkan file verifikasi Yandex di infoMux jika ada
+	if files, err := filepath.Glob(filepath.Join("public", "yandex_*.html")); err == nil {
+		for _, f := range files {
+			base := filepath.Base(f)
+			pattern := fmt.Sprintf("GET /%s", base)
+			infoMux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+				http.ServeFile(w, r, filepath.Join("public", base))
+			})
+		}
+	}
+
 	// Jalankan Dedicated Info Server (Port 8081) untuk domain cinembrot.my.id (Cloudflare Tunnel :81)
 	go func() {
-		infoMux := http.NewServeMux()
-		infoMux.HandleFunc("/", s.HandleInfoDomain)
-		infoMux.Handle("GET /img/", http.StripPrefix("/img/", http.FileServer(http.Dir(filepath.Join("public", "img")))))
-		infoMux.HandleFunc("GET /favicon.ico", func(w http.ResponseWriter, r *http.Request) {
-			http.ServeFile(w, r, filepath.Join("public", "favicon.png"))
-		})
-		infoMux.HandleFunc("GET /favicon.png", func(w http.ResponseWriter, r *http.Request) {
-			http.ServeFile(w, r, filepath.Join("public", "favicon.png"))
-		})
-		infoMux.HandleFunc("GET /yandex_", func(w http.ResponseWriter, r *http.Request) {
-			if !strings.HasSuffix(r.URL.Path, ".html") {
-				http.NotFound(w, r)
-				return
-			}
-			code := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/yandex_"), ".html")
-			w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-			w.WriteHeader(http.StatusOK)
-			fmt.Fprintf(w, "<html>\n    <head>\n        <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\n    </head>\n    <body>Verification: %s</body>\n</html>", code)
-		})
-		infoMux.HandleFunc("GET /BingSiteAuth.xml", func(w http.ResponseWriter, r *http.Request) {
-			settings := database.GetAllSettings(s.db)
-			code := settings["info_bing_site_verification"]
-			if code == "" {
-				code = settings["bing_site_verification"]
-			}
-			if code == "" {
-				code = "1E1C0A8C8D9899F03634DF89E4DAB6D8"
-			}
-			w.Header().Set("Content-Type", "application/xml; charset=utf-8")
-			fmt.Fprintf(w, "<?xml version=\"1.0\"?>\n<users>\n\t<user>%s</user>\n</users>", code)
-		})
 		infoHandler := SecurityHeadersMiddleware(infoMux)
 		log.Printf(" ℹ️ CINEMBROT INFO SERVER (cinembrot.my.id) AKTIF DI: http://localhost:%s", infoPort)
 		if err := http.ListenAndServe(":"+infoPort, infoHandler); err != nil {
@@ -469,11 +499,11 @@ func (s *Server) Start() error {
 	log.Printf(" 🚀 CINEMBROT WEB SERVER (cinembrot.web.id) AKTIF DI: http://localhost:%s", port)
 	log.Printf("==============================================================\n")
 
-	// Host-based routing: jika request datang dengan Host cinembrot.my.id di port utama, sajikan halaman info
+	// Host-based routing: jika request datang dengan Host cinembrot.my.id di port utama, delegasikan ke infoMux
 	hostRoutingHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		host := strings.ToLower(r.Host)
-		if strings.Contains(host, "cinembrot.my.id") && !strings.HasPrefix(r.URL.Path, "/uploads/") && !strings.HasPrefix(r.URL.Path, "/img/") && !strings.HasPrefix(r.URL.Path, "/favicon") {
-			s.HandleInfoDomain(w, r)
+		if strings.Contains(host, "cinembrot.my.id") && !strings.HasPrefix(r.URL.Path, "/uploads/") {
+			infoMux.ServeHTTP(w, r)
 			return
 		}
 		mux.ServeHTTP(w, r)
