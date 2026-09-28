@@ -301,6 +301,21 @@ func (s *Server) Start() error {
 	mux.HandleFunc("GET /sitemap.xml", s.HandleSitemapXML)
 	mux.HandleFunc("GET /robots.txt", s.HandleRobotsTXT)
 	mux.HandleFunc("GET /ads.txt", s.HandleAdsTXT)
+	mux.HandleFunc("GET /yandex_{code}.html", func(w http.ResponseWriter, r *http.Request) {
+		code := r.PathValue("code")
+		w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "<html>\n    <head>\n        <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\n    </head>\n    <body>Verification: %s</body>\n</html>", code)
+	})
+	mux.HandleFunc("GET /BingSiteAuth.xml", func(w http.ResponseWriter, r *http.Request) {
+		settings := database.GetAllSettings(s.db)
+		code := settings["bing_site_verification"]
+		if code == "" {
+			code = "1E1C0A8C8D9899F03634DF89E4DAB6D8"
+		}
+		w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+		fmt.Fprintf(w, "<?xml version=\"1.0\"?>\n<users>\n\t<user>%s</user>\n</users>", code)
+	})
 
 	// Route CMS Admin Endpoints
 	mux.HandleFunc("GET /admin/login", s.HandleAdminLogin)
@@ -417,6 +432,24 @@ func (s *Server) Start() error {
 		})
 		infoMux.HandleFunc("GET /favicon.png", func(w http.ResponseWriter, r *http.Request) {
 			http.ServeFile(w, r, filepath.Join("public", "favicon.png"))
+		})
+		infoMux.HandleFunc("GET /yandex_{code}.html", func(w http.ResponseWriter, r *http.Request) {
+			code := r.PathValue("code")
+			w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprintf(w, "<html>\n    <head>\n        <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\n    </head>\n    <body>Verification: %s</body>\n</html>", code)
+		})
+		infoMux.HandleFunc("GET /BingSiteAuth.xml", func(w http.ResponseWriter, r *http.Request) {
+			settings := database.GetAllSettings(s.db)
+			code := settings["info_bing_site_verification"]
+			if code == "" {
+				code = settings["bing_site_verification"]
+			}
+			if code == "" {
+				code = "1E1C0A8C8D9899F03634DF89E4DAB6D8"
+			}
+			w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+			fmt.Fprintf(w, "<?xml version=\"1.0\"?>\n<users>\n\t<user>%s</user>\n</users>", code)
 		})
 		infoHandler := SecurityHeadersMiddleware(infoMux)
 		log.Printf(" ℹ️ CINEMBROT INFO SERVER (cinembrot.my.id) AKTIF DI: http://localhost:%s", infoPort)

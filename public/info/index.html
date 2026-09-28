@@ -4,11 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CINEMBROT - Link Domain Resmi & Informasi Platform Streaming Gratis Sub Indo</title>
-  <meta name="description" content="Informasi link domain resmi aktif CINEMBROT (cinembrot.web.id). Platform nonton film, anime, drama korea, dan box office streaming gratis subtitle Indonesia kualitas Full HD.">
-  <meta name="keywords" content="cinembrot, cinembrot.web.id, cinembrot.my.id, link cinembrot, streaming film gratis, nonton anime sub indo, lk21, filmapik, layarkaca21">
-  <meta name="author" content="CINEMBROT Official">
+  <meta name="description" content="{{if .MetaDescription}}{{.MetaDescription}}{{else}}Informasi link domain resmi aktif CINEMBROT (cinembrot.web.id). Platform nonton film, anime, drama korea, dan box office streaming gratis subtitle Indonesia kualitas Full HD.{{end}}">
+  <meta name="keywords" content="{{if .MetaKeywords}}{{.MetaKeywords}}{{else}}cinembrot, cinembrot.web.id, cinembrot.my.id, link cinembrot, streaming film gratis, nonton anime sub indo, lk21, filmapik, layarkaca21{{end}}">
+  <meta name="author" content="{{if .SiteName}}{{.SiteName}}{{else}}CINEMBROT{{end}} Official">
   <link rel="canonical" href="https://cinembrot.my.id/">
   <link rel="icon" type="image/png" href="/favicon.png">
+
+  <!-- Search Engine Webmaster Verifications (Google, Bing, Yandex) -->
+  {{if .GoogleVerification}}<meta name="google-site-verification" content="{{.GoogleVerification}}">{{end}}
+  {{if .BingVerification}}<meta name="msvalidate.01" content="{{.BingVerification}}">{{end}}
+  {{if .YandexVerification}}<meta name="yandex-verification" content="{{.YandexVerification}}">{{end}}
+
+  <!-- Custom Head Code (GA4 / Histats / Custom Scripts) -->
+  {{if .CustomHeadCode}}{{.CustomHeadCode}}{{end}}
 
   <!-- Tailwind CDN & FontAwesome Icons -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -112,16 +120,16 @@
         </p>
 
         <div class="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <a href="https://cinembrot.web.id" target="_blank" rel="noopener noreferrer" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-brand-500 to-indigo-600 hover:from-brand-600 hover:to-indigo-700 text-white font-black text-sm uppercase tracking-wider shadow-xl shadow-brand-500/30 hover:scale-[1.02] active:scale-95 transition flex items-center justify-center gap-3 group">
+          <a href="{{if .SiteURL}}{{.SiteURL}}{{else}}https://cinembrot.web.id{{end}}" target="_blank" rel="noopener noreferrer" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-brand-500 to-indigo-600 hover:from-brand-600 hover:to-indigo-700 text-white font-black text-sm uppercase tracking-wider shadow-xl shadow-brand-500/30 hover:scale-[1.02] active:scale-95 transition flex items-center justify-center gap-3 group">
             <i class="fa-solid fa-circle-play text-lg group-hover:animate-bounce"></i>
-            <span>Buka CINEMBROT.WEB.ID Sekarang</span>
+            <span>Buka {{if .SiteName}}{{.SiteName}}{{else}}CINEMBROT{{end}} Sekarang</span>
             <i class="fa-solid fa-arrow-right text-xs"></i>
           </a>
-          <button type="button" onclick="copyDomain('https://cinembrot.web.id')" class="w-full sm:w-auto px-5 py-4 rounded-2xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer">
+          <button type="button" onclick="copyDomain('{{if .SiteURL}}{{.SiteURL}}{{else}}https://cinembrot.web.id{{end}}')" class="w-full sm:w-auto px-5 py-4 rounded-2xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer">
             <i class="fa-solid fa-copy"></i>
             <span id="copy-btn-text">Salin Link Domain</span>
           </button>
-          <a href="https://ripenhopperwitty.com/dshsjtw4mm?key=b8e97cccf7d6fdfe0a74963ec89f2ae2" target="_blank" rel="noopener noreferrer" class="w-full sm:w-auto px-5 py-4 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 hover:text-amber-200 text-xs font-bold transition flex items-center justify-center gap-2 group" title="Server Cepat Sponsor">
+          <a href="{{if .SmartlinkURL}}{{.SmartlinkURL}}{{else}}https://ripenhopperwitty.com/dshsjtw4mm?key=b8e97cccf7d6fdfe0a74963ec89f2ae2{{end}}" target="_blank" rel="noopener noreferrer" class="w-full sm:w-auto px-5 py-4 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 hover:text-amber-200 text-xs font-bold transition flex items-center justify-center gap-2 group" title="Server Cepat Sponsor">
             <i class="fa-solid fa-bolt text-amber-400 group-hover:scale-110 transition"></i>
             <span>Server VIP (Sponsor)</span>
             <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
@@ -398,62 +406,26 @@
      * =========================================================================
      */
     const ADSTERRA_CONFIG = {
-      enableAds: true,
+      enableAds: {{if .AdsEnabled}}true{{else}}false{{end}},
 
       // 1. POPUNDER SCRIPT
-      popunderScriptUrl: "https://ripenhopperwitty.com/54/e2/d0/54e2d041392f6fe60241fb7998b44e22.js",
+      popunderScriptUrl: {{if .PopunderScript}}{{.PopunderScript | safeJS}}{{else}}"https://ripenhopperwitty.com/54/e2/d0/54e2d041392f6fe60241fb7998b44e22.js"{{end}},
 
       // 2. SOCIAL BAR SCRIPT
-      socialBarScriptUrl: "https://ripenhopperwitty.com/e8/02/6c/e8026c7abe894a6b7c4f480910f52fc3.js",
+      socialBarScriptUrl: {{if .SocialBarScript}}{{.SocialBarScript | safeJS}}{{else}}"https://ripenhopperwitty.com/e8/02/6c/e8026c7abe894a6b7c4f480910f52fc3.js"{{end}},
 
       // 3. SMARTLINK
-      smartlinkUrl: "https://ripenhopperwitty.com/dshsjtw4mm?key=b8e97cccf7d6fdfe0a74963ec89f2ae2",
+      smartlinkUrl: {{if .SmartlinkURL}}{{.SmartlinkURL | safeJS}}{{else}}"https://ripenhopperwitty.com/dshsjtw4mm?key=b8e97cccf7d6fdfe0a74963ec89f2ae2"{{end}},
 
       // 4. BANNER ATAS (728x90 di PC / 320x50 di HP)
-      topBannerDesktop: `
-        <script type="text/javascript">
-          atOptions = {
-            'key' : '85fa49a7c78f9d85d42fce646c7003ab',
-            'format' : 'iframe',
-            'height' : 90,
-            'width' : 728,
-            'params' : {}
-          };
-        <\/script>
-        <script type="text/javascript" src="https://ripenhopperwitty.com/85fa49a7c78f9d85d42fce646c7003ab/invoke.js"><\/script>
-      `,
-      topBannerMobile: `
-        <script type="text/javascript">
-          atOptions = {
-            'key' : 'aed924266db38d0d234d16ebd3df5cad',
-            'format' : 'iframe',
-            'height' : 50,
-            'width' : 320,
-            'params' : {}
-          };
-        <\/script>
-        <script type="text/javascript" src="https://ripenhopperwitty.com/aed924266db38d0d234d16ebd3df5cad/invoke.js"><\/script>
-      `,
+      topBannerDesktop: `{{if .TopBannerDesktop}}{{.TopBannerDesktop}}{{end}}`,
+      topBannerMobile: `{{if .TopBannerMobile}}{{.TopBannerMobile}}{{end}}`,
 
       // 5. NATIVE BANNER (TENGAH ARTIKEL)
-      nativeBannerCode: `
-        <script async="async" data-cfasync="false" src="https://ripenhopperwitty.com/4436b99755730d92de41c04a72905573/invoke.js"><\/script>
-        <div id="container-4436b99755730d92de41c04a72905573"></div>
-      `,
+      nativeBannerCode: `{{if .NativeBannerCode}}{{.NativeBannerCode}}{{end}}`,
 
       // 6. BANNER BAWAH (300x250)
-      footerBannerCode: `
-        <script type="text/javascript">
-          atOptions = {
-            'key' : '4a071f6c776fe2fe0e203dab2f8c93f7',
-            'format' : 'iframe',
-            'height' : 250,
-            'width' : 300,
-            'params' : {}
-          };
-        <\/script>
-        <script type="text/javascript" src="https://ripenhopperwitty.com/4a071f6c776fe2fe0e203dab2f8c93f7/invoke.js"><\/script>
-      `
+      footerBannerCode: `{{if .FooterBannerCode}}{{.FooterBannerCode}}{{end}}`
     };
 
     /**
@@ -515,5 +487,8 @@
       });
     })();
   </script>
+
+  <!-- Custom Footer Code -->
+  {{if .CustomFooterCode}}{{.CustomFooterCode}}{{end}}
 </body>
 </html>

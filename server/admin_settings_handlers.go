@@ -102,6 +102,24 @@ func (s *Server) HandleAdminSaveSettings(w http.ResponseWriter, r *http.Request)
 	adblockNoticeEnabled := checkboxVal("adblock_notice_enabled")
 	downloadInterstitialEnabled := checkboxVal("download_interstitial_enabled")
 
+	// 8. Domain Informasi (cinembrot.my.id) - Adsterra & SEO Webmaster
+	infoAdsEnabled := checkboxVal("info_ads_enabled")
+	infoPopunderCode := strings.TrimSpace(r.FormValue("info_adsterra_popunder_code"))
+	infoSocialbarCode := strings.TrimSpace(r.FormValue("info_adsterra_socialbar_code"))
+	infoSmartlinkURL := strings.TrimSpace(r.FormValue("info_adsterra_smartlink_url"))
+	infoBannerTopDesktop := strings.TrimSpace(r.FormValue("info_adsterra_banner_top_desktop"))
+	infoBannerTopMobile := strings.TrimSpace(r.FormValue("info_adsterra_banner_top_mobile"))
+	infoNativeBannerCode := strings.TrimSpace(r.FormValue("info_adsterra_native_banner_code"))
+	infoBannerFooterCode := strings.TrimSpace(r.FormValue("info_adsterra_banner_footer_code"))
+
+	infoGoogleVerification := strings.TrimSpace(r.FormValue("info_google_site_verification"))
+	infoBingVerification := strings.TrimSpace(r.FormValue("info_bing_site_verification"))
+	infoYandexVerification := strings.TrimSpace(r.FormValue("info_yandex_verification"))
+	infoCustomHeadCode := strings.TrimSpace(r.FormValue("info_custom_head_code"))
+	infoCustomFooterCode := strings.TrimSpace(r.FormValue("info_custom_footer_code"))
+	infoMetaDescription := strings.TrimSpace(r.FormValue("info_meta_description"))
+	infoMetaKeywords := strings.TrimSpace(r.FormValue("info_meta_keywords"))
+
 	// Save all to MariaDB system_settings table
 	_ = database.SaveSetting(s.db, "ads_enabled", adsEnabled, "Saklar Master ON/OFF Iklan di Website")
 	_ = database.SaveSetting(s.db, "adsterra_popunder_code", popunderCode, "Kode Script Iklan Adsterra Popunder")
@@ -150,7 +168,25 @@ func (s *Server) HandleAdminSaveSettings(w http.ResponseWriter, r *http.Request)
 	_ = database.SaveSetting(s.db, "adblock_notice_enabled", adblockNoticeEnabled, "Tampilkan Notifikasi/Banner Ramah jika Pengunjung Menggunakan AdBlocker")
 	_ = database.SaveSetting(s.db, "download_interstitial_enabled", downloadInterstitialEnabled, "Hitung Mundur Buffer Sponsor (Smartlink) 3 Detik saat Tombol Download Diklik")
 
-	log.Printf("[CMS SETTINGS] ⚙️ Pengaturan website, SEO, Ads & Turnstile berhasil diperbarui oleh admin '%s'\n", s.GetLoggedInUser(r).Username)
+	// Simpan pengaturan Domain Informasi (cinembrot.my.id)
+	_ = database.SaveSetting(s.db, "info_ads_enabled", infoAdsEnabled, "Saklar Master ON/OFF Iklan Adsterra di cinembrot.my.id")
+	_ = database.SaveSetting(s.db, "info_adsterra_popunder_code", infoPopunderCode, "URL Script Popunder Adsterra (cinembrot.my.id)")
+	_ = database.SaveSetting(s.db, "info_adsterra_socialbar_code", infoSocialbarCode, "URL Script Social Bar Adsterra (cinembrot.my.id)")
+	_ = database.SaveSetting(s.db, "info_adsterra_smartlink_url", infoSmartlinkURL, "URL Smartlink Sponsor VIP (cinembrot.my.id)")
+	_ = database.SaveSetting(s.db, "info_adsterra_banner_top_desktop", infoBannerTopDesktop, "Banner Atas Desktop 728x90 (cinembrot.my.id)")
+	_ = database.SaveSetting(s.db, "info_adsterra_banner_top_mobile", infoBannerTopMobile, "Banner Atas Mobile 320x50 (cinembrot.my.id)")
+	_ = database.SaveSetting(s.db, "info_adsterra_native_banner_code", infoNativeBannerCode, "Native Banner Tengah Artikel (cinembrot.my.id)")
+	_ = database.SaveSetting(s.db, "info_adsterra_banner_footer_code", infoBannerFooterCode, "Banner Bawah 300x250 (cinembrot.my.id)")
+
+	_ = database.SaveSetting(s.db, "info_google_site_verification", infoGoogleVerification, "Kode Verifikasi Google Search Console (cinembrot.my.id)")
+	_ = database.SaveSetting(s.db, "info_bing_site_verification", infoBingVerification, "Kode Verifikasi Bing Webmaster Tools (cinembrot.my.id)")
+	_ = database.SaveSetting(s.db, "info_yandex_verification", infoYandexVerification, "Kode Verifikasi Yandex Webmaster (cinembrot.my.id)")
+	_ = database.SaveSetting(s.db, "info_custom_head_code", infoCustomHeadCode, "Custom Script <head> untuk cinembrot.my.id")
+	_ = database.SaveSetting(s.db, "info_custom_footer_code", infoCustomFooterCode, "Custom Script sebelum </body> untuk cinembrot.my.id")
+	_ = database.SaveSetting(s.db, "info_meta_description", infoMetaDescription, "Meta Description SEO (cinembrot.my.id)")
+	_ = database.SaveSetting(s.db, "info_meta_keywords", infoMetaKeywords, "Meta Keywords SEO (cinembrot.my.id)")
+
+	log.Printf("[CMS SETTINGS] ⚙️ Pengaturan website dual-domain (cinembrot.web.id & cinembrot.my.id) berhasil diperbarui oleh admin '%s'\n", s.GetLoggedInUser(r).Username)
 
 	http.Redirect(w, r, "/admin/settings?saved=1", http.StatusSeeOther)
 }

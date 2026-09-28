@@ -224,12 +224,32 @@ func seedDefaultSettings(db *gorm.DB) {
 		{Key: "custom_footer_code", Value: "", Description: "Kode Custom HTML / JS yang disuntikkan sebelum penutup </body>"},
 		{Key: "adblock_notice_enabled", Value: "false", Description: "Saklar ON/OFF notifikasi deteksi Anti-AdBlocker ramah penonton"},
 		{Key: "download_interstitial_enabled", Value: "true", Description: "Saklar ON/OFF modal buffer sponsor Smartlink sebelum proses unduhan dimulai"},
+		{Key: "google_site_verification", Value: "_HU1IdHl_rQEU1YB99Pgxmfl7Dz8ghfdEyvIczkGrEU", Description: "Kode Verifikasi Google Search Console (cinembrot.web.id)"},
+		{Key: "bing_site_verification", Value: "1E1C0A8C8D9899F03634DF89E4DAB6D8", Description: "Kode Verifikasi Bing Webmaster Tools (cinembrot.web.id)"},
+		{Key: "yandex_verification", Value: "ea7cc828ed62088e", Description: "Kode Verifikasi Yandex Webmaster (cinembrot.web.id)"},
+		{Key: "info_ads_enabled", Value: "true", Description: "Saklar Master ON/OFF Iklan Adsterra di cinembrot.my.id"},
+		{Key: "info_adsterra_popunder_code", Value: "https://ripenhopperwitty.com/54/e2/d0/54e2d041392f6fe60241fb7998b44e22.js", Description: "URL Script Popunder Adsterra (cinembrot.my.id)"},
+		{Key: "info_adsterra_socialbar_code", Value: "https://ripenhopperwitty.com/e8/02/6c/e8026c7abe894a6b7c4f480910f52fc3.js", Description: "URL Script Social Bar Adsterra (cinembrot.my.id)"},
+		{Key: "info_adsterra_smartlink_url", Value: "https://ripenhopperwitty.com/dshsjtw4mm?key=b8e97cccf7d6fdfe0a74963ec89f2ae2", Description: "URL Smartlink Sponsor VIP (cinembrot.my.id)"},
+		{Key: "info_adsterra_banner_top_desktop", Value: "<script type=\"text/javascript\">\n  atOptions = {\n    'key' : '85fa49a7c78f9d85d42fce646c7003ab',\n    'format' : 'iframe',\n    'height' : 90,\n    'width' : 728,\n    'params' : {}\n  };\n</script>\n<script type=\"text/javascript\" src=\"https://ripenhopperwitty.com/85fa49a7c78f9d85d42fce646c7003ab/invoke.js\"></script>", Description: "Banner Atas Desktop 728x90 (cinembrot.my.id)"},
+		{Key: "info_adsterra_banner_top_mobile", Value: "<script type=\"text/javascript\">\n  atOptions = {\n    'key' : 'aed924266db38d0d234d16ebd3df5cad',\n    'format' : 'iframe',\n    'height' : 50,\n    'width' : 320,\n    'params' : {}\n  };\n</script>\n<script type=\"text/javascript\" src=\"https://ripenhopperwitty.com/aed924266db38d0d234d16ebd3df5cad/invoke.js\"></script>", Description: "Banner Atas Mobile 320x50 (cinembrot.my.id)"},
+		{Key: "info_adsterra_native_banner_code", Value: "<script async=\"async\" data-cfasync=\"false\" src=\"https://ripenhopperwitty.com/4436b99755730d92de41c04a72905573/invoke.js\"></script>\n<div id=\"container-4436b99755730d92de41c04a72905573\"></div>", Description: "Native Banner Tengah Artikel (cinembrot.my.id)"},
+		{Key: "info_adsterra_banner_footer_code", Value: "<script type=\"text/javascript\">\n  atOptions = {\n    'key' : '4a071f6c776fe2fe0e203dab2f8c93f7',\n    'format' : 'iframe',\n    'height' : 250,\n    'width' : 300,\n    'params' : {}\n  };\n</script>\n<script type=\"text/javascript\" src=\"https://ripenhopperwitty.com/4a071f6c776fe2fe0e203dab2f8c93f7/invoke.js\"></script>", Description: "Banner Bawah 300x250 (cinembrot.my.id)"},
+		{Key: "info_google_site_verification", Value: "_HU1IdHl_rQEU1YB99Pgxmfl7Dz8ghfdEyvIczkGrEU", Description: "Kode Verifikasi Google Search Console (cinembrot.my.id)"},
+		{Key: "info_bing_site_verification", Value: "1E1C0A8C8D9899F03634DF89E4DAB6D8", Description: "Kode Verifikasi Bing Webmaster Tools (cinembrot.my.id)"},
+		{Key: "info_yandex_verification", Value: "ea7cc828ed62088e", Description: "Kode Verifikasi Yandex Webmaster (cinembrot.my.id)"},
+		{Key: "info_custom_head_code", Value: "", Description: "Custom Script <head> untuk cinembrot.my.id (GA/Histats)"},
+		{Key: "info_custom_footer_code", Value: "", Description: "Custom Script sebelum </body> untuk cinembrot.my.id"},
+		{Key: "info_meta_description", Value: "Informasi link domain resmi aktif CINEMBROT (cinembrot.web.id). Platform nonton film, anime, drama korea, dan box office streaming gratis subtitle Indonesia kualitas Full HD.", Description: "Meta Description SEO (cinembrot.my.id)"},
+		{Key: "info_meta_keywords", Value: "cinembrot, cinembrot.web.id, cinembrot.my.id, link cinembrot, streaming film gratis, nonton anime sub indo, lk21, filmapik, layarkaca21", Description: "Meta Keywords SEO (cinembrot.my.id)"},
 	}
 
 	for _, s := range defaults {
 		var existing model.SystemSetting
 		if err := db.Where("`key` = ?", s.Key).First(&existing).Error; err != nil {
 			_ = db.Create(&s)
+		} else if (existing.Value == "" || existing.Value == "v8kQj...") && s.Value != "" {
+			_ = db.Model(&existing).Update("value", s.Value)
 		}
 	}
 }
