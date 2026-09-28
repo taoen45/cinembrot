@@ -164,6 +164,17 @@ func (s *Server) PopulatePageData(r *http.Request, data *PageData) {
 		}
 		data.DomainNoticeText = template.HTML(text)
 	}
+
+	// Verifikasi Search Engine Webmaster
+	data.GoogleVerification = settings["google_site_verification"]
+	data.BingVerification = settings["bing_site_verification"]
+	if data.BingVerification == "" {
+		data.BingVerification = "1E1C0A8C8D9899F03634DF89E4DAB6D8"
+	}
+	data.YandexVerification = settings["yandex_verification"]
+	if data.YandexVerification == "" {
+		data.YandexVerification = "ea7cc828ed62088e"
+	}
 }
 
 // HandleHome displays home page with top 10 movies slider & multi-filter dropdown bar

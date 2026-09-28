@@ -95,7 +95,13 @@ func (s *Server) PopulateSEO(r *http.Request, data *PageData) {
 	// Verifikasi Search Console
 	data.GoogleVerification = settings["google_site_verification"]
 	data.BingVerification = settings["bing_site_verification"]
+	if data.BingVerification == "" {
+		data.BingVerification = "1E1C0A8C8D9899F03634DF89E4DAB6D8"
+	}
 	data.YandexVerification = settings["yandex_verification"]
+	if data.YandexVerification == "" {
+		data.YandexVerification = "ea7cc828ed62088e"
+	}
 
 	// Canonical URL
 	if data.CanonicalURL == "" && r != nil {
