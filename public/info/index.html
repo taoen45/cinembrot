@@ -406,16 +406,16 @@
      * =========================================================================
      */
     const ADSTERRA_CONFIG = {
-      enableAds: {{if .AdsEnabled}}true{{else}}false{{end}},
+      enableAds: "{{if .AdsEnabled}}true{{else}}false{{end}}" === "true",
 
       // 1. POPUNDER SCRIPT
-      popunderScriptUrl: {{if .PopunderScript}}{{.PopunderScript | safeJS}}{{else}}"https://ripenhopperwitty.com/54/e2/d0/54e2d041392f6fe60241fb7998b44e22.js"{{end}},
+      popunderScriptUrl: "{{if .PopunderScript}}{{.PopunderScript}}{{else}}https://ripenhopperwitty.com/54/e2/d0/54e2d041392f6fe60241fb7998b44e22.js{{end}}",
 
       // 2. SOCIAL BAR SCRIPT
-      socialBarScriptUrl: {{if .SocialBarScript}}{{.SocialBarScript | safeJS}}{{else}}"https://ripenhopperwitty.com/e8/02/6c/e8026c7abe894a6b7c4f480910f52fc3.js"{{end}},
+      socialBarScriptUrl: "{{if .SocialBarScript}}{{.SocialBarScript}}{{else}}https://ripenhopperwitty.com/e8/02/6c/e8026c7abe894a6b7c4f480910f52fc3.js{{end}}",
 
       // 3. SMARTLINK
-      smartlinkUrl: {{if .SmartlinkURL}}{{.SmartlinkURL | safeJS}}{{else}}"https://ripenhopperwitty.com/dshsjtw4mm?key=b8e97cccf7d6fdfe0a74963ec89f2ae2"{{end}},
+      smartlinkUrl: "{{if .SmartlinkURL}}{{.SmartlinkURL}}{{else}}https://ripenhopperwitty.com/dshsjtw4mm?key=b8e97cccf7d6fdfe0a74963ec89f2ae2{{end}}",
 
       // 4. BANNER ATAS (728x90 di PC / 320x50 di HP)
       topBannerDesktop: `{{if .TopBannerDesktop}}{{.TopBannerDesktop}}{{end}}`,
