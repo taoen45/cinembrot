@@ -300,9 +300,12 @@ func (s *Server) Start() error {
 	// SEO & Search Engine Discovery Endpoints
 	mux.HandleFunc("GET /sitemap.xml", s.HandleSitemapXML)
 	mux.HandleFunc("GET /robots.txt", s.HandleRobotsTXT)
-	mux.HandleFunc("GET /ads.txt", s.HandleAdsTXT)
-	mux.HandleFunc("GET /yandex_{code}.html", func(w http.ResponseWriter, r *http.Request) {
-		code := r.PathValue("code")
+	mux.HandleFunc("GET /yandex_", func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasSuffix(r.URL.Path, ".html") {
+			http.NotFound(w, r)
+			return
+		}
+		code := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/yandex_"), ".html")
 		w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprintf(w, "<html>\n    <head>\n        <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\n    </head>\n    <body>Verification: %s</body>\n</html>", code)
@@ -433,8 +436,12 @@ func (s *Server) Start() error {
 		infoMux.HandleFunc("GET /favicon.png", func(w http.ResponseWriter, r *http.Request) {
 			http.ServeFile(w, r, filepath.Join("public", "favicon.png"))
 		})
-		infoMux.HandleFunc("GET /yandex_{code}.html", func(w http.ResponseWriter, r *http.Request) {
-			code := r.PathValue("code")
+		infoMux.HandleFunc("GET /yandex_", func(w http.ResponseWriter, r *http.Request) {
+			if !strings.HasSuffix(r.URL.Path, ".html") {
+				http.NotFound(w, r)
+				return
+			}
+			code := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/yandex_"), ".html")
 			w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 			w.WriteHeader(http.StatusOK)
 			fmt.Fprintf(w, "<html>\n    <head>\n        <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\n    </head>\n    <body>Verification: %s</body>\n</html>", code)
