@@ -48,6 +48,18 @@
   {{if .BingVerification}}<meta name="msvalidate.01" content="{{.BingVerification}}">{{end}}
   {{if .YandexVerification}}<meta name="yandex-verification" content="{{.YandexVerification}}">{{end}}
 
+  <!-- Google Analytics GA4 (gtag.js) -->
+  {{if .GoogleAnalyticsID}}
+  <script async src="https://www.googletagmanager.com/gtag/js?id={{.GoogleAnalyticsID}}"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', '{{.GoogleAnalyticsID}}');
+  </script>
+  {{end}}
+
   <!-- Mobile & PWA Configuration -->
   <meta name="theme-color" content="#0F172A">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -442,5 +454,8 @@
     }
   </script>
   {{end}}
+
+  <!-- ==================== CUSTOM FOOTER INJECTED SCRIPTS ==================== -->
+  {{if .CustomFooterCode}}{{safeHTML .CustomFooterCode}}{{end}}
 </body>
 </html>

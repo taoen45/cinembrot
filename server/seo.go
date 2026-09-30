@@ -103,6 +103,12 @@ func (s *Server) PopulateSEO(r *http.Request, data *PageData) {
 		data.YandexVerification = "ea7cc828ed62088e"
 	}
 
+	// Google Analytics 4 (cinembrot.web.id)
+	data.GoogleAnalyticsID = settings["google_analytics_id"]
+	if data.GoogleAnalyticsID == "" {
+		data.GoogleAnalyticsID = "G-TLPQS96YJX"
+	}
+
 	// Canonical URL
 	if data.CanonicalURL == "" && r != nil {
 		data.CanonicalURL = siteURL + r.URL.Path

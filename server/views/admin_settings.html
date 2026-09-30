@@ -257,8 +257,8 @@
           </div>
         </div>
 
-        <!-- INPUT VERIFIKASI 3 SEARCH ENGINE RESMI -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- INPUT VERIFIKASI SEARCH ENGINE & ANALYTICS RESMI -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <!-- GOOGLE SEARCH CONSOLE -->
           <div class="p-4 bg-slate-50 dark:bg-dark-950 rounded-2xl border border-slate-200 dark:border-dark-800 space-y-2">
             <div class="flex items-center gap-2">
@@ -287,6 +287,16 @@
             </div>
             <p class="text-[11px] text-slate-400">Kode verifikasi HTML file / meta tag Yandex</p>
             <input type="text" name="yandex_verification" value="{{index .Settings "yandex_verification"}}" class="w-full text-xs bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-200 font-mono focus:outline-none focus:border-brand-500" placeholder="ea7cc828ed62088e">
+          </div>
+
+          <!-- GOOGLE ANALYTICS 4 (cinembrot.web.id) -->
+          <div class="p-4 bg-slate-50 dark:bg-dark-950 rounded-2xl border border-slate-200 dark:border-dark-800 space-y-2">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-chart-line text-emerald-500"></i>
+              <label class="text-xs font-bold text-slate-800 dark:text-slate-200">Google Analytics (GA4)</label>
+            </div>
+            <p class="text-[11px] text-slate-400">Measurement ID <code class="font-mono text-[10px]">gtag.js</code> (cinembrot.web.id)</p>
+            <input type="text" name="google_analytics_id" value="{{index .Settings "google_analytics_id"}}" class="w-full text-xs bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-200 font-mono focus:outline-none focus:border-brand-500" placeholder="G-TLPQS96YJX">
           </div>
         </div>
 
@@ -504,8 +514,8 @@
           </div>
         </div>
 
-        <!-- INPUT VERIFIKASI DOMAIN INFORMASI -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- INPUT VERIFIKASI DOMAIN INFORMASI & ANALYTICS -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <!-- GOOGLE SEARCH CONSOLE INFO -->
           <div class="p-4 bg-slate-50 dark:bg-dark-950 rounded-2xl border border-slate-200 dark:border-dark-800 space-y-2">
             <div class="flex items-center gap-2">
@@ -534,6 +544,16 @@
             </div>
             <p class="text-[11px] text-slate-400">Kode verifikasi Yandex khusus domain cinembrot.my.id</p>
             <input type="text" name="info_yandex_verification" value="{{index .Settings "info_yandex_verification"}}" class="w-full text-xs bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-200 font-mono focus:outline-none focus:border-blue-500" placeholder="ea7cc828ed62088e">
+          </div>
+
+          <!-- GOOGLE ANALYTICS 4 (cinembrot.my.id) -->
+          <div class="p-4 bg-slate-50 dark:bg-dark-950 rounded-2xl border border-slate-200 dark:border-dark-800 space-y-2">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-chart-line text-blue-500"></i>
+              <label class="text-xs font-bold text-slate-800 dark:text-slate-200">Google Analytics (Info)</label>
+            </div>
+            <p class="text-[11px] text-slate-400">Measurement ID <code class="font-mono text-[10px]">gtag.js</code> (cinembrot.my.id)</p>
+            <input type="text" name="info_google_analytics_id" value="{{index .Settings "info_google_analytics_id"}}" class="w-full text-xs bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-200 font-mono focus:outline-none focus:border-blue-500" placeholder="G-LN4TYGYDT2">
           </div>
         </div>
 

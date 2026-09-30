@@ -25,6 +25,7 @@ type InfoPageData struct {
 	GoogleVerification string
 	BingVerification   string
 	YandexVerification string
+	GoogleAnalyticsID  string
 	CustomHeadCode     template.HTML
 	CustomFooterCode   template.HTML
 	MetaDescription    string
@@ -59,6 +60,7 @@ func (s *Server) HandleInfoDomain(w http.ResponseWriter, r *http.Request) {
 		GoogleVerification: getVal("info_google_site_verification", getVal("google_site_verification", "")),
 		BingVerification:   getVal("info_bing_site_verification", getVal("bing_site_verification", "")),
 		YandexVerification: getVal("info_yandex_verification", getVal("yandex_verification", "")),
+		GoogleAnalyticsID:  getVal("info_google_analytics_id", "G-LN4TYGYDT2"),
 		CustomHeadCode:     template.HTML(getVal("info_custom_head_code", "")),
 		CustomFooterCode:   template.HTML(getVal("info_custom_footer_code", "")),
 		MetaDescription:    getVal("info_meta_description", "Informasi link domain resmi aktif CINEMBROT (cinembrot.web.id). Platform nonton film, anime, drama korea, dan box office streaming gratis subtitle Indonesia kualitas Full HD."),

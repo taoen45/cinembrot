@@ -83,6 +83,7 @@ type PageData struct {
 	GoogleVerification string
 	BingVerification   string
 	YandexVerification string
+	GoogleAnalyticsID  string
 	JSONLD             template.HTML
 	BreadcrumbJSONLD   template.HTML
 	MovieTypeLabel     string
@@ -174,6 +175,12 @@ func (s *Server) PopulatePageData(r *http.Request, data *PageData) {
 	data.YandexVerification = settings["yandex_verification"]
 	if data.YandexVerification == "" {
 		data.YandexVerification = "ea7cc828ed62088e"
+	}
+
+	// Google Analytics 4 (cinembrot.web.id)
+	data.GoogleAnalyticsID = settings["google_analytics_id"]
+	if data.GoogleAnalyticsID == "" {
+		data.GoogleAnalyticsID = "G-TLPQS96YJX"
 	}
 }
 

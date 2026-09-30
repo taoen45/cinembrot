@@ -15,6 +15,18 @@
   {{if .BingVerification}}<meta name="msvalidate.01" content="{{.BingVerification}}">{{end}}
   {{if .YandexVerification}}<meta name="yandex-verification" content="{{.YandexVerification}}">{{end}}
 
+  <!-- Google Analytics GA4 (gtag.js) -->
+  {{if .GoogleAnalyticsID}}
+  <script async src="https://www.googletagmanager.com/gtag/js?id={{.GoogleAnalyticsID}}"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', '{{.GoogleAnalyticsID}}');
+  </script>
+  {{end}}
+
   <!-- Custom Head Code (GA4 / Histats / Custom Scripts) -->
   {{if .CustomHeadCode}}{{.CustomHeadCode}}{{end}}
 
