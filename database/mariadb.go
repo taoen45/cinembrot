@@ -244,6 +244,10 @@ func seedDefaultSettings(db *gorm.DB) {
 		{Key: "info_custom_footer_code", Value: "", Description: "Custom Script sebelum </body> untuk cinembrot.my.id"},
 		{Key: "info_meta_description", Value: "Informasi link domain resmi aktif CINEMBROT (cinembrot.web.id). Platform nonton film, anime, drama korea, dan box office streaming gratis subtitle Indonesia kualitas Full HD.", Description: "Meta Description SEO (cinembrot.my.id)"},
 		{Key: "info_meta_keywords", Value: "cinembrot, cinembrot.web.id, cinembrot.my.id, link cinembrot, streaming film gratis, nonton anime sub indo, lk21, filmapik, layarkaca21", Description: "Meta Keywords SEO (cinembrot.my.id)"},
+		{Key: "doodstream_api_key", Value: "579834sz4bib8d70d8741z", Description: "API Key DoodStream untuk Remote Upload & Streaming VIP"},
+		{Key: "streamtape_login", Value: "5325cb880d00ecec2186", Description: "API/FTP Login Username Streamtape"},
+		{Key: "streamtape_key", Value: "", Description: "API Key Streamtape dari dashboard akun"},
+		{Key: "auto_hoster_upload", Value: "true", Description: "Saklar ON/OFF Remote Upload otomatis ke DoodStream & Streamtape"},
 	}
 
 	for _, s := range defaults {

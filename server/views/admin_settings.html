@@ -44,6 +44,10 @@
       <i class="fa-solid fa-gear"></i>
       <span>3. Sistem & Keamanan Global</span>
     </button>
+    <button type="button" onclick="switchDomainTab('hoster')" id="tab-btn-hoster" class="flex-1 min-w-[230px] px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+      <i class="fa-solid fa-cloud-arrow-up text-amber-500"></i>
+      <span>4. PPD Video Hoster (DoodStream & Streamtape)</span>
+    </button>
   </div>
 
   <form action="/admin/settings" method="POST" class="space-y-8">
@@ -733,6 +737,145 @@
 
     </div>
 
+    <!-- ========================================================================= -->
+    <!-- TAB PANEL 4: VIDEO HOSTER PPD (DoodStream & Streamtape)                    -->
+    <!-- ========================================================================= -->
+    <div id="tab-panel-hoster" class="space-y-6 hidden">
+
+      <!-- BANNER INFORMASI PPD CLOUD HOSTING -->
+      <div class="p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-brand-500/10 border border-amber-500/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-start sm:items-center gap-3.5">
+          <div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-500 flex items-center justify-center text-2xl shrink-0">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
+              PPD Video Hoster (DoodStream & Streamtape)
+              <span class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/30">Hemat Bandwidth & Hasilkan Dolar</span>
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">
+              Video diunggah secara <strong>Cloud-to-Cloud (Remote URL Upload)</strong>. Server homelab Anda bebas beban kuota/storage, dan Anda dibayar saldo $ (Pay-Per-Download/Stream) dari setiap penayangan.
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button type="button" onclick="checkHosterAPIStatus()" id="btn-check-hoster" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-white dark:bg-dark-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-dark-700 flex items-center gap-1.5 hover:text-amber-500 shadow-sm cursor-pointer">
+            <i class="fa-solid fa-arrows-rotate text-amber-500" id="icon-check-hoster"></i> Cek Saldo & Koneksi
+          </button>
+          <button type="button" onclick="triggerBatchHosterUpload()" id="btn-batch-hoster" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-1.5 shadow-md shadow-amber-500/20 cursor-pointer">
+            <i class="fa-solid fa-bolt" id="icon-batch-hoster"></i> Remote Upload Massal
+          </button>
+        </div>
+      </div>
+
+      <!-- SAKLAR MASTER AUTO REMOTE UPLOAD -->
+      <div class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-800 dark:text-slate-200">Otomatis Remote Upload saat Menemukan Link Video Matang</label>
+          <p class="text-[11px] text-slate-400">Jika aktif, sistem otomatis mengirimkan URL unduhan video ke DoodStream & Streamtape lalu menambahkan embed player VIP ke penonton.</p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer select-none shrink-0">
+          <input type="checkbox" name="auto_hoster_upload" value="true" class="sr-only peer" {{if ne (index .Settings "auto_hoster_upload") "false"}}checked{{end}}>
+          <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-dark-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+        </label>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- KARTU 1: DOODSTREAM -->
+        <div class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-6 shadow-sm space-y-4">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-dark-800">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-lg">
+                <i class="fa-solid fa-play"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white">DoodStream API</h3>
+                <p class="text-[11px] text-slate-400">PPD Hoster Populer • Storage Unlimited</p>
+              </div>
+            </div>
+            <a href="https://doodstream.com/settings" target="_blank" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-dark-700 flex items-center gap-1">
+              <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> Pengaturan
+            </a>
+          </div>
+
+          <!-- KOTAK LIVE STATUS DOODSTREAM -->
+          <div id="dood-status-box" class="p-3.5 rounded-xl bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-800 space-y-1.5 text-xs">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-400 text-[11px]">Status Akun:</span>
+              <span id="dood-status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                <i class="fa-solid fa-circle-check"></i> Menunggu Pengecekan
+              </span>
+            </div>
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="text-slate-400">Email Akun:</span>
+              <span id="dood-email" class="font-mono text-slate-700 dark:text-slate-300">-</span>
+            </div>
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="text-slate-400">Saldo Terkumpul:</span>
+              <span id="dood-balance" class="font-bold text-emerald-600 dark:text-emerald-400">$0.00</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">DoodStream API Key</label>
+            <input type="text" name="doodstream_api_key" value="{{index .Settings "doodstream_api_key"}}" class="w-full text-xs font-mono bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-amber-500" placeholder="579834sz4bib8d70d8741z">
+            <p class="text-[10px] text-slate-400 mt-1">Ditemukan di menu Settings akun DoodStream Anda.</p>
+          </div>
+        </div>
+
+        <!-- KARTU 2: STREAMTAPE -->
+        <div class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-6 shadow-sm space-y-4">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-dark-800">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center text-lg">
+                <i class="fa-solid fa-film"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white">Streamtape API</h3>
+                <p class="text-[11px] text-slate-400">Player Cepat • Server Cloud Global</p>
+              </div>
+            </div>
+            <a href="https://streamtape.com" target="_blank" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-dark-700 flex items-center gap-1">
+              <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> Dashboard
+            </a>
+          </div>
+
+          <!-- KOTAK LIVE STATUS STREAMTAPE -->
+          <div id="st-status-box" class="p-3.5 rounded-xl bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-800 space-y-1.5 text-xs">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-400 text-[11px]">Status Akun:</span>
+              <span id="st-status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/30">
+                <i class="fa-solid fa-circle-question"></i> Menunggu API Key
+              </span>
+            </div>
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="text-slate-400">Email / User:</span>
+              <span id="st-email" class="font-mono text-slate-700 dark:text-slate-300">-</span>
+            </div>
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="text-slate-400">Saldo Terkumpul:</span>
+              <span id="st-balance" class="font-bold text-blue-600 dark:text-blue-400">$0.00</span>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Streamtape API/FTP Username (Login)</label>
+              <input type="text" name="streamtape_login" value="{{index .Settings "streamtape_login"}}" class="w-full text-xs font-mono bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-blue-500" placeholder="5325cb880d00ecec2186">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Streamtape API Key / Password</label>
+              <input type="password" name="streamtape_key" value="{{index .Settings "streamtape_key"}}" class="w-full text-xs font-mono bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-blue-500" placeholder="Masukkan API Password dari kartu 'API/FTP Credentials'">
+              <p class="text-[10px] text-slate-400 mt-1">Buka dashboard Streamtape Anda, klik tab <em>API/FTP Credentials</em> di samping kanan untuk menyalin key.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
     <!-- TOMBOL SUBMIT STICKY -->
     <div class="flex items-center justify-between gap-3 sticky bottom-4 bg-white/95 dark:bg-dark-900/95 backdrop-blur p-4 rounded-2xl border border-slate-200 dark:border-dark-800 shadow-2xl z-30">
       <div class="flex items-center gap-2 text-xs text-slate-500">
@@ -753,10 +896,10 @@
 
 </div>
 
-<!-- SCRIPT CONTROLLER TABEL DUA DOMAIN -->
+<!-- SCRIPT CONTROLLER TABEL DUA DOMAIN & HOSTER -->
 <script>
   function switchDomainTab(tabName) {
-    var tabs = ['main', 'info', 'system'];
+    var tabs = ['main', 'info', 'system', 'hoster'];
     tabs.forEach(function(t) {
       var panel = document.getElementById('tab-panel-' + t);
       var btn = document.getElementById('tab-btn-' + t);
@@ -775,12 +918,72 @@
     } catch(e) {}
   }
 
+  function checkHosterAPIStatus() {
+    var icon = document.getElementById('icon-check-hoster');
+    if (icon) icon.classList.add('fa-spin');
+
+    fetch('/api/admin/hoster/status')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (icon) icon.classList.remove('fa-spin');
+        if (data.doodstream) {
+          var ds = data.doodstream;
+          document.getElementById('dood-email').innerText = ds.email || '-';
+          document.getElementById('dood-balance').innerText = ds.balance || '$0.00';
+          var badge = document.getElementById('dood-status-badge');
+          if (ds.status === 'OK') {
+            badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30';
+            badge.innerHTML = '<i class="fa-solid fa-circle-check"></i> Aktif (' + (ds.storage_left || 'Unlimited') + ')';
+          } else {
+            badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-600 border border-amber-500/30';
+            badge.innerText = ds.message;
+          }
+        }
+        if (data.streamtape) {
+          var st = data.streamtape;
+          document.getElementById('st-email').innerText = st.email || st.provider || '-';
+          document.getElementById('st-balance').innerText = st.balance || '$0.00';
+          var badgeST = document.getElementById('st-status-badge');
+          if (st.status === 'OK') {
+            badgeST.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30';
+            badgeST.innerHTML = '<i class="fa-solid fa-circle-check"></i> Terhubung';
+          } else {
+            badgeST.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-500/15 text-slate-500 border border-slate-500/30';
+            badgeST.innerText = st.message;
+          }
+        }
+      })
+      .catch(function(err) {
+        if (icon) icon.classList.remove('fa-spin');
+        alert('Gagal mengecek status API hoster: ' + err);
+      });
+  }
+
+  function triggerBatchHosterUpload() {
+    if (!confirm('Jalankan tugas background remote upload untuk film yang memiliki link download video?')) return;
+    var icon = document.getElementById('icon-batch-hoster');
+    if (icon) icon.className = 'fa-solid fa-circle-notch fa-spin';
+
+    fetch('/api/admin/hoster/batch-upload', { method: 'POST' })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (icon) icon.className = 'fa-solid fa-bolt';
+        alert(data.message || 'Remote upload berhasil dijadwalkan!');
+      })
+      .catch(function(err) {
+        if (icon) icon.className = 'fa-solid fa-bolt';
+        alert('Gagal memicu batch upload: ' + err);
+      });
+  }
+
   document.addEventListener('DOMContentLoaded', function() {
     var savedTab = 'main';
     try {
       savedTab = localStorage.getItem('cinembrot_settings_active_tab') || 'main';
     } catch(e) {}
     switchDomainTab(savedTab);
+    // Jalankan pengecekan status saat admin membuka halaman settings
+    checkHosterAPIStatus();
   });
 </script>
 {{end}}

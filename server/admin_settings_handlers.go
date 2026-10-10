@@ -1,11 +1,15 @@
 package server
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"cinembrot/database"
+	"cinembrot/model"
+	"cinembrot/provider/hoster"
 )
 
 // HandleAdminSettings renders the dynamic website settings & Adsterra monetization control page
@@ -190,7 +194,98 @@ func (s *Server) HandleAdminSaveSettings(w http.ResponseWriter, r *http.Request)
 	_ = database.SaveSetting(s.db, "info_meta_description", infoMetaDescription, "Meta Description SEO (cinembrot.my.id)")
 	_ = database.SaveSetting(s.db, "info_meta_keywords", infoMetaKeywords, "Meta Keywords SEO (cinembrot.my.id)")
 
-	log.Printf("[CMS SETTINGS] ⚙️ Pengaturan website dual-domain (cinembrot.web.id & cinembrot.my.id) berhasil diperbarui oleh admin '%s'\n", s.GetLoggedInUser(r).Username)
+	// 9. Video Hosters PPD (DoodStream & Streamtape)
+	doodAPIKey := strings.TrimSpace(r.FormValue("doodstream_api_key"))
+	stLogin := strings.TrimSpace(r.FormValue("streamtape_login"))
+	stKey := strings.TrimSpace(r.FormValue("streamtape_key"))
+	autoHosterUpload := checkboxVal("auto_hoster_upload")
+
+	_ = database.SaveSetting(s.db, "doodstream_api_key", doodAPIKey, "API Key DoodStream untuk Remote Upload & Streaming VIP")
+	_ = database.SaveSetting(s.db, "streamtape_login", stLogin, "API/FTP Login Username Streamtape")
+	_ = database.SaveSetting(s.db, "streamtape_key", stKey, "API Key Streamtape dari dashboard akun")
+	_ = database.SaveSetting(s.db, "auto_hoster_upload", autoHosterUpload, "Saklar ON/OFF Remote Upload otomatis ke DoodStream & Streamtape")
+
+	log.Printf("[CMS SETTINGS] ⚙️ Pengaturan website dual-domain & PPD Video Hoster berhasil diperbarui oleh admin '%s'\n", s.GetLoggedInUser(r).Username)
 
 	http.Redirect(w, r, "/admin/settings?saved=1", http.StatusSeeOther)
+}
+
+// HandleAdminHosterStatus returns real-time account status and balance from DoodStream & Streamtape
+func (s *Server) HandleAdminHosterStatus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	settings := database.GetAllSettings(s.db)
+	doodKey := settings["doodstream_api_key"]
+	if doodKey == "" {
+		doodKey = s.cfg.DoodStreamAPIKey
+	}
+	stLogin := settings["streamtape_login"]
+	if stLogin == "" {
+		stLogin = s.cfg.StreamtapeLogin
+	}
+	stKey := settings["streamtape_key"]
+	if stKey == "" {
+		stKey = s.cfg.StreamtapeKey
+	}
+
+	client := hoster.NewClient(doodKey, stLogin, stKey)
+	doodInfo, _ := client.CheckDoodStream()
+	stInfo, _ := client.CheckStreamtape()
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":    true,
+		"doodstream": doodInfo,
+		"streamtape": stInfo,
+	})
+}
+
+// HandleAdminHosterBatchUpload triggers background remote upload for movies that have direct download links
+func (s *Server) HandleAdminHosterBatchUpload(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"success":false,"message":"Metode HTTP harus POST"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	settings := database.GetAllSettings(s.db)
+	doodKey := settings["doodstream_api_key"]
+	if doodKey == "" {
+		doodKey = s.cfg.DoodStreamAPIKey
+	}
+	stLogin := settings["streamtape_login"]
+	if stLogin == "" {
+		stLogin = s.cfg.StreamtapeLogin
+	}
+	stKey := settings["streamtape_key"]
+	if stKey == "" {
+		stKey = s.cfg.StreamtapeKey
+	}
+
+	client := hoster.NewClient(doodKey, stLogin, stKey)
+
+	// Cari film-film yang punya download links video tapi belum memiliki stream DoodStream
+	go func() {
+		var movies []model.Movie
+		s.db.Preload("DownloadLinks").
+			Where("id IN (SELECT movie_id FROM download_links WHERE url NOT LIKE 'magnet:%' AND url NOT LIKE '%.torrent%')").
+			Order("id desc").
+			Limit(100).
+			Find(&movies)
+
+		log.Printf("[HOSTER BATCH] 🚀 Memulai batch remote upload untuk %d film...\n", len(movies))
+		count := 0
+		for _, m := range movies {
+			newStreams, err := client.ProcessMovieRemoteUpload(&m, s.db)
+			if err == nil && len(newStreams) > 0 {
+				count++
+			}
+			time.Sleep(1 * time.Second) // Santai 1 detik antar request
+		}
+		log.Printf("[HOSTER BATCH] 🎉 Batch remote upload selesai. %d film berhasil diproses.\n", count)
+	}()
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Tugas background remote upload ke DoodStream & Streamtape berhasil dijalankan!",
+	})
 }

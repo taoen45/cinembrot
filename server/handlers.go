@@ -13,6 +13,7 @@ import (
 	"cinembrot/i18n"
 	"cinembrot/model"
 	"cinembrot/provider/embed"
+	"cinembrot/provider/hoster"
 	"cinembrot/provider/subtitles"
 	"cinembrot/provider/torrents"
 	"cinembrot/scraper"
@@ -816,21 +817,7 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 	s.db.Find(&genres)
 
 	// Embed & Streaming Resolver: populate multi-server streams if not present in database or contains dead domains
-	tmdbID := embed.ExtractTMDbID(&movie)
-	if tmdbID == 0 && s.tmdbCli != nil {
-		// Try resolving TMDb ID by searching title
-		if movie.Type == "anime" || movie.Type == "drama_pendek" || movie.Type == "series" {
-			if tvRes, err := s.tmdbCli.SearchTV(movie.Title); err == nil && len(tvRes.Results) > 0 {
-				tmdbID = tvRes.Results[0].ID
-			} else if movieRes, err := s.tmdbCli.SearchMovie(movie.Title, movie.Year); err == nil && len(movieRes.Results) > 0 {
-				tmdbID = movieRes.Results[0].ID
-			}
-		} else {
-			if movieRes, err := s.tmdbCli.SearchMovie(movie.Title, movie.Year); err == nil && len(movieRes.Results) > 0 {
-				tmdbID = movieRes.Results[0].ID
-			}
-		}
-	}
+	tmdbID := s.resolveMovieTMDbID(&movie)
 
 	// Check if existing streams are empty or contain dead/unreachable domains (e.g. vidsrc.xyz, autoembed.cc)
 	hasDeadStream := false
@@ -841,8 +828,48 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Filter stream VIP (DoodStream & Streamtape) yang tersimpan di DB
+	var vipStreams []model.StreamLink
+	for _, sl := range movie.StreamLinks {
+		p := strings.ToLower(sl.Provider)
+		if (strings.Contains(p, "dood") || strings.Contains(p, "streamtape")) && !embed.IsDeadStreamURL(sl.EmbedURL) {
+			vipStreams = append(vipStreams, sl)
+		}
+	}
+
 	if len(movie.StreamLinks) == 0 || hasDeadStream {
-		movie.StreamLinks = embed.GenerateMultiServerStreams(&movie, tmdbID, 1, 1)
+		fresh := embed.GenerateMultiServerStreams(&movie, tmdbID, 1, 1)
+		movie.StreamLinks = append(vipStreams, fresh...)
+	} else if len(vipStreams) > 0 {
+		var nonVipStreams []model.StreamLink
+		for _, sl := range movie.StreamLinks {
+			p := strings.ToLower(sl.Provider)
+			if !strings.Contains(p, "dood") && !strings.Contains(p, "streamtape") {
+				nonVipStreams = append(nonVipStreams, sl)
+			}
+		}
+		movie.StreamLinks = append(vipStreams, nonVipStreams...)
+	}
+
+	// Picu background remote upload ke DoodStream jika belum ada dan auto_hoster_upload aktif
+	if len(vipStreams) == 0 && database.GetSetting(s.db, "auto_hoster_upload", "true") == "true" {
+		go func(m model.Movie) {
+			settings := database.GetAllSettings(s.db)
+			doodKey := settings["doodstream_api_key"]
+			if doodKey == "" {
+				doodKey = s.cfg.DoodStreamAPIKey
+			}
+			stLogin := settings["streamtape_login"]
+			if stLogin == "" {
+				stLogin = s.cfg.StreamtapeLogin
+			}
+			stKey := settings["streamtape_key"]
+			if stKey == "" {
+				stKey = s.cfg.StreamtapeKey
+			}
+			hCli := hoster.NewClient(doodKey, stLogin, stKey)
+			_, _ = hCli.ProcessMovieRemoteUpload(&m, s.db)
+		}(movie)
 	}
 
 	if len(movie.TorrentDownloads()) == 0 {
@@ -1174,7 +1201,20 @@ func (s *Server) HandleRefreshDownloadLink(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	// 3. Jika belum ada link / broken, generate link subtitle / mirror baru
+	// 3. Scrape direct video download links dari agregator (Pahe, Samehadaku, Otakudesu, Dramaid, Melongmovie)
+	if s.aggCli != nil {
+		directLinks := s.aggCli.ScrapeDirectDownloads(&movie)
+		for _, dl := range directLinks {
+			cleanU := strings.TrimSpace(dl.URL)
+			if cleanU != "" && !existingURLs[cleanU] {
+				dl.MovieID = movie.ID
+				newLinksFound = append(newLinksFound, dl)
+				existingURLs[cleanU] = true
+			}
+		}
+	}
+
+	// 4. Jika belum ada link / broken, generate link subtitle / mirror baru
 	if len(newLinksFound) == 0 && (len(movie.DownloadLinks) == 0 || hasBroken) {
 		subLinks := subtitles.GenerateSubtitleDownloadLinks(movie.Title, movie.Year)
 		for _, sl := range subLinks {
@@ -1277,19 +1317,8 @@ func (s *Server) HandleRefreshStreamLink(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	// Ekstrak atau cari TMDb ID
-	tmdbID := embed.ExtractTMDbID(&movie)
-	if tmdbID <= 0 && s.tmdbCli != nil {
-		if movie.Type == "anime" || movie.Type == "drama_pendek" || movie.Type == "series" {
-			if searchRes, err := s.tmdbCli.SearchTV(movie.Title); err == nil && len(searchRes.Results) > 0 {
-				tmdbID = searchRes.Results[0].ID
-			}
-		} else {
-			if searchRes, err := s.tmdbCli.SearchMovie(movie.Title, movie.Year); err == nil && len(searchRes.Results) > 0 {
-				tmdbID = searchRes.Results[0].ID
-			}
-		}
-	}
+	// Ekstrak atau cari TMDb ID secara komprehensif
+	tmdbID := s.resolveMovieTMDbID(&movie)
 
 	// Bersihkan referensi URL lama yang domainnya sudah mati
 	for _, sl := range movie.StreamLinks {
@@ -1308,6 +1337,28 @@ func (s *Server) HandleRefreshStreamLink(w http.ResponseWriter, r *http.Request)
 		if cleanU != "" && !existingURLs[cleanU] {
 			fs.MovieID = movie.ID
 			newStreamsFound = append(newStreamsFound, fs)
+		}
+	}
+
+	// Coba proses remote upload jika film memiliki direct video link
+	settings := database.GetAllSettings(s.db)
+	doodKey := settings["doodstream_api_key"]
+	if doodKey == "" {
+		doodKey = s.cfg.DoodStreamAPIKey
+	}
+	stLogin := settings["streamtape_login"]
+	if stLogin == "" {
+		stLogin = s.cfg.StreamtapeLogin
+	}
+	stKey := settings["streamtape_key"]
+	if stKey == "" {
+		stKey = s.cfg.StreamtapeKey
+	}
+	if doodKey != "" || (stLogin != "" && stKey != "") {
+		hCli := hoster.NewClient(doodKey, stLogin, stKey)
+		uploadedStreams, _ := hCli.ProcessMovieRemoteUpload(&movie, s.db)
+		for _, us := range uploadedStreams {
+			newStreamsFound = append(newStreamsFound, us)
 		}
 	}
 
@@ -1332,6 +1383,60 @@ func (s *Server) HandleRefreshStreamLink(w http.ResponseWriter, r *http.Request)
 		"cooldown_hours": 24,
 		"message":        "Server streaming sudah versi terbaru dan sama persis. Tombol dinonaktifkan selama 24 jam.",
 	})
+}
+
+// resolveMovieTMDbID resolves TMDb ID for a movie using multiple fallback strategies
+func (s *Server) resolveMovieTMDbID(movie *model.Movie) int {
+	if movie == nil {
+		return 0
+	}
+	if tmdbID := embed.ExtractTMDbID(movie); tmdbID > 0 {
+		return tmdbID
+	}
+	if s.tmdbCli == nil {
+		return 0
+	}
+
+	searchTitles := []string{movie.Title}
+	if movie.OriginalTitle != "" && movie.OriginalTitle != movie.Title {
+		searchTitles = append(searchTitles, movie.OriginalTitle)
+	}
+	if movie.AlternativeTitles != "" {
+		for _, alt := range strings.Split(movie.AlternativeTitles, "/") {
+			cleanAlt := strings.TrimSpace(alt)
+			if cleanAlt != "" && cleanAlt != movie.Title && cleanAlt != movie.OriginalTitle {
+				searchTitles = append(searchTitles, cleanAlt)
+			}
+		}
+	}
+
+	isTV := movie.Type == "anime" || movie.Type == "drama_pendek" || movie.Type == "series"
+	for _, titleCandidate := range searchTitles {
+		cleanTitle := strings.TrimSpace(titleCandidate)
+		if cleanTitle == "" {
+			continue
+		}
+		if isTV {
+			if tvRes, err := s.tmdbCli.SearchTV(cleanTitle); err == nil && len(tvRes.Results) > 0 {
+				return tvRes.Results[0].ID
+			}
+			if movieRes, err := s.tmdbCli.SearchMovie(cleanTitle, movie.Year); err == nil && len(movieRes.Results) > 0 {
+				return movieRes.Results[0].ID
+			}
+		} else {
+			if movieRes, err := s.tmdbCli.SearchMovie(cleanTitle, movie.Year); err == nil && len(movieRes.Results) > 0 {
+				return movieRes.Results[0].ID
+			}
+			if movieRes, err := s.tmdbCli.SearchMovie(cleanTitle, 0); err == nil && len(movieRes.Results) > 0 {
+				return movieRes.Results[0].ID
+			}
+			if tvRes, err := s.tmdbCli.SearchTV(cleanTitle); err == nil && len(tvRes.Results) > 0 {
+				return tvRes.Results[0].ID
+			}
+		}
+	}
+
+	return 0
 }
 
 // APIMovieItem represents a compact movie payload for smooth AJAX frontend rendering

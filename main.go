@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -13,6 +14,8 @@ import (
 	"cinembrot/database"
 	"cinembrot/model"
 	"cinembrot/pipeline"
+	"cinembrot/provider/aggregator"
+	"cinembrot/provider/hoster"
 	"cinembrot/provider/yts"
 	"cinembrot/scheduler"
 	"cinembrot/scraper"
@@ -66,6 +69,11 @@ func main() {
 
 	// CLI Sinkronisasi Link Download File / Subtitle
 	populateDownloads := flag.Bool("populate-downloads", false, "Isi dan perbarui URL link download secara massal untuk semua film di database")
+
+	// CLI Remote Upload PPD Video Hosters (DoodStream & Streamtape)
+	uploadHosters := flag.Bool("upload-hosters", false, "Remote upload URL video massal ke DoodStream & Streamtape untuk monetisasi tayang & hemat server")
+	uploadType := flag.String("type", "all", "Filter tipe film untuk remote upload: 'anime', 'hollywood', 'drama_pendek', 'movie', atau 'all'")
+	uploadLimit := flag.Int("limit", 50, "Batas jumlah film yang di-upload per sesi (default 50 agar aman dari batas antrean 100 URLs DoodStream)")
 
 	// CLI Scheduler Harian Lengkap (05:00 & 17:00 WIB)
 	dailyScrape := flag.Bool("daily-scrape", false, "Jalankan 1 siklus lengkap scraper harian (Anime On-Going, Drama Asia, Hollywood, TMDb, YTS) untuk tahun sekarang")
@@ -283,14 +291,97 @@ func main() {
 	}
 
 	if *populateDownloads {
-		fmt.Println("\n[ACTION] 📥 Memulai sinkronisasi dan pengisian URL link download secara massal...")
+		fmt.Println("\n[ACTION] 📥 Memulai sinkronisasi dan pengisian URL link download secara massal (Direct MP4, Torrent, Subtitle)...")
 		ytsCli := yts.NewClient(cfg)
-		count, err := pipeline.PopulateAllExistingDownloadLinks(db, ytsCli)
+		aggCli := aggregator.NewClient(cfg)
+		count, err := pipeline.PopulateAllExistingDownloadLinks(db, ytsCli, aggCli)
 		if err != nil {
 			log.Printf("[ERROR] Sinkronisasi link download gagal: %v\n", err)
 		} else {
 			fmt.Printf("\n[SUCCESS] Berhasil melengkapi link download untuk %d judul film di MariaDB!\n", count)
 		}
+		printDatabaseStats(db)
+		return
+	}
+
+	if *uploadHosters {
+		settings := database.GetAllSettings(db)
+		doodKey := settings["doodstream_api_key"]
+		if doodKey == "" {
+			doodKey = cfg.DoodStreamAPIKey
+		}
+		stLogin := settings["streamtape_login"]
+		if stLogin == "" {
+			stLogin = cfg.StreamtapeLogin
+		}
+		stKey := settings["streamtape_key"]
+		if stKey == "" {
+			stKey = cfg.StreamtapeKey
+		}
+
+		aggCli := aggregator.NewClient(cfg)
+		hCli := hoster.NewClient(doodKey, stLogin, stKey, aggCli)
+		fmt.Println("\n[ACTION] ☁️ Memulai Remote Upload Massal ke Video Hoster PPD (DoodStream & Streamtape)...")
+
+		// Cek info akun terlebih dahulu
+		if dInfo, err := hCli.CheckDoodStream(); err == nil {
+			fmt.Printf("  ├── DoodStream : %s (Saldo: %s | Storage: %s)\n", dInfo.Status, dInfo.Balance, dInfo.StorageLeft)
+		}
+		if sInfo, err := hCli.CheckStreamtape(); err == nil {
+			fmt.Printf("  └── Streamtape : %s (Saldo: %s)\n", sInfo.Status, sInfo.Balance)
+		}
+
+		var movies []model.Movie
+		query := db.Preload("DownloadLinks")
+
+		if *uploadType != "" && *uploadType != "all" {
+			if *uploadType == "hollywood" {
+				query = query.Where("type = ? OR (type = 'movie' AND (country LIKE '%United States%' OR country LIKE '%USA%' OR language LIKE '%English%' OR language = 'en'))", "hollywood")
+			} else {
+				query = query.Where("type = ?", *uploadType)
+			}
+		}
+
+		if *tmdbYear > 0 {
+			query = query.Where("year = ?", *tmdbYear)
+		}
+
+		// Lewati film yang SUDAH memiliki server DoodStream atau Streamtape agar tidak diupload berulang
+		query = query.Where("NOT EXISTS (SELECT 1 FROM stream_links WHERE stream_links.movie_id = movies.id AND (stream_links.provider LIKE '%Dood%' OR stream_links.provider LIKE '%Streamtape%') AND stream_links.deleted_at IS NULL)")
+
+		lim := *uploadLimit
+		if lim <= 0 {
+			lim = 30
+		}
+		query = query.Order("id desc").Limit(lim)
+		query.Find(&movies)
+
+		fmt.Printf("[INFO] Target Kategori : '%s' (Tahun: %d | Limit: %d judul)\n", *uploadType, *tmdbYear, lim)
+		fmt.Printf("[INFO] Ditemukan %d film dengan tautan download video siap upload.\n", len(movies))
+		successCount := 0
+		hitSlotLimit := false
+
+		for _, m := range movies {
+			newStreams, err := hCli.ProcessMovieRemoteUpload(&m, db)
+			if err != nil && strings.Contains(err.Error(), "SLOT_LIMIT") {
+				hitSlotLimit = true
+				fmt.Printf("  ⚠️ [LIMIT] Antrean DoodStream telah mencapai 100 URLs. Film saat ini sedang diproses oleh server DoodStream.\n")
+				break
+			}
+			if err == nil && len(newStreams) > 0 {
+				successCount++
+				fmt.Printf("  ✓ [%s] Ditambahkan ke server pemutar streaming VIP\n", m.Title)
+			}
+			time.Sleep(1 * time.Second)
+		}
+
+		if hitSlotLimit {
+			fmt.Println("\n[INFO] ⏸️ Remote upload dijeda sementara karena antrean DoodStream penuh (100 URLs).")
+			fmt.Println("       Tunggu beberapa menit hingga server DoodStream selesai mendownload video tersebut ke storage,")
+			fmt.Println("       kemudian jalankan kembali perintah ini untuk judul-judul berikutnya.")
+		}
+
+		fmt.Printf("\n[SUCCESS] Selesai! %d film berhasil dihubungkan ke player DoodStream & Streamtape.\n", successCount)
 		printDatabaseStats(db)
 		return
 	}
@@ -317,7 +408,7 @@ func main() {
 	}
 
 	// 6. Start Web Server with background Auto-Scraper enabled
-	if *serveWeb || (!*fetchArchive && !*fetchOpenMovies && !*syncAll && *tmdbQuery == "" && *scrapeURL == "" && *byYear == 0 && !*convertImages && !*checkLinks && !*scrapeAnime && !*scrapeDrama && !*scrapeHollywood && !*populateStreams && !*fixTitles && !*translateSynopsis && !*populateDownloads && !*dailyScrape) {
+	if *serveWeb || (!*fetchArchive && !*fetchOpenMovies && !*syncAll && *tmdbQuery == "" && *scrapeURL == "" && *byYear == 0 && !*convertImages && !*checkLinks && !*scrapeAnime && !*scrapeDrama && !*scrapeHollywood && !*populateStreams && !*fixTitles && !*translateSynopsis && !*populateDownloads && !*uploadHosters && !*dailyScrape) {
 		// Launch background polite auto-scraper
 		autoScraper.Start()
 

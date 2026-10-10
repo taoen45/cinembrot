@@ -10,6 +10,7 @@ import (
 	"cinembrot/config"
 	"cinembrot/imageprocessor"
 	"cinembrot/model"
+	"cinembrot/provider/aggregator"
 	"cinembrot/provider/archive"
 	"cinembrot/provider/embed"
 	"cinembrot/provider/jikan"
@@ -34,6 +35,7 @@ type Pipeline struct {
 	tmdbCli    *tmdb.Client
 	omdbCli    *omdb.Client
 	ytsCli     *yts.Client
+	aggCli     *aggregator.Client
 }
 
 func NewPipeline(cfg *config.Config, repo *scraper.Repository) *Pipeline {
@@ -45,6 +47,7 @@ func NewPipeline(cfg *config.Config, repo *scraper.Repository) *Pipeline {
 		tmdbCli:    tmdb.NewClient(cfg),
 		omdbCli:    omdb.NewClient(cfg),
 		ytsCli:     yts.NewClient(cfg),
+		aggCli:     aggregator.NewClient(cfg),
 	}
 }
 
@@ -390,7 +393,14 @@ func (p *Pipeline) enrichMetadata(movie *model.Movie) {
 	// 3. Auto-translate sinopsis dwibahasa (Indonesia & English)
 	ProcessMovieSynopses(movie)
 
-	// 4. Pastikan DownloadLinks selalu terisi otomatis (Torrent YTS / Nyaa & Subtitle ID/EN)
+	// 4. Pastikan DownloadLinks selalu terisi otomatis (Direct MP4, Torrent YTS/Nyaa & Subtitle ID/EN)
+	if p.aggCli != nil && len(movie.VideoDownloads()) == 0 {
+		directLinks := p.aggCli.ScrapeDirectDownloads(movie)
+		if len(directLinks) > 0 {
+			movie.DownloadLinks = append(directLinks, movie.DownloadLinks...)
+		}
+	}
+
 	if len(movie.DownloadLinks) == 0 {
 		if (movie.Type == "hollywood" || movie.Type == "movie") && p.ytsCli != nil {
 			if ytsMovies, err := p.ytsCli.SearchMovies(movie.Title, 3, 1); err == nil && len(ytsMovies) > 0 {
@@ -1008,10 +1018,17 @@ func TranslateAllExistingSynopses(db *gorm.DB) (int, error) {
 }
 
 // PopulateAllExistingDownloadLinks sweeps all movies in the database that don't have download links
-// and generates direct torrent/mirror/subtitle download links for them.
-func PopulateAllExistingDownloadLinks(db *gorm.DB, ytsCli *yts.Client) (int, error) {
+// or lack direct video downloads, and generates direct video/torrent/subtitle download links for them.
+func PopulateAllExistingDownloadLinks(db *gorm.DB, ytsCli *yts.Client, optionalAggCli ...*aggregator.Client) (int, error) {
+	var aggCli *aggregator.Client
+	if len(optionalAggCli) > 0 && optionalAggCli[0] != nil {
+		aggCli = optionalAggCli[0]
+	} else {
+		aggCli = aggregator.NewClient(nil)
+	}
+
 	var movies []model.Movie
-	// Ambil film yang belum memiliki download link
+	// Ambil semua film untuk diperiksa kelengkapan link download-nya
 	err := db.Preload("DownloadLinks").
 		Order("id desc").
 		Find(&movies).Error
@@ -1024,39 +1041,68 @@ func PopulateAllExistingDownloadLinks(db *gorm.DB, ytsCli *yts.Client) (int, err
 
 	for i := range movies {
 		movie := &movies[i]
-		if len(movie.DownloadLinks) > 0 {
-			continue
+		existingURLs := make(map[string]bool)
+		for _, dl := range movie.DownloadLinks {
+			existingURLs[strings.TrimSpace(dl.URL)] = true
 		}
 
 		var newLinks []model.DownloadLink
 
-		// Jika film Hollywood / Bioskop: coba cari torrent dari YTS
-		if (movie.Type == "hollywood" || movie.Type == "movie") && ytsCli != nil {
-			if ytsMovies, err := ytsCli.SearchMovies(movie.Title, 3, 1); err == nil && len(ytsMovies) > 0 {
-				for _, ym := range ytsMovies {
-					if ym.Year == movie.Year || movie.Year == 0 {
-						for _, dl := range ym.DownloadLinks {
-							dl.MovieID = movie.ID
-							newLinks = append(newLinks, dl)
-						}
-						break
-					}
+		// 1. Scrape direct video download links dari agregator (Pahe, Samehadaku, Otakudesu, Dramaid, Melongmovie)
+		if len(movie.VideoDownloads()) == 0 && aggCli != nil {
+			directLinks := aggCli.ScrapeDirectDownloads(movie)
+			for _, dl := range directLinks {
+				cleanU := strings.TrimSpace(dl.URL)
+				if cleanU != "" && !existingURLs[cleanU] {
+					dl.MovieID = movie.ID
+					newLinks = append(newLinks, dl)
+					existingURLs[cleanU] = true
 				}
 			}
 		}
 
-		// Tambahkan link unduhan subtitle dwibahasa resmi
-		subLinks := subtitles.GenerateSubtitleDownloadLinks(movie.Title, movie.Year)
-		for _, sl := range subLinks {
-			sl.MovieID = movie.ID
-			newLinks = append(newLinks, sl)
-		}
+		// 2. Jika belum ada link sama sekali, lengkapi juga Torrent YTS / Subtitles / Torrents
+		if len(movie.DownloadLinks) == 0 {
+			// YTS
+			if (movie.Type == "hollywood" || movie.Type == "movie") && ytsCli != nil {
+				if ytsMovies, err := ytsCli.SearchMovies(movie.Title, 3, 1); err == nil && len(ytsMovies) > 0 {
+					for _, ym := range ytsMovies {
+						if ym.Year == movie.Year || movie.Year == 0 {
+							for _, dl := range ym.DownloadLinks {
+								cleanU := strings.TrimSpace(dl.URL)
+								if cleanU != "" && !existingURLs[cleanU] {
+									dl.MovieID = movie.ID
+									newLinks = append(newLinks, dl)
+									existingURLs[cleanU] = true
+								}
+							}
+							break
+						}
+					}
+				}
+			}
 
-		// Selalu tambahkan juga link torrent resmi (Nyaa.si untuk anime, 1337x/EZTV/TGx untuk movie/series)
-		torLinks := torrents.GenerateTorrentLinks(movie)
-		for _, tl := range torLinks {
-			tl.MovieID = movie.ID
-			newLinks = append(newLinks, tl)
+			// Subtitle
+			subLinks := subtitles.GenerateSubtitleDownloadLinks(movie.Title, movie.Year)
+			for _, sl := range subLinks {
+				cleanU := strings.TrimSpace(sl.URL)
+				if cleanU != "" && !existingURLs[cleanU] {
+					sl.MovieID = movie.ID
+					newLinks = append(newLinks, sl)
+					existingURLs[cleanU] = true
+				}
+			}
+
+			// Torrent
+			torLinks := torrents.GenerateTorrentLinks(movie)
+			for _, tl := range torLinks {
+				cleanU := strings.TrimSpace(tl.URL)
+				if cleanU != "" && !existingURLs[cleanU] {
+					tl.MovieID = movie.ID
+					newLinks = append(newLinks, tl)
+					existingURLs[cleanU] = true
+				}
+			}
 		}
 
 		if len(newLinks) > 0 {
@@ -1068,7 +1114,7 @@ func PopulateAllExistingDownloadLinks(db *gorm.DB, ytsCli *yts.Client) (int, err
 				populatedCount, len(newLinks), movie.Title, movie.Year)
 		}
 
-		time.Sleep(50 * time.Millisecond) // Rate limiting
+		time.Sleep(50 * time.Millisecond) // Polite rate limiting
 	}
 
 	log.Printf("[POPULATE-DOWNLOADS] ✅ Selesai! Berhasil melengkapi URL link download untuk %d film di database.\n", populatedCount)

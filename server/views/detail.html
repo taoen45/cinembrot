@@ -113,23 +113,53 @@
       </div>
       
       <div class="flex items-center gap-2">
+        <!-- TOMBOL FULLSCREEN PLAYER -->
+        <button type="button" id="btn-fullscreen-player" onclick="togglePlayerFullScreen()" class="text-xs text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1.5 transition px-3 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-700/60 cursor-pointer shadow-xs active:scale-95" title="Nonton Layar Penuh (Fullscreen)">
+          <i id="icon-fullscreen-player" class="fa-solid fa-expand text-xs"></i>
+          <span id="text-fullscreen-player">Fullscreen</span>
+        </button>
+
+        <!-- TOMBOL BUKA DI TAB BARU (SOLUSI JIKA IFRAME DIBLOKIR ISP) -->
+        <button type="button" onclick="openPlayerInNewTab()" class="text-xs text-sky-400 hover:text-sky-300 font-bold flex items-center gap-1.5 transition px-2.5 py-1.5 rounded-lg bg-sky-950/50 hover:bg-sky-900/70 border border-sky-700/50 cursor-pointer shadow-xs active:scale-95" title="Buka Player di Tab Baru (Jika Buffering / Diblokir ISP)">
+          <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+          <span class="hidden sm:inline">Tab Baru</span>
+        </button>
+
         {{if .Movie.TrailerURL}}
-        <button type="button" onclick="switchToTrailer()" class="text-xs text-red-400 hover:text-red-300 font-bold flex items-center gap-1 transition px-2.5 py-1 rounded bg-red-950/40 border border-red-800/40 cursor-pointer">
+        <button type="button" onclick="switchToTrailer()" class="text-xs text-red-400 hover:text-red-300 font-bold flex items-center gap-1.5 transition px-2.5 py-1.5 rounded-lg bg-red-950/40 hover:bg-red-900/60 border border-red-800/40 cursor-pointer">
           <i class="fa-brands fa-youtube"></i> Trailer
         </button>
         {{end}}
-        <button type="button" onclick="reloadPlayer()" class="text-xs text-slate-400 hover:text-white font-medium flex items-center gap-1 transition px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 cursor-pointer" title="Refresh Player">
+        <button type="button" onclick="reloadPlayer()" class="text-xs text-slate-400 hover:text-white font-medium flex items-center gap-1.5 transition px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 cursor-pointer" title="Refresh Player">
           <i class="fa-solid fa-rotate-right"></i> Refresh
         </button>
       </div>
     </div>
 
-    <!-- PLAYER IFRAME -->
-    <div class="aspect-video w-full bg-black relative">
+    <!-- PLAYER IFRAME WRAPPER -->
+    <div id="player-container" class="aspect-video w-full bg-black relative">
       {{if .Movie.StreamLinks}}
-      <iframe id="main-stream-player" src="{{(index .Movie.StreamLinks 0).EmbedURL}}" class="w-full h-full" allowfullscreen frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+      <iframe id="main-stream-player" 
+              src="{{(index .Movie.StreamLinks 0).EmbedURL}}" 
+              class="w-full h-full" 
+              allowfullscreen="true" 
+              webkitallowfullscreen="true" 
+              mozallowfullscreen="true" 
+              frameborder="0" 
+              referrerpolicy="origin" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen">
+      </iframe>
       {{else if .Movie.TrailerURL}}
-      <iframe id="main-stream-player" src="{{youtubeEmbed .Movie.TrailerURL}}" class="w-full h-full" allowfullscreen frameborder="0"></iframe>
+      <iframe id="main-stream-player" 
+              src="{{youtubeEmbed .Movie.TrailerURL}}" 
+              class="w-full h-full" 
+              allowfullscreen="true" 
+              webkitallowfullscreen="true" 
+              mozallowfullscreen="true" 
+              frameborder="0" 
+              referrerpolicy="origin" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen">
+      </iframe>
       {{else}}
       <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 p-6 text-center">
         <i class="fa-solid fa-video-slash text-5xl mb-3 text-slate-600"></i>
@@ -174,7 +204,7 @@
       </div>
       <div class="mt-2.5 pt-2 border-t border-slate-900 flex items-center gap-1.5 text-[11px] text-slate-400">
         <i class="fa-solid fa-circle-info text-brand-400"></i>
-        <span>Server 1 (VidLink HD) adalah server utama super cepat. Jika buffering atau lambat di ISP Anda, beralihlah ke Server 2 (VidSrc Pro) atau Server 3.</span>
+        <span>Server 1 (VidLink HD) & Server 2 (SmashyStream) adalah server super cepat. Jika buffering atau lambat di ISP Anda, beralihlah ke Server 3, 4, atau Server 7 (NontonGo Asia).</span>
       </div>
     </div>
     {{end}}
@@ -582,6 +612,7 @@
        data-movie-id="{{.Movie.ID}}" 
        data-tmdb-id="{{.TMDbID}}" 
        data-is-tv="{{if or (eq .Movie.Type "anime") (eq .Movie.Type "drama_pendek") (eq .Movie.Type "series")}}true{{else}}false{{end}}" 
+       data-is-anime="{{if eq .Movie.Type "anime"}}true{{else}}false{{end}}" 
        data-trailer="{{if .Movie.TrailerURL}}{{youtubeEmbed .Movie.TrailerURL}}{{end}}"
        data-interstitial-enabled="{{if and .EnableAds .EnableDownloadInterstitial}}true{{else}}false{{end}}">
   </div>
@@ -592,6 +623,7 @@
     const movieId = metaEl ? parseInt(metaEl.dataset.movieId, 10) : 0;
     const tmdbID = metaEl ? parseInt(metaEl.dataset.tmdbId, 10) : 0;
     const isTV = metaEl ? (metaEl.dataset.isTv === 'true') : false;
+    const isAnime = metaEl ? (metaEl.dataset.isAnime === 'true') : false;
     const officialTrailer = metaEl ? (metaEl.dataset.trailer || '') : '';
 
     let currentServerIndex = 0;
@@ -661,17 +693,88 @@
 
       switch (serverIdx) {
         case 0:
+          // Server 1: VidLink HD
           return `https://vidlink.pro/tv/${tmdbID}/1/${epNum}`;
         case 1:
-          return `https://vidsrc.to/embed/tv/${tmdbID}/1/${epNum}`;
+          // Server 2: SmashyStream
+          return `https://embed.smashystream.com/playere.php?tmdb=${tmdbID}&season=1&episode=${epNum}`;
         case 2:
-          return `https://vidsrc.pm/embed/tv/${tmdbID}/1/${epNum}`;
+          // Server 3: AutoEmbed Fast
+          return `https://player.autoembed.cc/embed/tv/${tmdbID}/1/${epNum}`;
         case 3:
-          return `https://www.2embed.cc/embedtv/${tmdbID}&s=1&e=${epNum}`;
+          // Server 4: VidSrc CC (khusus anime atau TV)
+          return (isAnime ? `https://vidsrc.cc/v2/embed/anime/${tmdbID}/1/${epNum}` : `https://vidsrc.cc/v2/embed/tv/${tmdbID}/1/${epNum}`);
         case 4:
+          // Server 5: 2Embed VIP
+          return `https://www.2embed.cc/embedtv/${tmdbID}&s=1&e=${epNum}`;
+        case 5:
+          // Server 6: MultiEmbed
           return `https://multiembed.mov/?video_id=${tmdbID}&tmdb=1&s=1&e=${epNum}`;
+        case 6:
+          // Server 7: NontonGo Asia
+          return `https://www.nontongo.win/embed/tv/${tmdbID}/1/${epNum}`;
         default:
           return `https://vidlink.pro/tv/${tmdbID}/1/${epNum}`;
+      }
+    }
+
+    // Nonton Layar Penuh (Fullscreen)
+    function togglePlayerFullScreen() {
+      const container = document.getElementById('player-container');
+      const player = document.getElementById('main-stream-player');
+      const target = container || player;
+      if (!target) return;
+
+      const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+      if (!isFs) {
+        if (target.requestFullscreen) {
+          target.requestFullscreen().catch(() => {
+            if (player && player.requestFullscreen) player.requestFullscreen();
+          });
+        } else if (target.webkitRequestFullscreen) {
+          target.webkitRequestFullscreen();
+        } else if (target.mozRequestFullScreen) {
+          target.mozRequestFullScreen();
+        } else if (target.msRequestFullscreen) {
+          target.msRequestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+          document.mozCancelFullScreen();
+        } else if (document.msExitFullscreen) {
+          document.msExitFullscreen();
+        }
+      }
+    }
+
+    function updateFullscreenUI() {
+      const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+      const icon = document.getElementById('icon-fullscreen-player');
+      const text = document.getElementById('text-fullscreen-player');
+      if (icon) {
+        icon.className = isFs ? 'fa-solid fa-compress text-xs' : 'fa-solid fa-expand text-xs';
+      }
+      if (text) {
+        text.textContent = isFs ? 'Kecilkan' : 'Fullscreen';
+      }
+    }
+
+    document.addEventListener('fullscreenchange', updateFullscreenUI);
+    document.addEventListener('webkitfullscreenchange', updateFullscreenUI);
+    document.addEventListener('mozfullscreenchange', updateFullscreenUI);
+    document.addEventListener('MSFullscreenChange', updateFullscreenUI);
+
+    // Buka Player di Tab Baru (Jika Iframe Buffering atau Diblokir ISP)
+    function openPlayerInNewTab() {
+      const player = document.getElementById('main-stream-player');
+      if (player && player.src && player.src !== 'about:blank') {
+        window.open(player.src, '_blank', 'noopener,noreferrer');
+      } else {
+        alert('Player streaming belum siap atau URL tidak tersedia.');
       }
     }
 

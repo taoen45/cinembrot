@@ -13,6 +13,7 @@ import (
 	"cinembrot/config"
 	"cinembrot/database"
 	"cinembrot/i18n"
+	"cinembrot/provider/aggregator"
 	"cinembrot/provider/archive"
 	"cinembrot/provider/tmdb"
 	"cinembrot/provider/yts"
@@ -35,6 +36,7 @@ type Server struct {
 	tmdbCli    *tmdb.Client
 	archiveCli *archive.Client
 	ytsCli     *yts.Client
+	aggCli     *aggregator.Client
 }
 
 func NewServer(cfg *config.Config, db *gorm.DB) *Server {
@@ -52,6 +54,7 @@ func NewServer(cfg *config.Config, db *gorm.DB) *Server {
 		tmdbCli:    tmdb.NewClient(cfg),
 		archiveCli: archive.NewClient(cfg),
 		ytsCli:     yts.NewClient(cfg),
+		aggCli:     aggregator.NewClient(cfg),
 	}
 	s.loadTemplates()
 	return s
@@ -392,6 +395,8 @@ func (s *Server) Start() error {
 	// System Settings & Adsterra Ad Unit Controls
 	mux.HandleFunc("GET /admin/settings", s.RequireAdmin(s.HandleAdminSettings))
 	mux.HandleFunc("POST /admin/settings", s.RequireAdmin(s.HandleAdminSaveSettings))
+	mux.HandleFunc("GET /api/admin/hoster/status", s.RequireAdmin(s.HandleAdminHosterStatus))
+	mux.HandleFunc("POST /api/admin/hoster/batch-upload", s.RequireAdmin(s.HandleAdminHosterBatchUpload))
 
 	// Serve Static Files (Local WebP Originals & Thumbnails with Smart Placeholder Fallback)
 	uploadsDir := filepath.Join("public", "uploads")

@@ -52,6 +52,12 @@ type Config struct {
 	AdsterraBanner728 string
 	AdsterraBanner300 string
 	AdsterraNative    string
+
+	// PPD Video Hosters (DoodStream & Streamtape)
+	DoodStreamAPIKey string
+	StreamtapeLogin  string
+	StreamtapeKey    string
+	AutoHosterUpload bool
 }
 
 // LoadConfig loads configuration from .env and environment variables
@@ -94,6 +100,12 @@ func LoadConfig() *Config {
 		AdsterraBanner728: getEnv("ADSTERRA_BANNER_728_KEY", ""),
 		AdsterraBanner300: getEnv("ADSTERRA_BANNER_300_KEY", ""),
 		AdsterraNative:    getEnv("ADSTERRA_NATIVE_KEY", ""),
+
+		// Video Hosters Defaults
+		DoodStreamAPIKey: getEnv("DOODSTREAM_API_KEY", "579834sz4bib8d70d8741z"),
+		StreamtapeLogin:  getEnv("STREAMTAPE_LOGIN", "5325cb880d00ecec2186"),
+		StreamtapeKey:    getEnv("STREAMTAPE_KEY", ""),
+		AutoHosterUpload: getEnvAsBool("AUTO_HOSTER_UPLOAD", true),
 	}
 }
 

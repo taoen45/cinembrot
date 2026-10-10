@@ -193,6 +193,14 @@ docker compose exec app ./cinembrot -scrape-anime -year 2026
 docker compose exec app ./cinembrot -scrape-drama -year 2026
 docker compose exec app ./cinembrot -scrape-hollywood -year 2026
 
+# Upload massal ke Video Hoster PPD (DoodStream & Streamtape)
+docker compose exec app ./cinembrot -upload-hosters -type anime -limit 20
+docker compose exec app ./cinembrot -upload-hosters -type hollywood -limit 20
+docker compose exec app ./cinembrot -upload-hosters -type all -limit 50
+
+# Siklus Scraping Harian (Anime ongoing, Drama Asia, Hollywood 2026)
+docker compose exec app ./cinembrot -daily-scrape
+
 # Isi link download massal (Torrent & Subtitle) & server streaming embed
 docker compose exec app ./cinembrot -populate-downloads
 docker compose exec app ./cinembrot -populate-streams
@@ -211,6 +219,8 @@ cd /home/taoen45/docker/html
 go run . -scrape-anime -year 2026
 go run . -scrape-drama -year 2026
 go run . -scrape-hollywood -year 2026
+go run . -upload-hosters -type anime -limit 20
+go run . -daily-scrape
 go run . -populate-downloads
 go run . -populate-streams
 go run . -fix-titles
@@ -377,6 +387,9 @@ Jika domain yang sedang dipakai terkena blokir Trust Positif / Nawala / Kominfo:
 | 2026-09-28 | **Penegasan Meta Tag Verifikasi Yandex & Bing (cinembrot.web.id):** Memastikan `PopulateSEO` (`server/seo.go`) dan `PopulatePageData` (`server/handlers.go`) otomatis mengisi tag `<meta name="yandex-verification" content="ea7cc828ed62088e">` dan `<meta name="msvalidate.01" content="1E1C0A8C8D9899F03634DF89E4DAB6D8">` dengan fallback default resmi, sehingga semua halaman publik `cinembrot.web.id` selalu menyertakan meta tag verifikasi secara konsisten. |
 | 2026-09-28 | **Pemisahan & Penambahan XML Sitemap Dual-Domain (cinembrot.web.id & cinembrot.my.id):** (1) Domain Utama `cinembrot.web.id`: Menyajikan `GET /sitemap.xml` & `GET /sitemap_index.xml` lengkap untuk ribuan film/anime/drama, 40 genre, tahun rilis, dan robots.txt. (2) Domain Informasi `cinembrot.my.id`: Dibuat handler khusus `HandleInfoSitemapXML` dan `HandleInfoRobotsTXT` di `server/seo.go` yang terdaftar pada `infoMux` di `GET /sitemap.xml`, `GET /sitemap_index.xml`, dan `GET /robots.txt`. Mencegah error 'URL not allowed' di Search Console karena masing-masing domain hanya menyajikan URL origin miliknya sendiri. (3) Penambahan tombol cepat `sitemap.xml` di header Tab 2 CMS Admin Settings (`server/views/admin_settings.html`). |
 | 2026-09-30 | **Integrasi Google Analytics 4 (GA4) Dual-Domain (cinembrot.web.id & cinembrot.my.id) dengan Kontrol Penuh CMS Admin Settings:** (1) Domain Utama `cinembrot.web.id`: Integrasi otomatis script resmi Google tag (`gtag.js`) dengan Measurement ID `G-TLPQS96YJX` di `<head>` template utama `layout.html`. (2) Domain Informasi `cinembrot.my.id`: Integrasi otomatis script resmi Google tag (`gtag.js`) dengan Measurement ID `G-LN4TYGYDT2` tepat setelah pembuka `<head>` template landing page `public/info/index.html`. (3) Injeksi `CustomFooterCode` di `layout.html` sebelum penutup `</body>`. (4) Panel Pengaturan CMS Admin (`/admin/settings`): Penambahan kartu input khusus Google Analytics 4 di Tab 1 (Domain Utama) dan Tab 2 (Domain Informasi) yang tersimpan langsung di tabel `system_settings` (`google_analytics_id` & `info_google_analytics_id`) dengan nilai default resmi, sehingga Measurement ID dapat diubah kapan saja secara dinamis tanpa perlu edit kode. |
+| 2026-10-10 | **Optimalisasi Total Streaming Player Multi-Server & Penambahan Tombol Fullscreen / Tab Baru:** (1) Perbaikan bug penentuan TMDb ID di `ExtractTMDbID` (`provider/embed/embed.go`): mengutamakan field `tmdb_id` dan mencegah pengambilan MyAnimeList ID sebagai TMDb ID pada konten anime/drama. (2) Penambahan helper `resolveMovieTMDbID` di `server/handlers.go` dengan fallback multi-judul (`Title`, `OriginalTitle`, `AlternativeTitles`) untuk serial anime, drama, dan movie bioskop. (3) Ekspansi 7 Server Embed Streaming Aktif: Server 1 (VidLink HD), Server 2 (SmashyStream - super stabil & multi-source internal), Server 3 (AutoEmbed Fast), Server 4 (VidSrc CC v2 - endpoint anime khusus), Server 5 (2Embed VIP), Server 6 (MultiEmbed), dan Server 7 (NontonGo Asia - ramah ISP Indonesia). (4) Penambahan tombol Fullscreen interaktif (`togglePlayerFullScreen`) dengan deteksi status layar penuh, tombol "Buka Tab Baru" (`openPlayerInNewTab`) sebagai bypass pemblokiran iframe oleh ISP/ekstensi adblock, serta penambahan atribut keamanan dan performa iframe (`allowfullscreen="true"`, `referrerpolicy="origin"`, `allow="... fullscreen"`). (5) Sinkronisasi switcher episode JavaScript di `server/views/detail.html` agar perpindahan episode berjalan mulus di seluruh 7 server. |
+| 2026-10-10 | **Fitur Baru: Bot Scraper Agregator Direct Video Download Links (Opsi A):** (1) Modul baru `provider/aggregator/aggregator.go` menggunakan engine HTTP + GoQuery untuk ekstraksi otomatis link download direct file video (Google Drive, Acefile, PixelDrain, Mediafire, Mega, Buzzheavier, FastDrive) dari 5 situs agregator film, anime, dan drama: Pahe (`pahe.ink`/`pahe.li`), Otakudesu (`otakudesu.cloud`), Samehadaku (`samehadaku.care`), Melongmovie (`melongmovie.site`), dan Dramaid (`dramaid.tv`). (2) Integrasi pada `enrichMetadata` (`pipeline/pipeline.go`): saat scraping film baru (Anime, Drama Asia, Hollywood), sistem otomatis menyisir link direct video sehingga kolom download tidak lagi kosong. (3) Integrasi massal pada `PopulateAllExistingDownloadLinks` (`pipeline/pipeline.go` & `main.go -populate-downloads`): menyisir seluruh film lama di database dan melengkapi link video langsung tanpa input manual. (4) Integrasi mandiri pada endpoint `POST /api/movie/{id}/refresh-download` (`server/handlers.go`): tombol interaktif "🔄 Cek / Segarkan Link" di halaman publik kini otomatis memicu bot agregator untuk mencari tautan download baru dari situs sumber. |
+| 2026-10-10 | **Penyempurnaan Hosters DoodStream & Streamtape (Direct Cloudflare Dialer, Anti-Subtitle Filter, Unifikasi Binary & CLI Filter):** (1) Penambahan custom HTTP Transport Dialer di `provider/hoster/hoster.go` yang memetakan `api.streamtape.com` langsung ke IP Cloudflare resmi (`104.21.96.46:443`), mem-bypass spoofing DNS Internet Positif lokal ISP Indonesia. (2) Filter eksklusif video `IsDirectPlayableVideoURL()` untuk memblokir tautan subtitle (`subdl.com`, `opensubtitles.org`, `.srt`, `.vtt`) agar tidak pernah terkirim ke DoodStream/Streamtape. (3) Anti-Duplicate Query di `main.go` yang mencegah film terunggah ganda jika stream link Dood/Streamtape sudah ada. (4) Unifikasi biner tunggal resmi `cinembrot.exe` dan penambahan flag `-type` (`anime`, `hollywood`, `drama_pendek`, `movie`, `all`) serta `-limit` pada perintah CLI `-upload-hosters`. |
 
 
 

@@ -177,6 +177,8 @@ Aplikasi menyediakan berbagai opsi CLI terminal (setara *Artisan* pada Laravel) 
 | **Scrape Hollywood 2026** | `.\cinembrot.exe -scrape-hollywood -year 2026` | `./cinembrot -scrape-hollywood -year 2026` | `docker compose exec app ./cinembrot -scrape-hollywood -year 2026` |
 | **Isi Link Download Massal** | `.\cinembrot.exe -populate-downloads` | `./cinembrot -populate-downloads` | `docker compose exec app ./cinembrot -populate-downloads` |
 | **Isi Server Streaming Massal** | `.\cinembrot.exe -populate-streams` | `./cinembrot -populate-streams` | `docker compose exec app ./cinembrot -populate-streams` |
+| **Upload Massal Video Hoster (PPD)** | `.\cinembrot.exe -upload-hosters -type all -limit 50` | `./cinembrot -upload-hosters -type all -limit 50` | `docker compose exec app ./cinembrot -upload-hosters -type all -limit 50` |
+| **Siklus Scraping Harian (05:00/17:00)** | `.\cinembrot.exe -daily-scrape` | `./cinembrot -daily-scrape` | `docker compose exec app ./cinembrot -daily-scrape` |
 | **Perbaiki Judul CJK & Slug** | `.\cinembrot.exe -fix-titles` | `./cinembrot -fix-titles` | `docker compose exec app ./cinembrot -fix-titles` |
 | **Auto-Translate Sinopsis** | `.\cinembrot.exe -translate-synopsis` | `./cinembrot -translate-synopsis` | `docker compose exec app ./cinembrot -translate-synopsis` |
 | **Scan Link Rusak / Validasi** | `.\cinembrot.exe -check-links` | `./cinembrot -check-links` | `docker compose exec app ./cinembrot -check-links` |
@@ -269,7 +271,47 @@ docker compose up -d app
 .\cinembrot.exe -convert-images
 ```
 
-### 5. Pemisahan Blok Download (Video MP4, Subtitle SRT & Torrent) dan Tombol Mandiri
+### 5. Remote Upload Massal ke Video Hoster PPD (DoodStream & Streamtape)
+Fitur otomatisasi cloud-to-cloud Remote URL Upload dari tautan direct video (Google Drive, Pixeldrain, Mediafire, Archive.org, Acefile, dll.) langsung ke storage DoodStream dan Streamtape Anda:
+- **Keuntungan**: Menghemat storage & bandwidth server homelab, serta menghasilkan passive income saldo $ (Pay-Per-Download/Stream) dari pemutaran video.
+- **Filter Video Eksklusif**: Sistem otomatis memfilter dan membuang link subtitle (`.srt`, `.vtt`, SubDL, OpenSubtitles) sehingga DoodStream/Streamtape 100% hanya menerima berkas video asli.
+- **Anti-Duplicate**: Film yang sudah memiliki stream DoodStream atau Streamtape otomatis dilewati (`NOT EXISTS`).
+- **Bypass DNS Spoofing**: Dilengkapi direct dialer Cloudflare bawaan yang otomatis mem-bypass blokir Kominfo/Internet Positif ISP lokal untuk API Streamtape.
+
+```powershell
+# 🚀 Upload massal untuk SEMUA kategori (default limit 50 judul film)
+.\cinembrot.exe -upload-hosters
+
+# 🎌 Upload khusus Anime (contoh: 20 judul pertama)
+.\cinembrot.exe -upload-hosters -type anime -limit 20
+
+# 🎬 Upload khusus film Hollywood / Box Office (contoh: 30 judul)
+.\cinembrot.exe -upload-hosters -type hollywood -limit 30
+
+# 🎭 Upload khusus Drama Asia (Korea, China, Jepang, Thailand)
+.\cinembrot.exe -upload-hosters -type drama_pendek -limit 25
+
+# 🎥 Upload khusus Bioskop / Movie reguler
+.\cinembrot.exe -upload-hosters -type movie -limit 20
+
+# Linux Ubuntu (Host / Binary):
+./cinembrot -upload-hosters -type anime -limit 20
+
+# Linux Ubuntu (Docker di Server taoen45):
+docker compose exec app ./cinembrot -upload-hosters -type anime -limit 20
+```
+
+### 6. Siklus Scraping Harian Terjadwal (Daily Catchup Cycle)
+```powershell
+# ⏰ Jalankan 1 siklus penangkapan rilis harian (Anime ongoing, Drama Asia, dan Hollywood rilis 2026)
+# Perintah ini setara dengan jadwal cron otomatis harian pada pukul 05:00 WIB & 17:00 WIB
+.\cinembrot.exe -daily-scrape
+
+# Linux Ubuntu (Docker di Server taoen45):
+docker compose exec app ./cinembrot -daily-scrape
+```
+
+### 7. Pemisahan Blok Download (Video MP4, Subtitle SRT & Torrent) dan Tombol Mandiri
 Pada halaman detail film (`/movie/{slug}`), tautan unduhan ditata secara presisi dan dipisahkan menjadi 3 blok transparan agar tidak membingungkan pengguna:
 1. **File Video Siap Nonton (Direct MP4 / Hardsub)**:
    - Tombol hijau terang: **"Download Video MP4"**.
@@ -284,9 +326,10 @@ Pada halaman detail film (`/movie/{slug}`), tautan unduhan ditata secara presisi
      - **Hollywood / Movies**: 1337x & TorrentGalaxy (TGx).
 4. **Tombol Mandiri "🔄 Cek / Segarkan Link" & "🔄 Cek / Segarkan Server"**:
    - Didesain presisi, menyatu rapi dengan header Pusat Unduhan dan bilah player streaming.
+   - Otomatis memicu bot agregator (Pahe, Otakudesu, Samehadaku, Melongmovie, Dramaid) untuk mengais link video baru dari internet jika link lama mati.
    - **Aturan Cooldown 24 Jam**: Jika URL dari sumber sama persis (sudah versi paling baru), tombol otomatis terkunci (*disabled*) selama **1 hari (24 jam)** secara persisten di browser (`localStorage`) untuk mencegah spam request ke sumber.
 
-### 6. Scraping Film Barat & Domain Publik
+### 8. Scraping Film Barat & Domain Publik
 ```powershell
 # Scrape film rilis tahun tertentu dari provider (tmdb / archive / yts / all)
 .\cinembrot.exe -by-year 2024 -pages 1 -source yts
@@ -318,16 +361,19 @@ cinembrot/
 ├── model/              # Definisi struct model GORM (Movie, DownloadLink, StreamLink, dll.)
 ├── pipeline/           # Pipeline agregasi, resolusi metadata, enricher, & perbaikan judul
 ├── provider/           # Adapter client penyedia data & streaming
+│   ├── aggregator/     # Bot scraper direct download links (Pahe, Otakudesu, Samehadaku, Melongmovie, Dramaid)
 │   ├── archive/        # Client API Internet Archive
-│   ├── embed/          # Multi-server streaming embed generator (VidSrc, AutoEmbed, 2Embed, dll.)
+│   ├── embed/          # Multi-server streaming embed generator (VidLink, SmashyStream, AutoEmbed, VidSrc, dll.)
+│   ├── hoster/         # Auto remote upload PPD (DoodStream & Streamtape) + Cloudflare Direct Dialer
 │   ├── jikan/          # Client API MyAnimeList / Jikan v4 (Anime resmi)
 │   ├── omdb/           # Client API OMDb (Rating IMDb)
 │   ├── openmovies/     # Client film Creative Commons Blender Studio
 │   ├── subtitles/      # Generator link pencarian subtitle dwibahasa (SubDL & OpenSubtitles)
 │   ├── tmdb/           # Client REST API The Movie Database (TMDb Movie & TV)
+│   ├── torrents/       # Scraper & generator link torrent (Nyaa, AnimeTosho, EZTV, 1337x, TGx)
 │   └── yts/            # Client REST API YTS (YIFY Torrents)
 ├── public/             # Aset statis (WebP uploads, logo, bendera SVG, favicon)
-├── scheduler/          # Background worker otomatis & cron scraping periodik
+├── scheduler/          # Background worker otomatis & cron scraping periodik (05:00 & 17:00 WIB)
 ├── scraper/            # Engine scraping Colly, HTML cleaner, deteksi non-Latin, & repository query
 ├── server/             # HTTP Web Server, middleware admin, dan route handlers
 │   └── views/          # Template HTML dinamis Tailwind dengan live auto-reload (F5)
@@ -342,5 +388,6 @@ cinembrot/
 
 ## 📄 Lisensi
 Didistribusikan untuk tujuan edukasi dan pemutaran film/anime domain publik serta lisensi promosi resmi.
+
 
 
