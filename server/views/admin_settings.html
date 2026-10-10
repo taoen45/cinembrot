@@ -245,6 +245,27 @@
               <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-dark-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
             </label>
           </div>
+
+          <!-- SAFELINKU MONETISASI DOWNLOAD -->
+          <div class="p-4 bg-gradient-to-br from-indigo-50/50 to-blue-50/50 dark:from-indigo-950/20 dark:to-blue-950/20 rounded-2xl border border-indigo-200 dark:border-indigo-900/40 space-y-3">
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <i class="fa-solid fa-link text-indigo-500"></i> SafelinkU URL Shortener (Monetisasi Download)
+                </label>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400">Konversi otomatis tautan unduhan (Video MP4, Subtitle, Torrent) ke SafelinkU via REST API resmi.</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer select-none shrink-0">
+                <input type="checkbox" name="safelinku_enabled" value="true" class="sr-only peer" {{if ne (index .Settings "safelinku_enabled") "false"}}checked{{end}}>
+                <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-dark-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+              </label>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">API Token SafelinkU:</label>
+              <input type="text" name="safelinku_api_token" value="{{if index .Settings "safelinku_api_token"}}{{index .Settings "safelinku_api_token"}}{{else}}0e88844335a361150b23252773b50a0b03ded280{{end}}" class="w-full text-xs font-mono bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500" placeholder="0e88844335a361150b23252773b50a0b03ded280">
+              <span class="text-[10px] text-slate-400 mt-1 block">Dapatkan dari menu Member &gt; Tools &gt; Api di dashboard SafelinkU Anda.</span>
+            </div>
+          </div>
         </div>
 
       </div>

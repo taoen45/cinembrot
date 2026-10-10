@@ -151,81 +151,151 @@ func GenerateMultiServerStreams(movie *model.Movie, tmdbID int, season int, epis
 
 	if videoIDStr != "" {
 		if isTV {
-			// TV Show / Anime / Drama embeds
-			// Server 1: VidLink HD (Next.js player, sangat cepat, HD 1080p, minim iklan)
-			servers = append(servers, model.StreamLink{
-				MovieID:    movie.ID,
-				Provider:   "VidLink HD",
-				ServerName: "Server 1 (VidLink HD)",
-				Quality:    "HD 1080p",
-				EmbedURL:   fmt.Sprintf("https://vidlink.pro/tv/%s/%d/%d", videoIDStr, season, episode),
-				IsValid:    true,
-				Status:     "ACTIVE",
-			})
-			// Server 2: SmashyStream (Sangat stabil, multi-source video cadangan di dalam player)
-			servers = append(servers, model.StreamLink{
-				MovieID:    movie.ID,
-				Provider:   "SmashyStream",
-				ServerName: "Server 2 (SmashyStream)",
-				Quality:    "HD 1080p",
-				EmbedURL:   fmt.Sprintf("https://embed.smashystream.com/playere.php?tmdb=%s&season=%d&episode=%d", videoIDStr, season, episode),
-				IsValid:    true,
-				Status:     "ACTIVE",
-			})
-			// Server 3: AutoEmbed Fast (player.autoembed.cc - Responsif, buffer cepat)
-			servers = append(servers, model.StreamLink{
-				MovieID:    movie.ID,
-				Provider:   "AutoEmbed Fast",
-				ServerName: "Server 3 (AutoEmbed Fast)",
-				Quality:    "HD 1080p",
-				EmbedURL:   fmt.Sprintf("https://player.autoembed.cc/embed/tv/%s/%d/%d", videoIDStr, season, episode),
-				IsValid:    true,
-				Status:     "ACTIVE",
-			})
-			// Server 4: VidSrc CC v2 (Mendukung anime endpoint khusus atau TV)
-			vidSrcTVURL := fmt.Sprintf("https://vidsrc.cc/v2/embed/tv/%s/%d/%d", videoIDStr, season, episode)
 			if isAnime {
-				vidSrcTVURL = fmt.Sprintf("https://vidsrc.cc/v2/embed/anime/%s/%d/%d", videoIDStr, season, episode)
+				// Anime Embeds: Prioritaskan MultiEmbed, NontonGo Asia, dan 2Embed VIP yang terbukti 100% stabil untuk konten Asia
+				// Server 1: MultiEmbed (multiembed.mov - Multi source, stabil memutar anime)
+				servers = append(servers, model.StreamLink{
+					MovieID:    movie.ID,
+					Provider:   "MultiEmbed",
+					ServerName: "Server 1 (MultiEmbed HD)",
+					Quality:    "HD 1080p",
+					EmbedURL:   fmt.Sprintf("https://multiembed.mov/?video_id=%s&tmdb=1&s=%d&e=%d&sub_lang=id", videoIDStr, season, episode),
+					IsValid:    true,
+					Status:     "ACTIVE",
+				})
+				// Server 2: NontonGo Asia (nontongo.win - Ramah penonton Indonesia, prioritas Sub Indo)
+				servers = append(servers, model.StreamLink{
+					MovieID:    movie.ID,
+					Provider:   "NontonGo Asia",
+					ServerName: "Server 2 (NontonGo Asia)",
+					Quality:    "HD 720p",
+					EmbedURL:   fmt.Sprintf("https://www.nontongo.win/embed/tv/%s/%d/%d?sub=id", videoIDStr, season, episode),
+					IsValid:    true,
+					Status:     "ACTIVE",
+				})
+				// Server 3: 2Embed VIP (2embed.cc - format TV embed stabil)
+				servers = append(servers, model.StreamLink{
+					MovieID:    movie.ID,
+					Provider:   "2Embed VIP",
+					ServerName: "Server 3 (2Embed VIP)",
+					Quality:    "HD 720p",
+					EmbedURL:   fmt.Sprintf("https://www.2embed.cc/embedtv/%s&s=%d&e=%d&sub_lang=id", videoIDStr, season, episode),
+					IsValid:    true,
+					Status:     "ACTIVE",
+				})
+				// Server 4: VidLink HD (vidlink.pro)
+				servers = append(servers, model.StreamLink{
+					MovieID:    movie.ID,
+					Provider:   "VidLink HD",
+					ServerName: "Server 4 (VidLink HD)",
+					Quality:    "HD 1080p",
+					EmbedURL:   fmt.Sprintf("https://vidlink.pro/tv/%s/%d/%d?sub_lang=id", videoIDStr, season, episode),
+					IsValid:    true,
+					Status:     "ACTIVE",
+				})
+				// Server 5: SmashyStream (embed.smashystream.com)
+				servers = append(servers, model.StreamLink{
+					MovieID:    movie.ID,
+					Provider:   "SmashyStream",
+					ServerName: "Server 5 (SmashyStream)",
+					Quality:    "HD 1080p",
+					EmbedURL:   fmt.Sprintf("https://embed.smashystream.com/playere.php?tmdb=%s&season=%d&episode=%d", videoIDStr, season, episode),
+					IsValid:    true,
+					Status:     "ACTIVE",
+				})
+				// Server 6: AutoEmbed Fast (player.autoembed.cc)
+				servers = append(servers, model.StreamLink{
+					MovieID:    movie.ID,
+					Provider:   "AutoEmbed Fast",
+					ServerName: "Server 6 (AutoEmbed Fast)",
+					Quality:    "HD 1080p",
+					EmbedURL:   fmt.Sprintf("https://player.autoembed.cc/embed/tv/%s/%d/%d", videoIDStr, season, episode),
+					IsValid:    true,
+					Status:     "ACTIVE",
+				})
+				// Server 7: VidSrc CC v2 (vidsrc.cc endpoint anime)
+				servers = append(servers, model.StreamLink{
+					MovieID:    movie.ID,
+					Provider:   "VidSrc CC",
+					ServerName: "Server 7 (VidSrc CC)",
+					Quality:    "HD 1080p",
+					EmbedURL:   fmt.Sprintf("https://vidsrc.cc/v2/embed/anime/%s/%d/%d", videoIDStr, season, episode),
+					IsValid:    true,
+					Status:     "ACTIVE",
+				})
+			} else {
+				// Regular Drama Asia / TV Show embeds
+				// Server 1: VidLink HD (Next.js player, sangat cepat, HD 1080p)
+				servers = append(servers, model.StreamLink{
+					MovieID:    movie.ID,
+					Provider:   "VidLink HD",
+					ServerName: "Server 1 (VidLink HD)",
+					Quality:    "HD 1080p",
+					EmbedURL:   fmt.Sprintf("https://vidlink.pro/tv/%s/%d/%d?sub_lang=id", videoIDStr, season, episode),
+					IsValid:    true,
+					Status:     "ACTIVE",
+				})
+				// Server 2: MultiEmbed (multiembed.mov)
+				servers = append(servers, model.StreamLink{
+					MovieID:    movie.ID,
+					Provider:   "MultiEmbed",
+					ServerName: "Server 2 (MultiEmbed)",
+					Quality:    "HD 720p",
+					EmbedURL:   fmt.Sprintf("https://multiembed.mov/?video_id=%s&tmdb=1&s=%d&e=%d&sub_lang=id", videoIDStr, season, episode),
+					IsValid:    true,
+					Status:     "ACTIVE",
+				})
+				// Server 3: NontonGo Asia (nontongo.win)
+				servers = append(servers, model.StreamLink{
+					MovieID:    movie.ID,
+					Provider:   "NontonGo Asia",
+					ServerName: "Server 3 (NontonGo Asia)",
+					Quality:    "HD 720p",
+					EmbedURL:   fmt.Sprintf("https://www.nontongo.win/embed/tv/%s/%d/%d?sub=id", videoIDStr, season, episode),
+					IsValid:    true,
+					Status:     "ACTIVE",
+				})
+				// Server 4: 2Embed VIP (2embed.cc)
+				servers = append(servers, model.StreamLink{
+					MovieID:    movie.ID,
+					Provider:   "2Embed VIP",
+					ServerName: "Server 4 (2Embed VIP)",
+					Quality:    "HD 720p",
+					EmbedURL:   fmt.Sprintf("https://www.2embed.cc/embedtv/%s&s=%d&e=%d&sub_lang=id", videoIDStr, season, episode),
+					IsValid:    true,
+					Status:     "ACTIVE",
+				})
+				// Server 5: SmashyStream (embed.smashystream.com)
+				servers = append(servers, model.StreamLink{
+					MovieID:    movie.ID,
+					Provider:   "SmashyStream",
+					ServerName: "Server 5 (SmashyStream)",
+					Quality:    "HD 1080p",
+					EmbedURL:   fmt.Sprintf("https://embed.smashystream.com/playere.php?tmdb=%s&season=%d&episode=%d", videoIDStr, season, episode),
+					IsValid:    true,
+					Status:     "ACTIVE",
+				})
+				// Server 6: AutoEmbed Fast (player.autoembed.cc)
+				servers = append(servers, model.StreamLink{
+					MovieID:    movie.ID,
+					Provider:   "AutoEmbed Fast",
+					ServerName: "Server 6 (AutoEmbed Fast)",
+					Quality:    "HD 1080p",
+					EmbedURL:   fmt.Sprintf("https://player.autoembed.cc/embed/tv/%s/%d/%d", videoIDStr, season, episode),
+					IsValid:    true,
+					Status:     "ACTIVE",
+				})
+				// Server 7: VidSrc CC v2 (vidsrc.cc)
+				servers = append(servers, model.StreamLink{
+					MovieID:    movie.ID,
+					Provider:   "VidSrc CC",
+					ServerName: "Server 7 (VidSrc CC)",
+					Quality:    "HD 1080p",
+					EmbedURL:   fmt.Sprintf("https://vidsrc.cc/v2/embed/tv/%s/%d/%d", videoIDStr, season, episode),
+					IsValid:    true,
+					Status:     "ACTIVE",
+				})
 			}
-			servers = append(servers, model.StreamLink{
-				MovieID:    movie.ID,
-				Provider:   "VidSrc CC",
-				ServerName: "Server 4 (VidSrc CC)",
-				Quality:    "HD 1080p",
-				EmbedURL:   vidSrcTVURL,
-				IsValid:    true,
-				Status:     "ACTIVE",
-			})
-			// Server 5: 2Embed VIP (2embed.cc - format TV embed stabil)
-			servers = append(servers, model.StreamLink{
-				MovieID:    movie.ID,
-				Provider:   "2Embed VIP",
-				ServerName: "Server 5 (2Embed VIP)",
-				Quality:    "HD 720p",
-				EmbedURL:   fmt.Sprintf("https://www.2embed.cc/embedtv/%s&s=%d&e=%d", videoIDStr, season, episode),
-				IsValid:    true,
-				Status:     "ACTIVE",
-			})
-			// Server 6: MultiEmbed (multiembed.mov - Multi provider)
-			servers = append(servers, model.StreamLink{
-				MovieID:    movie.ID,
-				Provider:   "MultiEmbed",
-				ServerName: "Server 6 (MultiEmbed)",
-				Quality:    "HD 720p",
-				EmbedURL:   fmt.Sprintf("https://multiembed.mov/?video_id=%s&tmdb=1&s=%d&e=%d", videoIDStr, season, episode),
-				IsValid:    true,
-				Status:     "ACTIVE",
-			})
-			// Server 7: NontonGo Asia (Ramah ISP lokal Indonesia)
-			servers = append(servers, model.StreamLink{
-				MovieID:    movie.ID,
-				Provider:   "NontonGo Asia",
-				ServerName: "Server 7 (NontonGo Asia)",
-				Quality:    "HD 720p",
-				EmbedURL:   fmt.Sprintf("https://www.nontongo.win/embed/tv/%s/%d/%d", videoIDStr, season, episode),
-				IsValid:    true,
-				Status:     "ACTIVE",
-			})
 		} else {
 			// Regular Movie embeds
 			// Server 1: VidLink HD (Utama - Super Cepat, HD 1080p)
@@ -234,67 +304,67 @@ func GenerateMultiServerStreams(movie *model.Movie, tmdbID int, season int, epis
 				Provider:   "VidLink HD",
 				ServerName: "Server 1 (VidLink HD)",
 				Quality:    "HD 1080p",
-				EmbedURL:   fmt.Sprintf("https://vidlink.pro/movie/%s", videoIDStr),
+				EmbedURL:   fmt.Sprintf("https://vidlink.pro/movie/%s?sub_lang=id", videoIDStr),
 				IsValid:    true,
 				Status:     "ACTIVE",
 			})
-			// Server 2: SmashyStream (Sangat stabil & banyak source)
+			// Server 2: MultiEmbed (multiembed.mov - Sangat stabil)
+			servers = append(servers, model.StreamLink{
+				MovieID:    movie.ID,
+				Provider:   "MultiEmbed",
+				ServerName: "Server 2 (MultiEmbed)",
+				Quality:    "HD 720p",
+				EmbedURL:   fmt.Sprintf("https://multiembed.mov/?video_id=%s&tmdb=1&sub_lang=id", videoIDStr),
+				IsValid:    true,
+				Status:     "ACTIVE",
+			})
+			// Server 3: NontonGo Asia (nontongo.win - Sub Indo)
+			servers = append(servers, model.StreamLink{
+				MovieID:    movie.ID,
+				Provider:   "NontonGo Asia",
+				ServerName: "Server 3 (NontonGo Asia)",
+				Quality:    "HD 720p",
+				EmbedURL:   fmt.Sprintf("https://www.nontongo.win/embed/movie/%s?sub=id", videoIDStr),
+				IsValid:    true,
+				Status:     "ACTIVE",
+			})
+			// Server 4: 2Embed VIP (2embed.cc)
+			servers = append(servers, model.StreamLink{
+				MovieID:    movie.ID,
+				Provider:   "2Embed VIP",
+				ServerName: "Server 4 (2Embed VIP)",
+				Quality:    "HD 720p",
+				EmbedURL:   fmt.Sprintf("https://www.2embed.cc/embed/%s?sub_lang=id", videoIDStr),
+				IsValid:    true,
+				Status:     "ACTIVE",
+			})
+			// Server 5: SmashyStream (Sangat stabil & banyak source)
 			servers = append(servers, model.StreamLink{
 				MovieID:    movie.ID,
 				Provider:   "SmashyStream",
-				ServerName: "Server 2 (SmashyStream)",
+				ServerName: "Server 5 (SmashyStream)",
 				Quality:    "HD 1080p",
 				EmbedURL:   fmt.Sprintf("https://embed.smashystream.com/playere.php?tmdb=%s", videoIDStr),
 				IsValid:    true,
 				Status:     "ACTIVE",
 			})
-			// Server 3: AutoEmbed Fast (player.autoembed.cc)
+			// Server 6: AutoEmbed Fast (player.autoembed.cc)
 			servers = append(servers, model.StreamLink{
 				MovieID:    movie.ID,
 				Provider:   "AutoEmbed Fast",
-				ServerName: "Server 3 (AutoEmbed Fast)",
+				ServerName: "Server 6 (AutoEmbed Fast)",
 				Quality:    "HD 1080p",
 				EmbedURL:   fmt.Sprintf("https://player.autoembed.cc/embed/movie/%s", videoIDStr),
 				IsValid:    true,
 				Status:     "ACTIVE",
 			})
-			// Server 4: VidSrc CC v2 (vidsrc.cc)
+			// Server 7: VidSrc CC v2 (vidsrc.cc)
 			servers = append(servers, model.StreamLink{
 				MovieID:    movie.ID,
 				Provider:   "VidSrc CC",
-				ServerName: "Server 4 (VidSrc CC)",
+				ServerName: "Server 7 (VidSrc CC)",
 				Quality:    "HD 1080p",
 				EmbedURL:   fmt.Sprintf("https://vidsrc.cc/v2/embed/movie/%s", videoIDStr),
-				IsValid:    true,
-				Status:     "ACTIVE",
-			})
-			// Server 5: 2Embed VIP (2embed.cc)
-			servers = append(servers, model.StreamLink{
-				MovieID:    movie.ID,
-				Provider:   "2Embed VIP",
-				ServerName: "Server 5 (2Embed VIP)",
-				Quality:    "HD 720p",
-				EmbedURL:   fmt.Sprintf("https://www.2embed.cc/embed/%s", videoIDStr),
-				IsValid:    true,
-				Status:     "ACTIVE",
-			})
-			// Server 6: MultiEmbed (multiembed.mov)
-			servers = append(servers, model.StreamLink{
-				MovieID:    movie.ID,
-				Provider:   "MultiEmbed",
-				ServerName: "Server 6 (MultiEmbed)",
-				Quality:    "HD 720p",
-				EmbedURL:   fmt.Sprintf("https://multiembed.mov/?video_id=%s&tmdb=1", videoIDStr),
-				IsValid:    true,
-				Status:     "ACTIVE",
-			})
-			// Server 7: NontonGo Asia (Ramah ISP lokal Indonesia)
-			servers = append(servers, model.StreamLink{
-				MovieID:    movie.ID,
-				Provider:   "NontonGo Asia",
-				ServerName: "Server 7 (NontonGo Asia)",
-				Quality:    "HD 720p",
-				EmbedURL:   fmt.Sprintf("https://www.nontongo.win/embed/movie/%s", videoIDStr),
 				IsValid:    true,
 				Status:     "ACTIVE",
 			})

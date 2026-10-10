@@ -2,8 +2,10 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -59,6 +61,11 @@ func (s *Server) HandleAdminSaveSettings(w http.ResponseWriter, r *http.Request)
 	banner320Code := strings.TrimSpace(r.FormValue("adsterra_banner_320_code"))
 	nativeBannerCode := strings.TrimSpace(r.FormValue("adsterra_native_banner_code"))
 	smartlinkURL := strings.TrimSpace(r.FormValue("adsterra_smartlink_url"))
+	safelinkuEnabled := checkboxVal("safelinku_enabled")
+	safelinkuAPIToken := strings.TrimSpace(r.FormValue("safelinku_api_token"))
+	if safelinkuAPIToken == "" {
+		safelinkuAPIToken = "0e88844335a361150b23252773b50a0b03ded280"
+	}
 
 	// 2. Fitur Translate & Multi-Bahasa
 	translateEnabled := checkboxVal("translate_enabled")
@@ -174,6 +181,8 @@ func (s *Server) HandleAdminSaveSettings(w http.ResponseWriter, r *http.Request)
 	_ = database.SaveSetting(s.db, "custom_footer_code", customFooterCode, "Script Custom sebelum penutup </body>")
 	_ = database.SaveSetting(s.db, "adblock_notice_enabled", adblockNoticeEnabled, "Tampilkan Notifikasi/Banner Ramah jika Pengunjung Menggunakan AdBlocker")
 	_ = database.SaveSetting(s.db, "download_interstitial_enabled", downloadInterstitialEnabled, "Hitung Mundur Buffer Sponsor (Smartlink) 3 Detik saat Tombol Download Diklik")
+	_ = database.SaveSetting(s.db, "safelinku_enabled", safelinkuEnabled, "Saklar ON/OFF SafelinkU URL Shortener Monetisasi Download")
+	_ = database.SaveSetting(s.db, "safelinku_api_token", safelinkuAPIToken, "API Token SafelinkU REST API")
 
 	// Simpan pengaturan Domain Informasi (cinembrot.my.id)
 	_ = database.SaveSetting(s.db, "info_ads_enabled", infoAdsEnabled, "Saklar Master ON/OFF Iklan Adsterra di cinembrot.my.id")
@@ -289,3 +298,222 @@ func (s *Server) HandleAdminHosterBatchUpload(w http.ResponseWriter, r *http.Req
 		"message": "Tugas background remote upload ke DoodStream & Streamtape berhasil dijalankan!",
 	})
 }
+
+// HandleAdminHosterSingleUpload triggers immediate remote upload of a direct video link to DoodStream and/or Streamtape
+func (s *Server) HandleAdminHosterSingleUpload(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"success":false,"message":"Metode HTTP harus POST"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "Gagal membaca data form: " + err.Error(),
+		})
+		return
+	}
+
+	rawURL := strings.TrimSpace(r.FormValue("video_url"))
+	title := strings.TrimSpace(r.FormValue("title"))
+	target := strings.TrimSpace(strings.ToLower(r.FormValue("target")))
+	movieIDStr := strings.TrimSpace(r.FormValue("movie_id"))
+	episodeStr := strings.TrimSpace(r.FormValue("episode"))
+
+	if rawURL == "" {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "Tautan URL video tidak boleh kosong! Harap masukkan link file video langsung.",
+		})
+		return
+	}
+
+	// Validasi mutlak format file video
+	if !hoster.IsDirectPlayableVideoURL(rawURL) {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "Format file link TIDAK DIIZINKAN! Tautan harus berupa file video langsung (.mp4, .mkv, .webm, .avi, .ts) atau cloud storage yang didukung (Google Drive, PixelDrain, Acefile, Mediafire, FastDrive, Buzzheavier). DILARANG mengunggah subtitle (.srt/.vtt), torrent/magnet, atau arsip zip/rar.",
+		})
+		return
+	}
+
+	if target == "" {
+		target = "both"
+	}
+
+	uploadTitle := title
+	if uploadTitle == "" {
+		uploadTitle = "Cinembrot Video"
+	}
+
+	epNum := 0
+	if episodeStr != "" {
+		if ep, err := strconv.Atoi(episodeStr); err == nil && ep > 0 {
+			epNum = ep
+			uploadTitle = fmt.Sprintf("%s - Episode %d", uploadTitle, epNum)
+		}
+	}
+
+	settings := database.GetAllSettings(s.db)
+	doodKey := settings["doodstream_api_key"]
+	if doodKey == "" {
+		doodKey = s.cfg.DoodStreamAPIKey
+	}
+	stLogin := settings["streamtape_login"]
+	if stLogin == "" {
+		stLogin = s.cfg.StreamtapeLogin
+	}
+	stKey := settings["streamtape_key"]
+	if stKey == "" {
+		stKey = s.cfg.StreamtapeKey
+	}
+
+	client := hoster.NewClient(doodKey, stLogin, stKey)
+
+	var movieID uint
+	if mID, err := strconv.ParseUint(movieIDStr, 10, 32); err == nil {
+		movieID = uint(mID)
+	}
+
+	type UploadedServer struct {
+		Provider   string `json:"provider"`
+		ServerName string `json:"server_name"`
+		EmbedURL   string `json:"embed_url"`
+		Quality    string `json:"quality"`
+		DirectURL  string `json:"direct_url"`
+		Episode    int    `json:"episode,omitempty"`
+	}
+
+	var results []UploadedServer
+	var errMessages []string
+
+	// 1. Upload ke DoodStream
+	if target == "doodstream" || target == "both" {
+		if doodKey == "" {
+			errMessages = append(errMessages, "API Key DoodStream belum diisi di Pengaturan CMS")
+		} else {
+			fileCode, embedURL, err := client.UploadDoodStream(rawURL, uploadTitle)
+			if err != nil {
+				errMessages = append(errMessages, fmt.Sprintf("DoodStream gagal: %v", err))
+			} else if fileCode != "" && embedURL != "" {
+				serverName := "Server VIP 1 (DoodStream)"
+				if epNum > 0 {
+					serverName = fmt.Sprintf("Server VIP 1 - EPS %d (DoodStream)", epNum)
+				}
+				item := UploadedServer{
+					Provider:   "DoodStream",
+					ServerName: serverName,
+					EmbedURL:   embedURL,
+					Quality:    "HD 1080p",
+					DirectURL:  rawURL,
+					Episode:    epNum,
+				}
+				results = append(results, item)
+
+				if movieID > 0 {
+					now := time.Now()
+					sl := model.StreamLink{
+						MovieID:       movieID,
+						Provider:      "DoodStream",
+						ServerName:    serverName,
+						EmbedURL:      embedURL,
+						DirectURL:     rawURL,
+						Quality:       "HD 1080p",
+						IsValid:       true,
+						Status:        "ACTIVE",
+						LastCheckedAt: &now,
+					}
+					if epNum > 0 {
+						var ep model.Episode
+						if err := s.db.Where("movie_id = ? AND episode_number = ?", movieID, epNum).First(&ep).Error; err == nil {
+							sl.EpisodeID = &ep.ID
+						}
+					}
+					s.db.Create(&sl)
+				}
+			}
+		}
+	}
+
+	// 2. Upload ke Streamtape
+	if target == "streamtape" || target == "both" {
+		if stLogin == "" || stKey == "" {
+			errMessages = append(errMessages, "Username atau API Key Streamtape belum diisi di Pengaturan CMS")
+		} else {
+			taskID, err := client.UploadStreamtape(rawURL, uploadTitle)
+			if err != nil {
+				errMessages = append(errMessages, fmt.Sprintf("Streamtape gagal: %v", err))
+			} else if taskID != "" {
+				// Beri waktu 1 detik lalu periksa apakah task sudah memiliki extid (misal instant deduplication)
+				time.Sleep(1 * time.Second)
+				_, extid, _ := client.CheckStreamtapeRemoteDL(taskID)
+				finalCode := taskID
+				if extid != "" {
+					finalCode = extid
+				}
+				embedURL := fmt.Sprintf("https://streamtape.com/e/%s", finalCode)
+
+				serverName := "Server VIP 2 (Streamtape)"
+				if epNum > 0 {
+					serverName = fmt.Sprintf("Server VIP 2 - EPS %d (Streamtape)", epNum)
+				}
+				item := UploadedServer{
+					Provider:   "Streamtape",
+					ServerName: serverName,
+					EmbedURL:   embedURL,
+					Quality:    "HD 1080p",
+					DirectURL:  rawURL,
+					Episode:    epNum,
+				}
+				results = append(results, item)
+
+				if movieID > 0 {
+					now := time.Now()
+					sl := model.StreamLink{
+						MovieID:       movieID,
+						Provider:      "Streamtape",
+						ServerName:    serverName,
+						EmbedURL:      embedURL,
+						DirectURL:     rawURL,
+						Quality:       "HD 1080p",
+						IsValid:       true,
+						Status:        "ACTIVE",
+						LastCheckedAt: &now,
+					}
+					if epNum > 0 {
+						var ep model.Episode
+						if err := s.db.Where("movie_id = ? AND episode_number = ?", movieID, epNum).First(&ep).Error; err == nil {
+							sl.EpisodeID = &ep.ID
+						}
+					}
+					s.db.Create(&sl)
+				}
+			}
+		}
+	}
+
+	if len(results) == 0 {
+		errMsg := "Gagal mengunggah file ke DoodStream maupun Streamtape."
+		if len(errMessages) > 0 {
+			errMsg += " " + strings.Join(errMessages, " | ")
+		}
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": errMsg,
+		})
+		return
+	}
+
+	msg := fmt.Sprintf("Sukses! Video berhasil diunggah ke %d server streaming. Server telah otomatis disetel di posisi teratas sebagai server player default.", len(results))
+	if len(errMessages) > 0 {
+		msg += " Catatan: " + strings.Join(errMessages, " | ")
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": msg,
+		"servers": results,
+	})
+}
+

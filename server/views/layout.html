@@ -106,6 +106,54 @@
   </script>
 
   {{if .EnableAds}}
+  <!-- ==================== ADSTERRA POPUNDER COOLDOWN & FREQUENCY CONTROLLER ==================== -->
+  <script>
+    (function() {
+      // Cooldown 5 Menit (300.000 ms) agar user tidak terganggu oleh tab iklan beruntun
+      var AD_COOLDOWN_MS = 5 * 60 * 1000;
+      var AD_STORAGE_KEY = 'cinembrot_ad_cooldown_ts';
+
+      window.isCinembrotAdCooldownActive = function() {
+        try {
+          var last = localStorage.getItem(AD_STORAGE_KEY);
+          if (!last) return false;
+          var diff = Date.now() - parseInt(last, 10);
+          return diff < AD_COOLDOWN_MS;
+        } catch(e) {
+          return false;
+        }
+      };
+
+      window.setCinembrotAdCooldown = function(minutes) {
+        try {
+          var ms = (minutes || 5) * 60 * 1000;
+          // Set cooldown hingga durasi tertentu
+          localStorage.setItem(AD_STORAGE_KEY, Date.now().toString());
+        } catch(e) {}
+      };
+
+      // Cegah script popunder membuka tab baru jika cooldown 5 menit sedang aktif
+      var originalWindowOpen = window.open;
+      window.open = function(url, target, features) {
+        // Jika pemanggilan berasal dari pengguna sendiri untuk link unduhan/tab baru internal, izinkan
+        var urlStr = (url || '').toString();
+        var isInternal = urlStr.indexOf('cinembrot') !== -1 || urlStr.indexOf('sfl.gl') !== -1 || urlStr.indexOf('safelinku') !== -1 || urlStr.indexOf('/movie/') !== -1;
+
+        if (!isInternal && window.isCinembrotAdCooldownActive()) {
+          console.warn('[CINEMBROT] Iklan direct dicegah selama masa tenang 5 menit agar penonton tidak terganggu.');
+          return null;
+        }
+
+        if (!isInternal) {
+          // Jika iklan direct dibuka, aktifkan masa tenang 5 menit ke depan
+          window.setCinembrotAdCooldown(5);
+        }
+
+        return originalWindowOpen.apply(this, arguments);
+      };
+    })();
+  </script>
+
   <!-- ==================== ADSTERRA POPUNDER & SOCIAL BAR ==================== -->
   {{if .AdsterraPopunder}}{{.AdsterraPopunder}}{{end}}
   {{if .AdsterraSocialBar}}{{.AdsterraSocialBar}}{{end}}

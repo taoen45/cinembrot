@@ -378,6 +378,61 @@ func (c *Client) UploadStreamtape(videoURL, title string) (string, error) {
 	return res.Result.ID, nil
 }
 
+// CheckStreamtapeRemoteDL checks status of a remote upload task on Streamtape
+func (c *Client) CheckStreamtapeRemoteDL(taskID string) (status string, extid string, err error) {
+	if c.StreamtapeLogin == "" || c.StreamtapeKey == "" || strings.TrimSpace(taskID) == "" {
+		return "", "", fmt.Errorf("parameter tidak lengkap")
+	}
+
+	endpoint := fmt.Sprintf("https://api.streamtape.com/remotedl/status?login=%s&key=%s&id=%s",
+		url.QueryEscape(c.StreamtapeLogin), url.QueryEscape(c.StreamtapeKey), url.QueryEscape(taskID))
+
+	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
+	if err != nil {
+		return "", "", err
+	}
+	req.Header.Set("User-Agent", "CINEMBROT/2.0 RemoteUploader (+https://cinembrot.web.id)")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return "", "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", "", err
+	}
+
+	var res struct {
+		Status int    `json:"status"`
+		Msg    string `json:"msg"`
+		Result map[string]struct {
+			ID     string      `json:"id"`
+			Status string      `json:"status"`
+			ExtID  interface{} `json:"extid"`
+		} `json:"result"`
+	}
+
+	if err := json.Unmarshal(body, &res); err != nil {
+		return "", "", err
+	}
+
+	if item, ok := res.Result[taskID]; ok {
+		extidStr := ""
+		if item.ExtID != nil {
+			if s, ok := item.ExtID.(string); ok {
+				extidStr = s
+			} else {
+				extidStr = fmt.Sprintf("%v", item.ExtID)
+			}
+		}
+		return item.Status, extidStr, nil
+	}
+
+	return "", "", fmt.Errorf("task ID tidak ditemukan di respons status")
+}
+
 // IsDirectPlayableVideoURL strictly validates that the URL is an actual video file and NOT a subtitle/search HTML webpage
 func IsDirectPlayableVideoURL(rawURL string) bool {
 	u := strings.ToLower(strings.TrimSpace(rawURL))
@@ -385,20 +440,25 @@ func IsDirectPlayableVideoURL(rawURL string) bool {
 		return false
 	}
 
-	// 1. Blacklist mutlak: Subtitle, Web Search, Torrent, ZIP, RAR
+	cleanPath := strings.Split(u, "?")[0]
+
+	// 1. Blacklist mutlak: Subtitle, Web Search, Torrent, Arsip ZIP/RAR/7z
 	if strings.Contains(u, "subdl.com") ||
 		strings.Contains(u, "opensubtitles.org") ||
 		strings.Contains(u, "subsource.net") ||
 		strings.Contains(u, "subscene") ||
 		strings.Contains(u, "/search/") ||
 		strings.Contains(u, "/subtitle/") ||
-		strings.HasSuffix(u, ".srt") ||
-		strings.HasSuffix(u, ".vtt") ||
-		strings.HasSuffix(u, ".ass") ||
-		strings.HasSuffix(u, ".zip") ||
-		strings.HasSuffix(u, ".rar") ||
+		strings.HasSuffix(cleanPath, ".srt") ||
+		strings.HasSuffix(cleanPath, ".vtt") ||
+		strings.HasSuffix(cleanPath, ".ass") ||
+		strings.HasSuffix(cleanPath, ".zip") ||
+		strings.HasSuffix(cleanPath, ".rar") ||
+		strings.HasSuffix(cleanPath, ".7z") ||
+		strings.HasSuffix(cleanPath, ".tar") ||
+		strings.HasSuffix(cleanPath, ".gz") ||
 		strings.HasPrefix(u, "magnet:") ||
-		strings.HasSuffix(u, ".torrent") {
+		strings.HasSuffix(cleanPath, ".torrent") {
 		return false
 	}
 
@@ -415,13 +475,14 @@ func IsDirectPlayableVideoURL(rawURL string) bool {
 		return true
 	}
 
-	// 3. Direct Video File Extensions (.mp4, .mkv, .webm, .avi, .ts)
-	cleanPath := strings.Split(u, "?")[0]
+	// 3. Direct Video File Extensions (.mp4, .mkv, .webm, .avi, .ts, .m4v, .flv)
 	if strings.HasSuffix(cleanPath, ".mp4") ||
 		strings.HasSuffix(cleanPath, ".mkv") ||
 		strings.HasSuffix(cleanPath, ".webm") ||
 		strings.HasSuffix(cleanPath, ".avi") ||
-		strings.HasSuffix(cleanPath, ".ts") {
+		strings.HasSuffix(cleanPath, ".ts") ||
+		strings.HasSuffix(cleanPath, ".m4v") ||
+		strings.HasSuffix(cleanPath, ".flv") {
 		return true
 	}
 

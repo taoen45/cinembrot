@@ -1,6 +1,7 @@
 package aggregator
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -24,15 +25,23 @@ type Client struct {
 
 // NewClient creates a new Aggregator download scraper client
 func NewClient(cfg *config.Config) *Client {
-	timeout := 10
+	timeout := 15
 	if cfg != nil && cfg.ScraperTimeoutSec > 0 {
 		timeout = cfg.ScraperTimeoutSec
+	}
+
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+		DisableKeepAlives: false,
 	}
 
 	return &Client{
 		cfg: cfg,
 		httpClient: &http.Client{
-			Timeout: time.Duration(timeout) * time.Second,
+			Transport: transport,
+			Timeout:   time.Duration(timeout) * time.Second,
 		},
 	}
 }
@@ -108,12 +117,12 @@ func (c *Client) scrapePahe(title string, year int) []model.DownloadLink {
 
 		// Cari artikel yang cocok dengan judul
 		var targetPostURL string
-		doc.Find("article.post, .content-area article").Each(func(i int, s *goquery.Selection) {
+		doc.Find("article.post, .content-area article, .post-box, .box-item, li.timeline-post, div.post").Each(func(i int, s *goquery.Selection) {
 			if targetPostURL != "" {
 				return
 			}
-			postTitle := strings.TrimSpace(s.Find(".entry-title a, h2 a").Text())
-			postHref, exists := s.Find(".entry-title a, h2 a").Attr("href")
+			postTitle := strings.TrimSpace(s.Find(".post-box-title a, .entry-title a, .post-title a, h2 a").Text())
+			postHref, exists := s.Find(".post-box-title a, .entry-title a, .post-title a, h2 a").Attr("href")
 			if !exists || postHref == "" {
 				return
 			}
@@ -126,7 +135,7 @@ func (c *Client) scrapePahe(title string, year int) []model.DownloadLink {
 
 		if targetPostURL == "" {
 			// Coba link pertama dari search result jika ada
-			targetPostURL, _ = doc.Find(".entry-title a, h2 a").First().Attr("href")
+			targetPostURL, _ = doc.Find(".post-box-title a, .entry-title a, .post-title a, h2 a").First().Attr("href")
 		}
 
 		if targetPostURL != "" {
@@ -202,148 +211,169 @@ func (c *Client) extractPaheLinks(doc *goquery.Document) []model.DownloadLink {
 // --- SCRAPER 2: OTAKUDESU (Anime Subtitle Indonesia) ---
 func (c *Client) scrapeOtakudesu(title string) []model.DownloadLink {
 	searchQuery := url.QueryEscape(title)
-	searchURL := fmt.Sprintf("https://otakudesu.cloud/?s=%s&post_type=anime", searchQuery)
-
-	doc, err := c.fetchDocument(searchURL)
-	if err != nil || doc == nil {
-		return nil
+	mirrors := []string{
+		"https://otakudesu.blog",
+		"https://otakudesu.best",
+		"https://otakudesu.cam",
+		"https://otakudesu.cloud",
 	}
 
-	var targetAnimeURL string
-	doc.Find("ul.chivsrc li").Each(func(i int, s *goquery.Selection) {
-		if targetAnimeURL != "" {
-			return
-		}
-		animeTitle := strings.TrimSpace(s.Find("h2 a").Text())
-		href, ok := s.Find("h2 a").Attr("href")
-		if ok && matchTitle(animeTitle, title) {
-			targetAnimeURL = href
-		}
-	})
-
-	if targetAnimeURL == "" {
-		targetAnimeURL, _ = doc.Find("ul.chivsrc li h2 a").First().Attr("href")
-	}
-
-	if targetAnimeURL == "" {
-		return nil
-	}
-
-	animeDoc, err := c.fetchDocument(targetAnimeURL)
-	if err != nil || animeDoc == nil {
-		return nil
-	}
-
-	var links []model.DownloadLink
-	seen := make(map[string]bool)
-
-	// Cari kotak download (batch download atau episode download)
-	animeDoc.Find(".download ul li, .batchlink ul li").Each(func(i int, s *goquery.Selection) {
-		qualityText := strings.TrimSpace(s.Find("strong").Text())
-		if qualityText == "" {
-			qualityText = "720p HD"
+	var results []model.DownloadLink
+	for _, base := range mirrors {
+		searchURL := fmt.Sprintf("%s/?s=%s&post_type=anime", base, searchQuery)
+		doc, err := c.fetchDocument(searchURL)
+		if err != nil || doc == nil {
+			continue
 		}
 
-		s.Find("a[href]").Each(func(j int, a *goquery.Selection) {
-			href, ok := a.Attr("href")
-			if !ok || seen[href] {
+		var targetAnimeURL string
+		doc.Find("ul.chivsrc li").Each(func(i int, s *goquery.Selection) {
+			if targetAnimeURL != "" {
 				return
 			}
+			animeTitle := strings.TrimSpace(s.Find("h2 a").Text())
+			href, ok := s.Find("h2 a").Attr("href")
+			if ok && matchTitle(animeTitle, title) {
+				targetAnimeURL = href
+			}
+		})
 
-			anchorText := strings.TrimSpace(a.Text())
-			providerName := detectHostProvider(href, anchorText)
-			if providerName == "" {
-				return
+		if targetAnimeURL == "" {
+			targetAnimeURL, _ = doc.Find("ul.chivsrc li h2 a").First().Attr("href")
+		}
+
+		if targetAnimeURL == "" {
+			continue
+		}
+
+		animeDoc, err := c.fetchDocument(targetAnimeURL)
+		if err != nil || animeDoc == nil {
+			continue
+		}
+
+		seen := make(map[string]bool)
+
+		// Cari kotak download (batch download atau episode download)
+		animeDoc.Find(".download ul li, .batchlink ul li").Each(func(i int, s *goquery.Selection) {
+			qualityText := strings.TrimSpace(s.Find("strong").Text())
+			if qualityText == "" {
+				qualityText = "720p HD"
 			}
 
-			seen[href] = true
-			links = append(links, model.DownloadLink{
-				Provider:   providerName + " (Hardsub Indo)",
-				Quality:    cleanAnimeQuality(qualityText),
-				Resolution: resolveResolution(qualityText),
-				FileSize:   "350 MB",
-				Format:     "MP4",
-				URL:        href,
-				IsValid:    true,
-				Status:     "ACTIVE",
+			s.Find("a[href]").Each(func(j int, a *goquery.Selection) {
+				href, ok := a.Attr("href")
+				if !ok || seen[href] {
+					return
+				}
+
+				anchorText := strings.TrimSpace(a.Text())
+				providerName := detectHostProvider(href, anchorText)
+				if providerName == "" {
+					return
+				}
+
+				seen[href] = true
+				results = append(results, model.DownloadLink{
+					Provider:   providerName + " (Hardsub Indo)",
+					Quality:    cleanAnimeQuality(qualityText),
+					Resolution: resolveResolution(qualityText),
+					FileSize:   "350 MB",
+					Format:     "MP4",
+					URL:        href,
+					IsValid:    true,
+					Status:     "ACTIVE",
+				})
 			})
 		})
-	})
 
-	return links
+		if len(results) > 0 {
+			break
+		}
+	}
+
+	return results
 }
 
 // --- SCRAPER 3: SAMEHADAKU (Anime Subtitle Indonesia) ---
 func (c *Client) scrapeSamehadaku(title string) []model.DownloadLink {
 	searchQuery := url.QueryEscape(title)
-	searchURL := fmt.Sprintf("https://samehadaku.care/?s=%s", searchQuery)
-
-	doc, err := c.fetchDocument(searchURL)
-	if err != nil || doc == nil {
-		return nil
+	mirrors := []string{
+		"https://samehadaku.care",
+		"https://samehadaku.email",
 	}
 
-	var targetURL string
-	doc.Find("article.animpost").Each(func(i int, s *goquery.Selection) {
-		if targetURL != "" {
-			return
-		}
-		postTitle := strings.TrimSpace(s.Find(".title").Text())
-		href, ok := s.Find("a").Attr("href")
-		if ok && matchTitle(postTitle, title) {
-			targetURL = href
-		}
-	})
-
-	if targetURL == "" {
-		targetURL, _ = doc.Find("article.animpost a").First().Attr("href")
-	}
-
-	if targetURL == "" {
-		return nil
-	}
-
-	detailDoc, err := c.fetchDocument(targetURL)
-	if err != nil || detailDoc == nil {
-		return nil
-	}
-
-	var links []model.DownloadLink
-	seen := make(map[string]bool)
-
-	detailDoc.Find(".download-eps li, .areadl ul li").Each(func(i int, s *goquery.Selection) {
-		qualityText := strings.TrimSpace(s.Find("strong").Text())
-		if qualityText == "" {
-			qualityText = "720p HD"
+	var results []model.DownloadLink
+	for _, base := range mirrors {
+		searchURL := fmt.Sprintf("%s/?s=%s", base, searchQuery)
+		doc, err := c.fetchDocument(searchURL)
+		if err != nil || doc == nil {
+			continue
 		}
 
-		s.Find("a[href]").Each(func(j int, a *goquery.Selection) {
-			href, ok := a.Attr("href")
-			if !ok || seen[href] {
+		var targetURL string
+		doc.Find("article.animpost, .animpost").Each(func(i int, s *goquery.Selection) {
+			if targetURL != "" {
 				return
 			}
+			postTitle := strings.TrimSpace(s.Find(".title").Text())
+			href, ok := s.Find("a").Attr("href")
+			if ok && matchTitle(postTitle, title) {
+				targetURL = href
+			}
+		})
 
-			anchorText := strings.TrimSpace(a.Text())
-			providerName := detectHostProvider(href, anchorText)
-			if providerName == "" {
-				return
+		if targetURL == "" {
+			targetURL, _ = doc.Find("article.animpost a, .animpost a").First().Attr("href")
+		}
+
+		if targetURL == "" {
+			continue
+		}
+
+		detailDoc, err := c.fetchDocument(targetURL)
+		if err != nil || detailDoc == nil {
+			continue
+		}
+
+		seen := make(map[string]bool)
+		detailDoc.Find(".download-eps li, .areadl ul li").Each(func(i int, s *goquery.Selection) {
+			qualityText := strings.TrimSpace(s.Find("strong").Text())
+			if qualityText == "" {
+				qualityText = "720p HD"
 			}
 
-			seen[href] = true
-			links = append(links, model.DownloadLink{
-				Provider:   providerName + " (Samehadaku)",
-				Quality:    cleanAnimeQuality(qualityText),
-				Resolution: resolveResolution(qualityText),
-				FileSize:   "380 MB",
-				Format:     "MP4",
-				URL:        href,
-				IsValid:    true,
-				Status:     "ACTIVE",
+			s.Find("a[href]").Each(func(j int, a *goquery.Selection) {
+				href, ok := a.Attr("href")
+				if !ok || seen[href] {
+					return
+				}
+
+				anchorText := strings.TrimSpace(a.Text())
+				providerName := detectHostProvider(href, anchorText)
+				if providerName == "" {
+					return
+				}
+
+				seen[href] = true
+				results = append(results, model.DownloadLink{
+					Provider:   providerName + " (Samehadaku)",
+					Quality:    cleanAnimeQuality(qualityText),
+					Resolution: resolveResolution(qualityText),
+					FileSize:   "380 MB",
+					Format:     "MP4",
+					URL:        href,
+					IsValid:    true,
+					Status:     "ACTIVE",
+				})
 			})
 		})
-	})
 
-	return links
+		if len(results) > 0 {
+			break
+		}
+	}
+
+	return results
 }
 
 // --- SCRAPER 4: MELONGMOVIE (Box Office & Bioskop Indonesia) ---

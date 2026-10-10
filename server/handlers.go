@@ -14,6 +14,7 @@ import (
 	"cinembrot/model"
 	"cinembrot/provider/embed"
 	"cinembrot/provider/hoster"
+	"cinembrot/provider/safelinku"
 	"cinembrot/provider/subtitles"
 	"cinembrot/provider/torrents"
 	"cinembrot/scraper"
@@ -99,6 +100,10 @@ type PageData struct {
 	// Anti-Banned & Domain Migration Banner
 	DomainNoticeEnabled bool
 	DomainNoticeText    template.HTML
+
+	// SafelinkU Monetization Fields
+	SafelinkuEnabled  bool
+	SafelinkuAPIToken string
 }
 
 // PopulatePageData automatically sets dynamic settings from database into PageData
@@ -165,6 +170,14 @@ func (s *Server) PopulatePageData(r *http.Request, data *PageData) {
 			text = "Perhatian: Jika domain ini terkena blokir, simpan domain resmi alternatif kami dan bergabung ke channel resmi kami."
 		}
 		data.DomainNoticeText = template.HTML(text)
+	}
+
+	// SafelinkU Monetization Configuration
+	safelinkVal := settings["safelinku_enabled"]
+	data.SafelinkuEnabled = safelinkVal != "false" && safelinkVal != "0"
+	data.SafelinkuAPIToken = settings["safelinku_api_token"]
+	if data.SafelinkuAPIToken == "" {
+		data.SafelinkuAPIToken = safelinku.DefaultAPIToken
 	}
 
 	// Verifikasi Search Engine Webmaster
@@ -832,7 +845,8 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 	var vipStreams []model.StreamLink
 	for _, sl := range movie.StreamLinks {
 		p := strings.ToLower(sl.Provider)
-		if (strings.Contains(p, "dood") || strings.Contains(p, "streamtape")) && !embed.IsDeadStreamURL(sl.EmbedURL) {
+		name := strings.ToLower(sl.ServerName)
+		if (strings.Contains(p, "dood") || strings.Contains(p, "streamtape") || strings.Contains(name, "dood") || strings.Contains(name, "streamtape") || strings.Contains(name, "vip")) && !embed.IsDeadStreamURL(sl.EmbedURL) {
 			vipStreams = append(vipStreams, sl)
 		}
 	}
@@ -844,7 +858,8 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 		var nonVipStreams []model.StreamLink
 		for _, sl := range movie.StreamLinks {
 			p := strings.ToLower(sl.Provider)
-			if !strings.Contains(p, "dood") && !strings.Contains(p, "streamtape") {
+			name := strings.ToLower(sl.ServerName)
+			if !strings.Contains(p, "dood") && !strings.Contains(p, "streamtape") && !strings.Contains(name, "dood") && !strings.Contains(name, "streamtape") && !strings.Contains(name, "vip") {
 				nonVipStreams = append(nonVipStreams, sl)
 			}
 		}
@@ -1661,6 +1676,50 @@ func (s *Server) HandleAPIMoviesFilter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = json.NewEncoder(w).Encode(resp)
+}
+
+// HandleSafelinkuShorten receives an original target download URL and returns a SafelinkU monetized short link
+func (s *Server) HandleSafelinkuShorten(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		URL string `json:"url"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || strings.TrimSpace(req.URL) == "" {
+		http.Error(w, "Invalid URL payload", http.StatusBadRequest)
+		return
+	}
+
+	settings := database.GetAllSettings(s.db)
+	enabled := settings["safelinku_enabled"]
+	if enabled == "false" || enabled == "0" {
+		// Jika SafelinkU dinonaktifkan di CMS, return URL asli secara transparan
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"status":    "disabled",
+			"short_url": req.URL,
+		})
+		return
+	}
+
+	token := settings["safelinku_api_token"]
+	if token == "" {
+		token = safelinku.DefaultAPIToken
+	}
+
+	shortURL, err := safelinku.ShortenURL(req.URL, token)
+	if err != nil {
+		shortURL = req.URL
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":    "success",
+		"short_url": shortURL,
+	})
 }
 
 

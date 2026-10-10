@@ -299,6 +299,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("GET /api/movies/filter", s.HandleAPIMoviesFilter)
 	mux.HandleFunc("POST /api/movie/{id}/refresh-download", s.HandleRefreshDownloadLink)
 	mux.HandleFunc("POST /api/movie/{id}/refresh-stream", s.HandleRefreshStreamLink)
+	mux.HandleFunc("POST /api/safelinku/shorten", s.HandleSafelinkuShorten)
 
 	// SEO & Search Engine Discovery Endpoints
 	mux.HandleFunc("GET /sitemap.xml", s.HandleSitemapXML)
@@ -397,6 +398,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("POST /admin/settings", s.RequireAdmin(s.HandleAdminSaveSettings))
 	mux.HandleFunc("GET /api/admin/hoster/status", s.RequireAdmin(s.HandleAdminHosterStatus))
 	mux.HandleFunc("POST /api/admin/hoster/batch-upload", s.RequireAdmin(s.HandleAdminHosterBatchUpload))
+	mux.HandleFunc("POST /api/admin/hoster/upload-single", s.RequireAdmin(s.HandleAdminHosterSingleUpload))
 
 	// Serve Static Files (Local WebP Originals & Thumbnails with Smart Placeholder Fallback)
 	uploadsDir := filepath.Join("public", "uploads")

@@ -202,9 +202,19 @@
         </button>
         {{end}}
       </div>
-      <div class="mt-2.5 pt-2 border-t border-slate-900 flex items-center gap-1.5 text-[11px] text-slate-400">
-        <i class="fa-solid fa-circle-info text-brand-400"></i>
-        <span>Server 1 (VidLink HD) & Server 2 (SmashyStream) adalah server super cepat. Jika buffering atau lambat di ISP Anda, beralihlah ke Server 3, 4, atau Server 7 (NontonGo Asia).</span>
+      <div class="mt-2.5 pt-2 border-t border-slate-900 flex flex-col md:flex-row md:items-center justify-between gap-2 text-[11px] text-slate-400">
+        <div class="flex items-center gap-1.5">
+          <i class="fa-solid fa-circle-info text-brand-400"></i>
+          {{if eq .Movie.Type "anime"}}
+          <span>Server 1 (MultiEmbed) & Server 2 (NontonGo) dioptimalkan untuk Anime. Jika buffering, pilih Server 3 (2Embed VIP).</span>
+          {{else}}
+          <span>Server 1 (VidLink HD) & Server 2 (MultiEmbed) adalah server super cepat. Jika buffering, beralihlah ke server alternatif.</span>
+          {{end}}
+        </div>
+        <div class="inline-flex items-center gap-1.5 bg-emerald-950/50 border border-emerald-800/50 text-emerald-300 px-2.5 py-1 rounded-lg font-medium text-[11px] self-start md:self-auto shadow-xs">
+          <i class="fa-solid fa-closed-captioning text-emerald-400"></i>
+          <span><b>Subtitle Indonesia:</b> Klik tombol <b>[CC]</b> atau ikon gear ⚙️ di pojok kanan bawah player lalu pilih <i>Indonesian</i></span>
+        </div>
       </div>
     </div>
     {{end}}
@@ -425,7 +435,7 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           {{range .Movie.TorrentDownloads}}
-          <a href="{{safeURL .URL}}" target="_blank" class="bg-slate-50 hover:bg-slate-100 dark:bg-dark-950 dark:hover:bg-dark-800 border border-slate-200 dark:border-dark-800 hover:border-blue-500 p-3.5 rounded-xl flex items-center justify-between group transition">
+          <a href="{{safeURL .URL}}" target="_blank" onclick="return handleDownloadClick(event, this.href, '{{if $.AdsterraSmartlink}}{{$.AdsterraSmartlink}}{{end}}', '{{$.Movie.Title}} - Torrent')" class="bg-slate-50 hover:bg-slate-100 dark:bg-dark-950 dark:hover:bg-dark-800 border border-slate-200 dark:border-dark-800 hover:border-blue-500 p-3.5 rounded-xl flex items-center justify-between group transition">
             <div class="flex items-center gap-3 min-w-0">
               <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition text-base">
                 <i class="fa-solid fa-download"></i>
@@ -614,7 +624,8 @@
        data-is-tv="{{if or (eq .Movie.Type "anime") (eq .Movie.Type "drama_pendek") (eq .Movie.Type "series")}}true{{else}}false{{end}}" 
        data-is-anime="{{if eq .Movie.Type "anime"}}true{{else}}false{{end}}" 
        data-trailer="{{if .Movie.TrailerURL}}{{youtubeEmbed .Movie.TrailerURL}}{{end}}"
-       data-interstitial-enabled="{{if and .EnableAds .EnableDownloadInterstitial}}true{{else}}false{{end}}">
+       data-interstitial-enabled="{{if and .EnableAds .EnableDownloadInterstitial}}true{{else}}false{{end}}"
+       data-safelinku-enabled="{{if .SafelinkuEnabled}}true{{else}}false{{end}}">
   </div>
 
   <!-- CLIENT SCRIPT STREAMING & EPISODE SWITCHER -->
@@ -630,6 +641,9 @@
     let currentEpisodeNumber = 1;
 
     function switchServer(indexOrBtn, embedURL, serverName) {
+      if (typeof window.setCinembrotAdCooldown === 'function') {
+        window.setCinembrotAdCooldown(5);
+      }
       let index = indexOrBtn;
       if (typeof indexOrBtn === 'object' && indexOrBtn !== null && indexOrBtn.dataset) {
         index = parseInt(indexOrBtn.dataset.index, 10);
@@ -652,7 +666,8 @@
       if (badge && serverName) badge.textContent = serverName;
 
       let targetURL = embedURL;
-      if (isTV && tmdbID > 0) {
+      const isCustomHoster = embedURL && (embedURL.includes('dood.') || embedURL.includes('streamtape.') || embedURL.includes('streamta.pe') || (serverName && (serverName.includes('VIP') || serverName.includes('Dood') || serverName.includes('Streamtape'))));
+      if (isTV && tmdbID > 0 && !isCustomHoster) {
         targetURL = buildEpisodeEmbedURL(index, currentEpisodeNumber);
       }
 
@@ -662,6 +677,9 @@
     }
 
     function switchEpisode(epNumOrBtn) {
+      if (typeof window.setCinembrotAdCooldown === 'function') {
+        window.setCinembrotAdCooldown(5);
+      }
       let epNum = epNumOrBtn;
       if (typeof epNumOrBtn === 'object' && epNumOrBtn !== null && epNumOrBtn.dataset) {
         epNum = parseInt(epNumOrBtn.dataset.episode, 10);
@@ -679,9 +697,22 @@
         }
       });
 
-      const player = document.getElementById('main-stream-player');
-      if (player) {
-        player.src = buildEpisodeEmbedURL(currentServerIndex, epNum);
+      // Cek apakah ada server VIP (DoodStream/Streamtape) yang dikhususkan untuk episode ini
+      let matchingServerBtn = null;
+      document.querySelectorAll('.server-btn').forEach(btn => {
+        const name = (btn.getAttribute('data-name') || '').toUpperCase();
+        if (name.includes('EPS ' + epNum) || name.includes('EPISODE ' + epNum)) {
+          matchingServerBtn = btn;
+        }
+      });
+
+      if (matchingServerBtn) {
+        switchServer(matchingServerBtn);
+      } else {
+        const player = document.getElementById('main-stream-player');
+        if (player) {
+          player.src = buildEpisodeEmbedURL(currentServerIndex, epNum);
+        }
       }
     }
 
@@ -691,30 +722,60 @@
         return activeBtn ? activeBtn.getAttribute('data-embed') : '';
       }
 
-      switch (serverIdx) {
-        case 0:
-          // Server 1: VidLink HD
-          return `https://vidlink.pro/tv/${tmdbID}/1/${epNum}`;
-        case 1:
-          // Server 2: SmashyStream
-          return `https://embed.smashystream.com/playere.php?tmdb=${tmdbID}&season=1&episode=${epNum}`;
-        case 2:
-          // Server 3: AutoEmbed Fast
-          return `https://player.autoembed.cc/embed/tv/${tmdbID}/1/${epNum}`;
-        case 3:
-          // Server 4: VidSrc CC (khusus anime atau TV)
-          return (isAnime ? `https://vidsrc.cc/v2/embed/anime/${tmdbID}/1/${epNum}` : `https://vidsrc.cc/v2/embed/tv/${tmdbID}/1/${epNum}`);
-        case 4:
-          // Server 5: 2Embed VIP
-          return `https://www.2embed.cc/embedtv/${tmdbID}&s=1&e=${epNum}`;
-        case 5:
-          // Server 6: MultiEmbed
-          return `https://multiembed.mov/?video_id=${tmdbID}&tmdb=1&s=1&e=${epNum}`;
-        case 6:
-          // Server 7: NontonGo Asia
-          return `https://www.nontongo.win/embed/tv/${tmdbID}/1/${epNum}`;
-        default:
-          return `https://vidlink.pro/tv/${tmdbID}/1/${epNum}`;
+      if (isAnime) {
+        // Prioritas server Anime: MultiEmbed, NontonGo Asia, 2Embed VIP (paling stabil & ada sub ID)
+        switch (serverIdx) {
+          case 0:
+            // Server 1: MultiEmbed HD
+            return `https://multiembed.mov/?video_id=${tmdbID}&tmdb=1&s=1&e=${epNum}&sub_lang=id`;
+          case 1:
+            // Server 2: NontonGo Asia
+            return `https://www.nontongo.win/embed/tv/${tmdbID}/1/${epNum}?sub=id`;
+          case 2:
+            // Server 3: 2Embed VIP
+            return `https://www.2embed.cc/embedtv/${tmdbID}&s=1&e=${epNum}&sub_lang=id`;
+          case 3:
+            // Server 4: VidLink HD
+            return `https://vidlink.pro/tv/${tmdbID}/1/${epNum}?sub_lang=id`;
+          case 4:
+            // Server 5: SmashyStream
+            return `https://embed.smashystream.com/playere.php?tmdb=${tmdbID}&season=1&episode=${epNum}`;
+          case 5:
+            // Server 6: AutoEmbed Fast
+            return `https://player.autoembed.cc/embed/tv/${tmdbID}/1/${epNum}`;
+          case 6:
+            // Server 7: VidSrc CC
+            return `https://vidsrc.cc/v2/embed/anime/${tmdbID}/1/${epNum}`;
+          default:
+            return `https://multiembed.mov/?video_id=${tmdbID}&tmdb=1&s=1&e=${epNum}&sub_lang=id`;
+        }
+      } else {
+        // Regular TV Series / Drama
+        switch (serverIdx) {
+          case 0:
+            // Server 1: VidLink HD
+            return `https://vidlink.pro/tv/${tmdbID}/1/${epNum}?sub_lang=id`;
+          case 1:
+            // Server 2: MultiEmbed HD
+            return `https://multiembed.mov/?video_id=${tmdbID}&tmdb=1&s=1&e=${epNum}&sub_lang=id`;
+          case 2:
+            // Server 3: NontonGo Asia
+            return `https://www.nontongo.win/embed/tv/${tmdbID}/1/${epNum}?sub=id`;
+          case 3:
+            // Server 4: 2Embed VIP
+            return `https://www.2embed.cc/embedtv/${tmdbID}&s=1&e=${epNum}&sub_lang=id`;
+          case 4:
+            // Server 5: SmashyStream
+            return `https://embed.smashystream.com/playere.php?tmdb=${tmdbID}&season=1&episode=${epNum}`;
+          case 5:
+            // Server 6: AutoEmbed Fast
+            return `https://player.autoembed.cc/embed/tv/${tmdbID}/1/${epNum}`;
+          case 6:
+            // Server 7: VidSrc CC
+            return `https://vidsrc.cc/v2/embed/tv/${tmdbID}/1/${epNum}`;
+          default:
+            return `https://vidlink.pro/tv/${tmdbID}/1/${epNum}?sub_lang=id`;
+        }
       }
     }
 
@@ -918,28 +979,67 @@
       });
     }
 
-    // Inisialisasi status cooldown saat halaman dimuat
+    // Inisialisasi status cooldown & sterilisasi iklan player saat halaman dimuat
     document.addEventListener('DOMContentLoaded', function() {
       checkButtonCooldown('dl', movieId, 'btn-refresh-dl', 'icon-refresh-dl', 'text-refresh-dl', 'Cek / Segarkan Link');
       checkButtonCooldown('stream', movieId, 'btn-refresh-stream', 'icon-refresh-stream', 'text-refresh-stream', 'Cek / Segarkan Server');
       checkButtonCooldown('stream', movieId, 'btn-refresh-stream-empty', 'icon-refresh-stream-empty', 'text-refresh-stream-empty', 'Cari / Hubungkan Server Streaming');
+
+      // 1. Aktifkan masa tenang iklan 5 menit di halaman movie detail
+      if (typeof window.setCinembrotAdCooldown === 'function') {
+        window.setCinembrotAdCooldown(5);
+      }
     });
 
-    // ==================== GLOBAL DOWNLOAD BUFFER INTERSTITIAL ====================
+    // ==================== GLOBAL DOWNLOAD BUFFER & SAFELINKU MONETIZATION ====================
     var pendingDownloadURL = '';
     var interstitialCountdown = null;
     var isInterstitialEnabled = metaEl ? (metaEl.dataset.interstitialEnabled === 'true') : false;
+    var isSafelinkuEnabled = metaEl ? (metaEl.dataset.safelinkuEnabled !== 'false') : true;
 
     function handleDownloadClick(event, targetURL, sponsorURL, itemName) {
-      if (!isInterstitialEnabled || !sponsorURL) {
-        return true;
-      }
       if (event) event.preventDefault();
-      openDownloadInterstitial(targetURL, sponsorURL, itemName);
+
+      // Jika SafelinkU aktif, konversi URL menjadi tautan SafelinkU berbayar secara instan
+      if (isSafelinkuEnabled && targetURL) {
+        // Tampilkan indikator loading halus jika modal interstitial dipakai
+        if (isInterstitialEnabled) {
+          openDownloadInterstitial(targetURL, sponsorURL, itemName, true);
+        }
+
+        fetch('/api/safelinku/shorten', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: targetURL })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          var monetizedURL = (data && data.short_url) ? data.short_url : targetURL;
+          pendingDownloadURL = monetizedURL;
+          if (!isInterstitialEnabled) {
+            window.open(monetizedURL, '_blank');
+          }
+        })
+        .catch(function(err) {
+          pendingDownloadURL = targetURL;
+          if (!isInterstitialEnabled) {
+            window.open(targetURL, '_blank');
+          }
+        });
+
+        return false;
+      }
+
+      if (isInterstitialEnabled) {
+        openDownloadInterstitial(targetURL, sponsorURL, itemName, false);
+        return false;
+      }
+
+      window.open(targetURL, '_blank');
       return false;
     }
 
-    function openDownloadInterstitial(targetURL, sponsorURL, itemName) {
+    function openDownloadInterstitial(targetURL, sponsorURL, itemName, isFetchingShortlink) {
       pendingDownloadURL = targetURL;
       var modal = document.getElementById('download-interstitial-modal');
       var nameEl = document.getElementById('interstitial-filename');
@@ -992,13 +1092,12 @@
       var a = document.createElement('a');
       a.href = url;
       a.target = '_blank';
-      a.setAttribute('download', '');
       document.body.appendChild(a);
       a.click();
       a.remove();
       setTimeout(function() {
         closeDownloadInterstitial();
-      }, 1000);
+      }, 1200);
     }
 
     function closeDownloadInterstitial() {

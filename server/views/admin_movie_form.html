@@ -314,31 +314,119 @@
       </div>
     </div>
 
-    <!-- 4. STREAM PLAYER LINKS -->
-    <div class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-6 shadow-sm space-y-4">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-dark-800">
-        <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <i class="fa-solid fa-play text-purple-500"></i> Server Player Streaming
-        </h3>
-        <button type="button" onclick="addStreamRow()" class="text-xs bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold px-3 py-1.5 rounded-lg hover:bg-purple-500 hover:text-white transition">
-          <i class="fa-solid fa-plus mr-1"></i> Tambah Server Player
+    <!-- 4. STREAM PLAYER & REMOTE UPLOADER (DOODSTREAM & STREAMTAPE) -->
+    <div class="bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-6 shadow-sm space-y-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 dark:border-dark-800 gap-2">
+        <div>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <i class="fa-solid fa-play text-purple-500"></i> Server Player Streaming
+          </h3>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+            Server paling atas (urutan 1) otomatis menjadi <b>Player Default</b> saat pengunjung membuka tayangan/episode.
+          </p>
+        </div>
+        <button type="button" onclick="addStreamRow()" class="self-start sm:self-auto text-xs bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold px-3 py-1.5 rounded-lg hover:bg-purple-500 hover:text-white transition cursor-pointer">
+          <i class="fa-solid fa-plus mr-1"></i> Tambah Server Manual
         </button>
       </div>
 
-      <div id="stream-rows" class="space-y-3">
-        {{range .Movie.StreamLinks}}
-        <div class="flex items-center gap-2 p-3 bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-800 rounded-xl">
-          <input type="text" name="stream_server[]" value="{{.ServerName}}" placeholder="Nama Server (cth: Server VIP 1)" class="w-40 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-xs rounded-lg px-2.5 py-2 text-slate-900 dark:text-slate-100">
-          <input type="text" name="stream_url[]" value="{{.EmbedURL}}" placeholder="URL Embed Player Video" class="flex-1 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-xs rounded-lg px-2.5 py-2 text-slate-900 dark:text-slate-100">
-          <input type="text" name="stream_quality[]" value="{{.Quality}}" placeholder="HD 1080p" class="w-28 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-xs rounded-lg px-2.5 py-2 text-slate-900 dark:text-slate-100">
-          <button type="button" onclick="this.parentElement.remove()" class="p-2 text-red-500 hover:bg-red-500/10 rounded-lg"><i class="fa-solid fa-trash"></i></button>
+      <!-- PANEL REMOTE UPLOADER DOODSTREAM & STREAMTAPE -->
+      <div class="bg-gradient-to-br from-slate-900 via-dark-950 to-slate-900 border border-purple-500/30 rounded-2xl p-5 text-white shadow-lg space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-white/10">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-purple-600 flex items-center justify-center text-white shadow-sm font-black text-xs">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+            </div>
+            <div>
+              <h4 class="text-xs font-bold text-white flex items-center gap-2">
+                <span>Remote Upload ke DoodStream & Streamtape</span>
+                <span class="text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 rounded-full font-bold">Auto Player Default</span>
+              </h4>
+              <p class="text-[11px] text-slate-400">Unggah dari link file video. Hasil embed otomatis disetel di posisi teratas sebagai player default.</p>
+            </div>
+          </div>
+          <button type="button" onclick="copyFromMatangLink()" class="self-start sm:self-auto text-[11px] bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 font-bold px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 cursor-pointer" title="Gunakan link file matang hardsub dari bagian atas jika sudah dirender">
+            <i class="fa-solid fa-link text-emerald-400"></i> Ambil dari File Matang
+          </button>
+        </div>
+
+        <!-- PERINGATAN KETENTUAN FORMAT LINK FILE -->
+        <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3.5 text-[11px] leading-relaxed text-amber-200 space-y-1">
+          <div class="font-bold flex items-center gap-1.5 text-amber-300">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>Ketentuan Format Link File yang Diizinkan:</span>
+          </div>
+          <ul class="list-disc list-inside space-y-0.5 text-slate-300">
+            <li>Link file <b class="text-amber-200">HARUS</b> berupa tautan video langsung berformat: <code class="bg-black/40 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold">.mp4</code>, <code class="bg-black/40 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold">.mkv</code>, <code class="bg-black/40 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold">.webm</code>, <code class="bg-black/40 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold">.avi</code>, <code class="bg-black/40 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold">.ts</code> atau direct cloud storage (<b class="text-white">Google Drive</b>, <b class="text-white">PixelDrain</b>, <b class="text-white">Acefile</b>, <b class="text-white">Mediafire</b>, <b class="text-white">FastDrive</b>, <b class="text-white">Buzzheavier</b>).</li>
+            <li><b class="text-red-400">❌ Dilarang Keras:</b> Tautan subtitle (<code class="bg-black/40 text-red-300 px-1.5 py-0.5 rounded font-mono">.srt</code>, <code class="bg-black/40 text-red-300 px-1.5 py-0.5 rounded font-mono">.vtt</code>), tautan torrent/magnet (<code class="bg-black/40 text-red-300 px-1.5 py-0.5 rounded font-mono">.torrent</code>), arsip (<code class="bg-black/40 text-red-300 px-1.5 py-0.5 rounded font-mono">.zip</code>, <code class="bg-black/40 text-red-300 px-1.5 py-0.5 rounded font-mono">.rar</code>), atau link website HTML biasa karena server hoster akan menolak.</li>
+          </ul>
+        </div>
+
+        <!-- FORM INPUT REMOTE UPLOAD -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+          <div class="md:col-span-8">
+            <label class="block text-[11px] font-bold text-slate-300 mb-1">
+              Link URL File Video Langsung <span class="text-red-400">*</span>
+            </label>
+            <input type="text" id="hoster-video-url" placeholder="https://domain.com/video.mp4 atau https://drive.google.com/file/d/..." 
+              class="w-full bg-black/50 border border-slate-700 text-slate-100 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-cyan-400 font-mono">
+          </div>
+
+          <div class="md:col-span-4">
+            <label class="block text-[11px] font-bold text-slate-300 mb-1">
+              Nomor Episode (Khusus Series/Anime)
+            </label>
+            <input type="number" id="hoster-episode" min="1" placeholder="Kosongkan jika Film Bioskop" 
+              class="w-full bg-black/50 border border-slate-700 text-slate-100 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-cyan-400">
+          </div>
+        </div>
+
+        <!-- TOMBOL AKSI UPLOAD & STATUS -->
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Upload DoodStream -->
+            <button type="button" onclick="triggerSingleRemoteUpload('doodstream')" id="btn-upload-dood" class="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl transition shadow-md shadow-cyan-600/25 flex items-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-cloud-arrow-up"></i> <span>Upload ke DoodStream</span>
+            </button>
+            <!-- Upload Streamtape -->
+            <button type="button" onclick="triggerSingleRemoteUpload('streamtape')" id="btn-upload-st" class="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs rounded-xl transition shadow-md shadow-orange-600/25 flex items-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-cloud-arrow-up"></i> <span>Upload ke Streamtape</span>
+            </button>
+            <!-- Upload Keduanya -->
+            <button type="button" onclick="triggerSingleRemoteUpload('both')" id="btn-upload-both" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold text-xs rounded-xl transition shadow-md shadow-purple-600/25 flex items-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-bolt"></i> <span>Upload ke Keduanya</span>
+            </button>
+          </div>
+
+          <div id="hoster-upload-status" class="text-xs font-semibold hidden items-center gap-2">
+            <!-- Spinner / Status text -->
+          </div>
+        </div>
+      </div>
+
+      <!-- DAFTAR BARIS SERVER PLAYER -->
+      <div id="stream-rows" class="space-y-3 pt-2">
+        {{range $idx, $stream := .Movie.StreamLinks}}
+        <div class="flex items-center gap-2 p-3 bg-slate-50 dark:bg-dark-950 border {{if eq $idx 0}}border-emerald-500/60 bg-emerald-500/5{{else}}border-slate-200 dark:border-dark-800{{end}} rounded-xl transition">
+          <div class="relative w-48 shrink-0">
+            <input type="text" name="stream_server[]" value="{{$stream.ServerName}}" placeholder="Nama Server (cth: Server VIP 1)" class="w-full bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-xs rounded-lg px-2.5 py-2 text-slate-900 dark:text-slate-100 font-bold">
+            {{if eq $idx 0}}
+            <span class="absolute -top-2 left-2 bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.2 rounded shadow">DEFAULT</span>
+            {{end}}
+          </div>
+          <input type="text" name="stream_url[]" value="{{$stream.EmbedURL}}" placeholder="URL Embed Player Video" class="flex-1 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-xs rounded-lg px-2.5 py-2 text-slate-900 dark:text-slate-100 font-mono text-[11px]">
+          <input type="text" name="stream_quality[]" value="{{$stream.Quality}}" placeholder="HD 1080p" class="w-28 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-xs rounded-lg px-2.5 py-2 text-slate-900 dark:text-slate-100">
+          <button type="button" onclick="this.closest('.flex').remove()" class="p-2 text-red-500 hover:bg-red-500/10 rounded-lg shrink-0 cursor-pointer" title="Hapus Server"><i class="fa-solid fa-trash"></i></button>
         </div>
         {{else}}
-        <div class="flex items-center gap-2 p-3 bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-800 rounded-xl">
-          <input type="text" name="stream_server[]" value="Server Utama" placeholder="Nama Server" class="w-40 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-xs rounded-lg px-2.5 py-2 text-slate-900 dark:text-slate-100">
-          <input type="text" name="stream_url[]" placeholder="URL Embed Player Video" class="flex-1 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-xs rounded-lg px-2.5 py-2 text-slate-900 dark:text-slate-100">
+        <div class="flex items-center gap-2 p-3 bg-slate-50 dark:bg-dark-950 border border-emerald-500/60 bg-emerald-500/5 rounded-xl transition">
+          <div class="relative w-48 shrink-0">
+            <input type="text" name="stream_server[]" value="Server Utama" placeholder="Nama Server" class="w-full bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-xs rounded-lg px-2.5 py-2 text-slate-900 dark:text-slate-100 font-bold">
+            <span class="absolute -top-2 left-2 bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.2 rounded shadow">DEFAULT</span>
+          </div>
+          <input type="text" name="stream_url[]" placeholder="URL Embed Player Video" class="flex-1 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-xs rounded-lg px-2.5 py-2 text-slate-900 dark:text-slate-100 font-mono text-[11px]">
           <input type="text" name="stream_quality[]" value="HD 1080p" placeholder="Kualitas" class="w-28 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-xs rounded-lg px-2.5 py-2 text-slate-900 dark:text-slate-100">
-          <button type="button" onclick="this.parentElement.remove()" class="p-2 text-red-500 hover:bg-red-500/10 rounded-lg"><i class="fa-solid fa-trash"></i></button>
+          <button type="button" onclick="this.closest('.flex').remove()" class="p-2 text-red-500 hover:bg-red-500/10 rounded-lg shrink-0 cursor-pointer" title="Hapus Server"><i class="fa-solid fa-trash"></i></button>
         </div>
         {{end}}
       </div>
@@ -426,18 +514,142 @@ function addTorrentRow() {
   container.appendChild(div);
 }
 
-function addStreamRow() {
+function addStreamRow(serverName, embedUrl, quality, isDefault) {
   const container = document.getElementById('stream-rows');
   const div = document.createElement('div');
-  div.className = "flex items-center gap-2 p-3 bg-slate-50 dark:bg-dark-950 border border-slate-200 dark:border-dark-800 rounded-xl";
+  div.className = "flex items-center gap-2 p-3 bg-slate-50 dark:bg-dark-950 border " + 
+    (isDefault ? "border-emerald-500/60 bg-emerald-500/10 shadow-sm shadow-emerald-500/10" : "border-slate-200 dark:border-dark-800") + 
+    " rounded-xl transition";
+
   div.innerHTML = `
-    <input type="text" name="stream_server[]" value="Server Cadangan" placeholder="Nama Server" class="w-40 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-xs rounded-lg px-2.5 py-2 text-slate-900 dark:text-slate-100">
-    <input type="text" name="stream_url[]" placeholder="URL Embed Player Video" class="flex-1 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-xs rounded-lg px-2.5 py-2 text-slate-900 dark:text-slate-100">
-    <input type="text" name="stream_quality[]" value="HD 1080p" placeholder="Kualitas" class="w-28 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-xs rounded-lg px-2.5 py-2 text-slate-900 dark:text-slate-100">
-    <button type="button" onclick="this.parentElement.remove()" class="p-2 text-red-500 hover:bg-red-500/10 rounded-lg"><i class="fa-solid fa-trash"></i></button>
+    <div class="relative w-48 shrink-0">
+      <input type="text" name="stream_server[]" value="${serverName || 'Server Cadangan'}" placeholder="Nama Server" class="w-full bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-xs rounded-lg px-2.5 py-2 text-slate-900 dark:text-slate-100 font-bold">
+      ${isDefault ? '<span class="absolute -top-2 left-2 bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.2 rounded shadow">DEFAULT</span>' : ''}
+    </div>
+    <input type="text" name="stream_url[]" value="${embedUrl || ''}" placeholder="URL Embed Player Video" class="flex-1 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-xs rounded-lg px-2.5 py-2 text-slate-900 dark:text-slate-100 font-mono text-[11px]">
+    <input type="text" name="stream_quality[]" value="${quality || 'HD 1080p'}" placeholder="Kualitas" class="w-28 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 text-xs rounded-lg px-2.5 py-2 text-slate-900 dark:text-slate-100">
+    <button type="button" onclick="this.closest('.flex').remove()" class="p-2 text-red-500 hover:bg-red-500/10 rounded-lg shrink-0 cursor-pointer" title="Hapus Server"><i class="fa-solid fa-trash"></i></button>
   `;
-  container.appendChild(div);
+
+  if (isDefault && container.firstChild) {
+    // Hapus label default dari baris lain jika ada
+    container.querySelectorAll('.absolute.-top-2').forEach(el => el.remove());
+    container.querySelectorAll('#stream-rows > div').forEach(el => {
+      el.classList.remove('border-emerald-500/60', 'bg-emerald-500/10', 'shadow-sm', 'shadow-emerald-500/10');
+      el.classList.add('border-slate-200', 'dark:border-dark-800');
+    });
+    container.insertBefore(div, container.firstChild);
+  } else {
+    container.appendChild(div);
+  }
 }
+
+function copyFromMatangLink() {
+  const matangInputs = document.querySelectorAll('#matang-rows .dl-url');
+  for (const input of matangInputs) {
+    const val = input.value.trim();
+    if (val && (val.endsWith('.mp4') || val.endsWith('.mkv') || val.includes('/downloads/'))) {
+      const fullURL = val.startsWith('http') ? val : (window.location.origin + val);
+      document.getElementById('hoster-video-url').value = fullURL;
+      alert('Tautan file matang berhasil disalin ke kolom upload:\n' + fullURL);
+      return;
+    }
+  }
+  alert('Belum ada tautan file matang MP4 yang terdeteksi di form atas. Silakan render file dari torrent atau masukkan link video secara manual.');
+}
+
+async function triggerSingleRemoteUpload(target) {
+  const urlInput = document.getElementById('hoster-video-url');
+  const epInput = document.getElementById('hoster-episode');
+  const statusEl = document.getElementById('hoster-upload-status');
+  const titleInput = document.querySelector('input[name="title"]');
+
+  const videoURL = urlInput ? urlInput.value.trim() : '';
+  const episode = epInput ? epInput.value.trim() : '';
+  const title = titleInput ? titleInput.value.trim() : 'Cinembrot Video';
+  const movieID = '{{if .Movie.ID}}{{.Movie.ID}}{{else}}0{{end}}';
+
+  if (!videoURL) {
+    alert('Silakan masukkan tautan link file video terlebih dahulu!');
+    if (urlInput) urlInput.focus();
+    return;
+  }
+
+  // Validasi format file video (.mp4, .mkv, cloud storage)
+  const lower = videoURL.toLowerCase();
+  const clean = lower.split('?')[0];
+  const isVideoExt = clean.endsWith('.mp4') || clean.endsWith('.mkv') || clean.endsWith('.webm') || clean.endsWith('.avi') || clean.endsWith('.ts');
+  const isCloudStorage = lower.includes('drive.google.com') || lower.includes('pixeldrain.com') || lower.includes('acefile.co') || lower.includes('mediafire.com') || lower.includes('fastdrive') || lower.includes('buzzheavier.com') || lower.includes('archive.org');
+
+  if (!isVideoExt && !isCloudStorage) {
+    alert('Format file link TIDAK DIIZINKAN!\n\n' +
+          '• File link HARUS berupa video langsung (.mp4, .mkv, .webm, .avi, .ts) atau direct cloud storage (Google Drive, PixelDrain, Acefile, Mediafire, FastDrive, Buzzheavier).\n\n' +
+          '• Dilarang keras memasukkan tautan subtitle (.srt/.vtt), file torrent/magnet, arsip zip/rar, atau halaman web HTML biasa.');
+    return;
+  }
+
+  const buttons = [
+    document.getElementById('btn-upload-dood'),
+    document.getElementById('btn-upload-st'),
+    document.getElementById('btn-upload-both')
+  ];
+  buttons.forEach(b => { if (b) b.disabled = true; });
+
+  if (statusEl) {
+    statusEl.className = 'text-xs font-semibold flex items-center gap-2 text-cyan-300';
+    statusEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-sm"></i> <span>Sedang memproses remote upload ke ${target.toUpperCase()}...</span>`;
+  }
+
+  try {
+    const params = new URLSearchParams();
+    params.append('video_url', videoURL);
+    params.append('title', title);
+    params.append('target', target);
+    params.append('movie_id', movieID);
+    params.append('episode', episode);
+
+    const res = await fetch('/api/admin/hoster/upload-single', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: params.toString()
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      if (statusEl) {
+        statusEl.className = 'text-xs font-semibold flex items-center gap-2 text-emerald-400';
+        statusEl.innerHTML = `<i class="fa-solid fa-circle-check text-sm"></i> <span>${data.message}</span>`;
+      }
+
+      // Masukkan server-server baru ke bagian PALING ATAS (urutan #1) agar otomatis menjadi DEFAULT
+      if (data.servers && data.servers.length > 0) {
+        for (let i = data.servers.length - 1; i >= 0; i--) {
+          const s = data.servers[i];
+          addStreamRow(s.server_name, s.embed_url, s.quality, true);
+        }
+      }
+
+      alert('Berhasil!\n\n' + data.message + '\n\nServer streaming baru telah diposisikan di baris teratas (DEFAULT). Silakan periksa atau klik "Simpan Perubahan Film".');
+    } else {
+      if (statusEl) {
+        statusEl.className = 'text-xs font-semibold flex items-center gap-2 text-red-400';
+        statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-sm"></i> <span>Gagal: ${data.message || 'Error'}</span>`;
+      }
+      alert('Gagal remote upload:\n' + (data.message || 'Terjadi kesalahan sistem'));
+    }
+  } catch (err) {
+    if (statusEl) {
+      statusEl.className = 'text-xs font-semibold flex items-center gap-2 text-red-400';
+      statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-sm"></i> <span>Koneksi error: ${err.message}</span>`;
+    }
+    alert('Terjadi kesalahan koneksi: ' + err.message);
+  } finally {
+    buttons.forEach(b => { if (b) b.disabled = false; });
+  }
+}
+
 
 async function triggerTorrentDownload(btn, movieID) {
   const row = btn.closest('.download-link-item');
