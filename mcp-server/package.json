@@ -1,0 +1,13 @@
+{
+  "name": "cinembrot-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server resmi Cinembrot Movie Engine & Streamer (Golang + MariaDB + Redis + Caddy): diagnosis log multi-server, error tracking, database schema inspection, dan sinkronisasi GitHub/Server",
+  "main": "index.mjs",
+  "type": "module",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "dotenv": "^18.0.9",
+    "mysql2": "^3.24.6"
+  }
+}
+
