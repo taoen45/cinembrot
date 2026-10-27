@@ -428,3 +428,4 @@ main().catch((err) => {
   console.error("Fatal error starting Cinembrot MCP server:", err);
   process.exit(1);
 });
+
