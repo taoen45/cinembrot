@@ -21,7 +21,7 @@ dotenv.config({ path: path.join(PROJECT_ROOT, ".env"), quiet: true });
 const server = new Server(
   {
     name: "cinembrot-diagnostics",
-    version: "1.0.0",
+    version: "1.1.0",
   },
   {
     capabilities: {
@@ -49,7 +49,7 @@ function getDbPool() {
   return dbPool;
 }
 
-function runExec(cmd, cwd = PROJECT_ROOT, maxBuffer = 1024 * 1024 * 4, timeout = 15000) {
+function runExec(cmd, cwd = PROJECT_ROOT, maxBuffer = 1024 * 1024 * 4, timeout = 30000) {
   return new Promise((resolve) => {
     exec(cmd, { cwd, maxBuffer, timeout }, (error, stdout, stderr) => {
       resolve({
@@ -97,6 +97,11 @@ const CINEMBROT_GITHUB_INFO = {
 // Pengetahuan Penting Proyek & Guardrails (AGENTS.md + INSTRUKSI-SERVER.md)
 const CINEMBROT_KNOWLEDGE = {
   projectName: "CINEMBROT",
+  architecture3Layers: {
+    layer1_context: "AI Memory (.ai-memory/) + RAG Search (search_project_rag) + Modular Rules (.cursor/rules/)",
+    layer2_execution: "MCP Tools (cinembrot-diagnostics) + Terminal terkontrol (Go build/run, git)",
+    layer3_validation: "Playwright E2E (tests/e2e/smoke.spec.js) + Go Unit Tests via tool 'run_tests' (compact output)",
+  },
   architecture: "Golang 1.22+ Native (No PHP required) + GORM + MariaDB + Redis + Caddy + Cloudflare Tunnel",
   github: CINEMBROT_GITHUB_INFO,
   guardrails: [
@@ -115,7 +120,7 @@ const CINEMBROT_KNOWLEDGE = {
     cloudflared: "journalctl -u cloudflared -n 50 --no-pager",
   },
   coreFeatures: [
-    "Multi-Server Streaming Embed (VidSrc, AutoEmbed, 2Embed, VidLink, SuperEmbed)",
+    "Multi-Server Streaming Embed (VidSrc, AutoEmbed, 2Embed, VidLink, SuperEmbed, MultiEmbed, NontonGo)",
     "Dwibahasa ID & EN dengan auto-translate sinopsis",
     "Automated Scraper (TMDb, Jikan Anime, TMDb TV Asian Drama, Internet Archive, YTS)",
     "Dual Domain: cinembrot.web.id (Streaming Hub) & cinembrot.my.id (Landing Info)",
@@ -130,16 +135,60 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "get_project_knowledge",
         description:
-          "Mengambil ringkasan spec, arsitektur stack Golang, aturan wajib AGENTS.md, jadwal cron, konfigurasi Cloudflare dual-domain, dan guardrails keamanan Cinembrot.",
+          "Mengambil ringkasan arsitektur 3-layer, stack Golang, aturan wajib AGENTS.md, jadwal cron, konfigurasi Cloudflare dual-domain, dan guardrails keamanan Cinembrot.",
         inputSchema: {
           type: "object",
           properties: {},
         },
       },
       {
+        name: "search_project_rag",
+        description:
+          "Layer 1 Token-Saving RAG: Mencari potongan pengetahuan proyek dari .ai-memory/ dan file dokumentasi penting secara terindeks untuk menghemat token konteks AI Agent (tanpa dump file utuh).",
+        inputSchema: {
+          type: "object",
+          properties: {
+            query: {
+              type: "string",
+              description: "Kata kunci pencarian (misal: 'database safety', 'stream server', 'ad cooldown', 'webp').",
+            },
+            source: {
+              type: "string",
+              enum: ["all", "ai-memory", "docs"],
+              description: "Sumber pencarian (default: 'all').",
+            },
+            maxChunks: {
+              type: "number",
+              description: "Maksimal potongan hasil (default: 5, max: 10).",
+            },
+          },
+          required: ["query"],
+        },
+      },
+      {
+        name: "run_tests",
+        description:
+          "Layer 3 Compact Validation Runner: Menjalankan Go test ('go') atau Playwright E2E ('playwright') dan mengembalikan ringkasan status (passed/failed/failures) secara hemat token tanpa memenuhi layar terminal.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            suite: {
+              type: "string",
+              enum: ["go", "playwright"],
+              description: "Framework testing yang dijalankan: 'go' (Go unit tests) atau 'playwright' (E2E browser tests).",
+            },
+            filter: {
+              type: "string",
+              description: "Filter nama package/test (opsional, misal './server' atau 'smoke.spec.js').",
+            },
+          },
+          required: ["suite"],
+        },
+      },
+      {
         name: "diagnose_server_logs",
         description:
-          "Mendiagnosis log server langsung dari host taoen45 atau container Docker Cinembrot (Go App, Caddy, Scraper, Nightly Maintenance, Cloudflared) via SSH/remote command tanpa menghabiskan context token.",
+          "Layer 2 Tool: Mendiagnosis log server langsung dari host taoen45 atau container Docker Cinembrot (Go App, Caddy, Scraper, Nightly Maintenance, Cloudflared) via SSH/remote command tanpa menghabiskan context token.",
         inputSchema: {
           type: "object",
           properties: {
@@ -168,7 +217,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "inspect_db_schema_safe",
         description:
-          "Melakukan inspeksi skema MariaDB Cinembrot secara aman (Read-Only) seperti daftar tabel, struktur kolom, status migration, atau ringkasan total data tanpa query write.",
+          "Layer 2 Tool: Melakukan inspeksi skema MariaDB Cinembrot secara aman (Read-Only) seperti daftar tabel, struktur kolom, status migration, atau ringkasan total data tanpa query write.",
         inputSchema: {
           type: "object",
           properties: {
@@ -220,6 +269,190 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      case "search_project_rag": {
+        const query = String(args.query || "").toLowerCase();
+        const source = args.source || "all";
+        const maxChunks = Math.min(Math.max(parseInt(args.maxChunks || 5, 10), 1), 10);
+
+        const targetDirs = [];
+        if (source === "all" || source === "ai-memory") {
+          targetDirs.push(path.join(PROJECT_ROOT, ".ai-memory"));
+        }
+        if (source === "all" || source === "docs") {
+          targetDirs.push(path.join(PROJECT_ROOT, ".cursor", "rules"));
+        }
+
+        const keywords = query.split(/\s+/).filter((w) => w.length > 1);
+        const results = [];
+
+        function scanDir(dir) {
+          if (!fs.existsSync(dir)) return;
+          const items = fs.readdirSync(dir, { withFileTypes: true });
+          for (const item of items) {
+            const fullPath = path.join(dir, item.name);
+            if (item.isDirectory() && !item.name.startsWith(".")) {
+              scanDir(fullPath);
+            } else if (item.isFile() && (item.name.endsWith(".md") || item.name.endsWith(".mdc"))) {
+              const relPath = path.relative(PROJECT_ROOT, fullPath).replace(/\\/g, "/");
+              try {
+                const content = fs.readFileSync(fullPath, "utf-8");
+                const sections = content.split(/\n(?=##?\s+)/);
+                for (const section of sections) {
+                  const secLower = section.toLowerCase();
+                  let score = 0;
+                  for (const kw of keywords) {
+                    if (secLower.includes(kw)) score += 1;
+                  }
+                  if (score > 0) {
+                    const lines = section.trim().split("\n");
+                    const title = lines[0] ? lines[0].replace(/^#+\s*/, "") : item.name;
+                    const preview = lines.slice(0, 15).join("\n");
+                    results.push({
+                      file: relPath,
+                      sectionTitle: title,
+                      score,
+                      chunkText: preview,
+                    });
+                  }
+                }
+              } catch {
+                // Ignore read errors
+              }
+            }
+          }
+        }
+
+        for (const dir of targetDirs) {
+          scanDir(dir);
+        }
+
+        // Cari juga pada README.md dan INSTRUKSI-SERVER.md secara hemat potongan
+        if (source === "all") {
+          for (const extraFile of ["README.md", "INSTRUKSI-SERVER.md"]) {
+            const fullPath = path.join(PROJECT_ROOT, extraFile);
+            if (fs.existsSync(fullPath)) {
+              try {
+                const content = fs.readFileSync(fullPath, "utf-8");
+                const sections = content.split(/\n(?=##?\s+)/);
+                for (const section of sections) {
+                  const secLower = section.toLowerCase();
+                  let score = 0;
+                  for (const kw of keywords) {
+                    if (secLower.includes(kw)) score += 1;
+                  }
+                  if (score > 0) {
+                    const lines = section.trim().split("\n");
+                    const title = lines[0] ? lines[0].replace(/^#+\s*/, "") : extraFile;
+                    const preview = lines.slice(0, 15).join("\n");
+                    results.push({
+                      file: extraFile,
+                      sectionTitle: title,
+                      score,
+                      chunkText: preview,
+                    });
+                  }
+                }
+              } catch {
+                // ignore
+              }
+            }
+          }
+        }
+
+        results.sort((a, b) => b.score - a.score);
+        const topResults = results.slice(0, maxChunks);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  query,
+                  found: topResults.length,
+                  results: topResults,
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+      }
+
+      case "run_tests": {
+        const suite = args.suite;
+        const filter = args.filter ? String(args.filter).trim() : null;
+
+        if (suite === "go") {
+          const filterArg = filter ? ` ${filter}` : " ./server";
+          const cmd = `go test${filterArg} -v`;
+          const res = await runExec(cmd, PROJECT_ROOT, 1024 * 1024 * 2, 60000);
+          const output = (res.stdout + "\n" + res.stderr).trim();
+          const passed = res.exitCode === 0 && !output.includes("FAIL") && !output.includes("[build failed]");
+
+          const lines = output.split(/\r?\n/);
+          const passLines = lines.filter((l) => l.startsWith("--- PASS:") || l.startsWith("ok  \t"));
+          const failLines = lines.filter((l) => l.startsWith("--- FAIL:") || l.includes("FAIL\t") || l.includes("undefined:"));
+
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(
+                  {
+                    suite: "go",
+                    filter: filter || "./server",
+                    passed,
+                    summary: {
+                      passedCount: passLines.length,
+                      failedCount: failLines.length,
+                      passedTests: passLines.slice(-5),
+                      failurePreview: failLines.slice(0, 5),
+                    },
+                    rawExcerpt: passed ? "All selected tests passed." : failLines.slice(0, 8).join("\n"),
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
+          };
+        }
+
+        if (suite === "playwright") {
+          const filterArg = filter ? ` tests/e2e/${filter}` : " tests/e2e/smoke.spec.js";
+          const cmd = `npx --yes playwright test${filterArg}`;
+          const res = await runExec(cmd, PROJECT_ROOT, 1024 * 1024 * 2, 60000);
+          const output = (res.stdout + "\n" + res.stderr).trim();
+          const passed = res.exitCode === 0;
+
+          const lines = output.split(/\r?\n/);
+          const summaryLine = lines.reverse().find((l) => /\d+\s+(passed|failed|skipped)/i.test(l)) || "";
+          const failures = lines.filter((l) => /Error:|failed/i.test(l)).slice(0, 5);
+
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(
+                  {
+                    suite: "playwright",
+                    passed,
+                    summary: summaryLine.trim() || (passed ? "Tests passed" : "Tests failed/skipped"),
+                    failurePreview: failures,
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
+          };
+        }
+
+        return { content: [{ type: "text", text: `Suite test tidak dikenal: ${suite}` }] };
+      }
+
       case "diagnose_server_logs": {
         const target = args.target || "app";
         const lines = Math.min(Math.max(10, args.lines || 50), 200);
@@ -251,13 +484,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
 
         // Jalankan via SSH ke taoen45 jika host terjangkau
-        const sshHost = "taoen45"; // Menggunakan config SSH lokal jika ada, atau fallback IP 55.0.0.157
+        const sshHost = "taoen45";
         const executeCmd = `ssh -o BatchMode=yes -o ConnectTimeout=6 ${sshHost} "${remoteCmd}"`;
         const res = await runExec(executeCmd);
 
         let outputText = res.stdout || res.stderr;
         if (!outputText && res.exitCode !== 0) {
-          // Fallback coba langsung ke IP WireGuard taoen45 55.0.0.157
           const fallbackCmd = `ssh -o BatchMode=yes -o ConnectTimeout=6 taoen45@55.0.0.157 "${remoteCmd}"`;
           const fbRes = await runExec(fallbackCmd);
           outputText = fbRes.stdout || fbRes.stderr;
@@ -428,4 +660,3 @@ main().catch((err) => {
   console.error("Fatal error starting Cinembrot MCP server:", err);
   process.exit(1);
 });
-

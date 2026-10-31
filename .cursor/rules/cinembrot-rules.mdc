@@ -1,0 +1,16 @@
+---
+description: Aturan utama dan arsitektur proyek Cinembrot (Golang Native)
+globs: **/*
+alwaysApply: true
+---
+
+# Aturan Proyek Cinembrot (Server taoen45)
+
+1. **Bahasa Indonesia**: Selalu berkomunikasi, memberikan instruksi, dan menulis dokumentasi dalam Bahasa Indonesia yang lugas dan profesional.
+2. **Database Wajib Izin**: Urusan database harus ekstra hati-hati. Operasi DELETE, RESTORE, EDIT, UPDATE, atau modifikasi skema/data WAJIB meminta izin/konfirmasi eksplisit dari user terlebih dahulu.
+3. **Golang Native**: Proyek ini berbasis Go 1.22+, MariaDB, Redis, Caddy. JANGAN mengasumsikan adanya PHP/Laravel atau tool artisan di project ini.
+4. **Efisiensi Token**: Gunakan Arsitektur 3-Layer:
+   - Layer 1: Gunakan `.ai-memory/` dan tool MCP `search_project_rag` sebelum membaca file utuh.
+   - Layer 2: Gunakan tool MCP `inspect_db_schema_safe` dan `diagnose_server_logs` untuk investigasi bug/skema.
+   - Layer 3: Gunakan tool MCP `run_tests` untuk validasi ringkas (Go unit test / Playwright).
+5. **Pencatatan Audit**: Setiap perubahan fitur, arsitektur, timer, atau port wajib dicatat pada `INSTRUKSI-SERVER.md` bagian Riwayat Perubahan.
