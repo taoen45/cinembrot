@@ -1,17 +1,30 @@
 ---
-description: Aturan utama dan arsitektur proyek Cinembrot (Golang Native)
-globs: **/*
+description: Aturan inti arsitektur, kepatuhan database safety, efisiensi token, dan prinsip Ponytail Cinembrot
+globs: *
 alwaysApply: true
 ---
 
-# Aturan Proyek Cinembrot (Server taoen45)
+# Cinembrot Core Rules & Ponytail Principles
 
-1. **Bahasa Indonesia**: Selalu berkomunikasi, memberikan instruksi, dan menulis dokumentasi dalam Bahasa Indonesia yang lugas dan profesional.
-2. **Database Wajib Izin**: Urusan database harus ekstra hati-hati. Operasi DELETE, RESTORE, EDIT, UPDATE, atau modifikasi skema/data WAJIB meminta izin/konfirmasi eksplisit dari user terlebih dahulu.
-3. **Golang Native**: Proyek ini berbasis Go 1.22+, MariaDB, Redis, Caddy. JANGAN mengasumsikan adanya PHP/Laravel atau tool artisan di project ini.
-4. **Efisiensi Token**: Gunakan Arsitektur 3-Layer:
-   - Layer 1: Gunakan `.ai-memory/` dan tool MCP `search_project_rag` sebelum membaca file utuh.
-   - Layer 2: Gunakan tool MCP `inspect_db_schema_safe` dan `diagnose_server_logs` untuk investigasi bug/skema.
-   - Layer 3: Gunakan tool MCP `run_tests` untuk validasi ringkas (Go unit test / Playwright).
-5. **Pencatatan Audit**: Setiap perubahan fitur, arsitektur, timer, atau port wajib dicatat pada `INSTRUKSI-SERVER.md` bagian Riwayat Perubahan.
+1. **Bahasa Indonesia Lugas**:
+   - Selalu berkomunikasi, memberikan instruksi, dan menulis dokumentasi dalam Bahasa Indonesia yang lugas, terarah, dan profesional.
 
+2. **Database Safety Mutlak (Zero Data Loss - Wajib Izin)**:
+   - DILARANG KERAS melakukan operasi modifikasi data (INSERT, UPDATE, DELETE) atau modifikasi skema database (ALTER, DROP, TRUNCATE, MIGRATION) tanpa persetujuan eksplisit user terlebih dahulu.
+   - Gunakan tool MCP `inspect_db_schema_safe` untuk membaca database secara 100% read-only.
+
+3. **Golang Native (No PHP)**:
+   - Stack proyek adalah Golang 1.22+, MariaDB, Redis, Caddy. DILARANG berasumsi adanya PHP, Composer, Artisan, atau Apache.
+
+4. **3-Layer Token-Saving Architecture**:
+   - **Layer 1 (Context)**: Baca `.ai-memory/` atau gunakan tool MCP `search_project_rag`. Jangan membaca file besar secara utuh jika hanya butuh satu blok kode.
+   - **Layer 2 (Execution)**: Gunakan tool MCP `cinembrot-diagnostics` (`diagnose_server_logs`, `inspect_db_schema_safe`) agar hasil berupa JSON ringkas (< 50 token).
+   - **Layer 3 (Validation)**: Validasi via tool MCP `run_tests` (`suite: "go"` atau `suite: "playwright"`) sebelum melaporkan ke user.
+
+5. **Prinsip Ponytail (Lazy Senior Dev / Minimalist Code)**:
+   - **The Decision Ladder**: Utamakan 0 kode baru (pakai fungsi/config yang ada) -> Minimal Surgical Edit (1–5 baris) -> Jangan buat package/wrapper/interface baru jika hanya dipakai sekali (YAGNI).
+   - **Surgical Edit Only**: Dilarang merapikan/mengubah kode sekitar yang sedang bekerja normal (*don't touch running code*).
+   - **Hemat Token Output**: Jawab langsung ke inti, tampilkan hanya potongan kode/diff yang diubah, hentikan esai teori panjang.
+
+6. **Audit & Catatan Server**:
+   - Setiap perubahan fitur, arsitektur, timer, atau port wajib dicatat pada `INSTRUKSI-SERVER.md` bagian Riwayat Perubahan.

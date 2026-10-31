@@ -102,6 +102,15 @@ const CINEMBROT_KNOWLEDGE = {
     layer2_execution: "MCP Tools (cinembrot-diagnostics) + Terminal terkontrol (Go build/run, git)",
     layer3_validation: "Playwright E2E (tests/e2e/smoke.spec.js) + Go Unit Tests via tool 'run_tests' (compact output)",
   },
+  ponytailPrinciples: {
+    philosophy: "The best code is the code you never wrote. Solusi paling hemat token dan paling stabil adalah solusi minimalis yang tepat sasaran.",
+    decisionLadder: [
+      "Level 1: No New Code (Manfaatkan fungsi, model, atau konfigurasi yang sudah ada).",
+      "Level 2: Minimal Surgical Edit (1-5 baris edit terfokus, DILARANG refactoring kode sekitar yang bekerja normal).",
+      "Level 3: Anti-Overengineering (YAGNI - dilarang buat package/struct/wrapper baru jika hanya dipakai sekali).",
+    ],
+    antiBloatGuidelines: "Tampilkan diff tertarget, hindari esai teori panjang, dan fokus langsung ke penyelesaian masalah.",
+  },
   architecture: "Golang 1.22+ Native (No PHP required) + GORM + MariaDB + Redis + Caddy + Cloudflare Tunnel",
   github: CINEMBROT_GITHUB_INFO,
   guardrails: [
