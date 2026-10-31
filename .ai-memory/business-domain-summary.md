@@ -31,3 +31,4 @@ Cinembrot adalah platform movie streaming & subtitle engine berbasis **Golang na
    - Masa tenang iklan 5 menit (Ad cooldown) agar pengunjung nyaman.
    - Tombol download MP4/Subtitle otomatis dipendekkan ke tautan SafelinkU berbayar.
    - Buffer intersitial 3 detik untuk sponsor Adsterra.
+

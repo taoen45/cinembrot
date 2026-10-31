@@ -64,3 +64,4 @@ Dokumen ini mendefinisikan arsitektur 3-Layer yang disesuaikan khusus untuk proj
 - **Komponen**:
   1. `run_tests` (Tool MCP): Menjalankan `go test ./...` atau `playwright test` dan hanya mengembalikan kesimpulan ringkas: status `passed/failed`, jumlah test, dan cuplikan 5 baris error teratas jika gagal.
   2. Playwright E2E (`tests/e2e/smoke.spec.js`): Smoke test headless untuk menguji homepage, katalog anime/drama/hollywood, dan pemutar player streaming.
+

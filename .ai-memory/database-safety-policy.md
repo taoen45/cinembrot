@@ -18,3 +18,4 @@
 - Gunakan tool MCP `inspect_db_schema_safe` untuk membaca struktur tabel dan statistik secara **READ-ONLY**.
 - Jika user meminta perbaikan data, siapkan rencana query terlebih dahulu, jelaskan dampaknya, dan tunggu jawaban user sebelum mengeksekusi.
 - Pastikan koneksi MariaDB mengarah ke host `55.0.0.157:3306` (atau `127.0.0.1` saat di dalam server host) dengan database `cinembrot`.
+

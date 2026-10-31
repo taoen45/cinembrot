@@ -40,3 +40,4 @@ func TestSanitizeSearchQuery(t *testing.T) {
 		t.Errorf("SanitizeSearchQuery(%q) = %q; want %q", input, got, expected)
 	}
 }
+

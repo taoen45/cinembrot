@@ -47,3 +47,4 @@ test.describe('Cinembrot Web Smoke Test', () => {
     expect(response.status()).toBe(200);
   });
 });
+

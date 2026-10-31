@@ -14,3 +14,4 @@ alwaysApply: true
    - Layer 2: Gunakan tool MCP `inspect_db_schema_safe` dan `diagnose_server_logs` untuk investigasi bug/skema.
    - Layer 3: Gunakan tool MCP `run_tests` untuk validasi ringkas (Go unit test / Playwright).
 5. **Pencatatan Audit**: Setiap perubahan fitur, arsitektur, timer, atau port wajib dicatat pada `INSTRUKSI-SERVER.md` bagian Riwayat Perubahan.
+
