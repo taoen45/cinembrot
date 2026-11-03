@@ -1,30 +1,38 @@
 ---
-description: Aturan inti arsitektur, kepatuhan database safety, efisiensi token, dan prinsip Ponytail Cinembrot
+description: Aturan inti arsitektur, kepatuhan database safety, efisiensi token, prinsip Ponytail, dan standar desain anti-AI
 globs: *
 alwaysApply: true
 ---
 
-# Cinembrot Core Rules & Ponytail Principles
+# Cinembrot Core Rules, Ponytail & Natural Design Standards
 
-1. **Bahasa Indonesia Lugas**:
+1. **Bahasa Indonesia Lugas & Bebas Klise AI**:
    - Selalu berkomunikasi, memberikan instruksi, dan menulis dokumentasi dalam Bahasa Indonesia yang lugas, terarah, dan profesional.
+   - **HAPUS PENGGUNAAN TANDA EM-DASH (`—`)**: Tanda em-dash adalah indikator kuat teks buatan AI. Ganti dengan titik dua (`:`), tanda kurung `()`, titik, atau koma.
+   - Dilarang memakai copywriting klise AI (*seamless*, *revolutionary*, *next-gen*, *empower*). Gunakan bahasa manusiawi yang to-the-point.
 
-2. **Database Safety Mutlak (Zero Data Loss - Wajib Izin)**:
+2. **Desain Frontend Alami & Fungsional (Anti-AI UI)**:
+   - Patuhi panduan `DESIGN.md` dan `.ai-memory/design-principles.md`.
+   - Dilarang memakai gradien neon ungu-biru atau glassmorphism murahan yang merusak kontras.
+   - Gunakan skema warna netral Slate/Zinc dengan aksen amber/merah sinematik, serta berikan state lengkap (hover, active, focus, disabled) pada setiap elemen interaktif.
+
+3. **Database Safety Mutlak (Zero Data Loss - Wajib Izin)**:
    - DILARANG KERAS melakukan operasi modifikasi data (INSERT, UPDATE, DELETE) atau modifikasi skema database (ALTER, DROP, TRUNCATE, MIGRATION) tanpa persetujuan eksplisit user terlebih dahulu.
    - Gunakan tool MCP `inspect_db_schema_safe` untuk membaca database secara 100% read-only.
 
-3. **Golang Native (No PHP)**:
+4. **Golang Native (No PHP)**:
    - Stack proyek adalah Golang 1.22+, MariaDB, Redis, Caddy. DILARANG berasumsi adanya PHP, Composer, Artisan, atau Apache.
 
-4. **3-Layer Token-Saving Architecture**:
+5. **3-Layer Token-Saving Architecture**:
    - **Layer 1 (Context)**: Baca `.ai-memory/` atau gunakan tool MCP `search_project_rag`. Jangan membaca file besar secara utuh jika hanya butuh satu blok kode.
    - **Layer 2 (Execution)**: Gunakan tool MCP `cinembrot-diagnostics` (`diagnose_server_logs`, `inspect_db_schema_safe`) agar hasil berupa JSON ringkas (< 50 token).
    - **Layer 3 (Validation)**: Validasi via tool MCP `run_tests` (`suite: "go"` atau `suite: "playwright"`) sebelum melaporkan ke user.
 
-5. **Prinsip Ponytail (Lazy Senior Dev / Minimalist Code)**:
-   - **The Decision Ladder**: Utamakan 0 kode baru (pakai fungsi/config yang ada) -> Minimal Surgical Edit (1–5 baris) -> Jangan buat package/wrapper/interface baru jika hanya dipakai sekali (YAGNI).
+6. **Prinsip Ponytail (Lazy Senior Dev / Minimalist Code)**:
+   - **The Decision Ladder**: Utamakan 0 kode baru (pakai fungsi/config yang ada) -> Minimal Surgical Edit (1-5 baris) -> Jangan buat package/wrapper/interface baru jika hanya dipakai sekali (YAGNI).
    - **Surgical Edit Only**: Dilarang merapikan/mengubah kode sekitar yang sedang bekerja normal (*don't touch running code*).
    - **Hemat Token Output**: Jawab langsung ke inti, tampilkan hanya potongan kode/diff yang diubah, hentikan esai teori panjang.
 
-6. **Audit & Catatan Server**:
+7. **Audit Server & Alur Default**:
    - Setiap perubahan fitur, arsitektur, timer, atau port wajib dicatat pada `INSTRUKSI-SERVER.md` bagian Riwayat Perubahan.
+   - Selesai pengerjaan: lakukan `commit`, `push` ke fork (`https://github.com/taoen45/cinembrot.git`), dan `pull` ke server produksi `Ubuntu-FDME` (`/home/taoen45/docker/html`) secara otomatis (kecuali ada instruksi khusus untuk tidak deploy).

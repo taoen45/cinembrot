@@ -111,6 +111,11 @@ const CINEMBROT_KNOWLEDGE = {
     ],
     antiBloatGuidelines: "Tampilkan diff tertarget, hindari esai teori panjang, dan fokus langsung ke penyelesaian masalah.",
   },
+  designPrinciples: {
+    antiAiLook: "Hindari tanda em-dash (—) yang merupakan indikasi teks AI (ganti dengan titik dua, tanda kurung, atau titik). Hindari gradien ungu-biru neon dan glassmorphism murahan.",
+    uiGuideline: "Patuhi DESIGN.md: gunakan palet netral Slate/Zinc dengan aksen amber/merah sinematik, micro-interactions jelas, dan copywriting manusiawi to-the-point.",
+  },
+  deploymentWorkflow: "Default workflow: commit, push ke GitHub fork, dan git pull ke server remote Ubuntu-FDME (/home/taoen45/docker/html).",
   architecture: "Golang 1.22+ Native (No PHP required) + GORM + MariaDB + Redis + Caddy + Cloudflare Tunnel",
   github: CINEMBROT_GITHUB_INFO,
   guardrails: [
