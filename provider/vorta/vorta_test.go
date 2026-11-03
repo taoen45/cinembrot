@@ -77,3 +77,4 @@ func TestVortaGetSingleDramaAndStream(t *testing.T) {
 
 	t.Logf("Stream berhasil diambil: Resolusi=%s, URL=%s", stream.Streams[0].Resolution, stream.Streams[0].URL)
 }
+

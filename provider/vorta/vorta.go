@@ -184,6 +184,29 @@ func (c *Client) GetHomeFeed(platform, lang string) ([]DramaItem, error) {
 	return res.Data, nil
 }
 
+// Search mencari drama pendek berdasarkan kata kunci dengan jeda aman anti-brute force
+func (c *Client) Search(platform, query, lang string) ([]DramaItem, error) {
+	if platform == "" {
+		platform = "meloshort"
+	}
+	if lang == "" {
+		lang = "id"
+	}
+
+	path := fmt.Sprintf("/api/v2/search?category_p=%s&q=%s&lang=%s", url.QueryEscape(platform), url.QueryEscape(query), url.QueryEscape(lang))
+	body, err := c.executeRequest("GET", path)
+	if err != nil {
+		return nil, err
+	}
+
+	var res HomeResponse
+	if err := json.Unmarshal(body, &res); err != nil {
+		return nil, fmt.Errorf("gagal unmarshal search results: %w", err)
+	}
+
+	return res.Data, nil
+}
+
 // ChapterInfo merepresentasikan episode dalam drama
 type ChapterInfo struct {
 	ID       string `json:"id"`

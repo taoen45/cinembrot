@@ -29,3 +29,4 @@ Dokumen ini mendokumentasikan integrasi resmi Vorta Tech REST API (`https://api.
    - `GET /api/v2/home?category_p=meloshort&lang=id` -> Mendapatkan katalog beranda.
    - `GET /api/v2/detail?category_p=meloshort&id={drama_id}&lang=id` -> Mendapatkan metadata judul & daftar chapter.
    - `GET /api/v2/video?category_p=meloshort&id={drama_id}&chapterId={chapter_id}&lang=id` -> Mendapatkan URL streaming M3U8 (`resolution: 1280x720`).
+
