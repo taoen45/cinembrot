@@ -35,7 +35,15 @@
     <span id="drama-counter-badge" class="text-xs text-slate-400 font-medium">{{.TotalCount}} titles</span>
   </div>
 
-  <form id="drama-filter-form" action="/drama-pendek" method="GET" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+  <form id="drama-filter-form" action="/drama-pendek" method="GET" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+    <!-- INPUT PENCARIAN JUDUL -->
+    <div class="col-span-2 sm:col-span-2 md:col-span-3 lg:col-span-2">
+      <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1"><i class="fa-solid fa-magnifying-glass text-amber-500"></i> Cari Judul Drama</label>
+      <div class="relative">
+        <input type="text" id="drama-search-input" name="q" value="{{.SearchQuery}}" placeholder="Ketik judul (misal: Raja Wall Street)..." class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl pl-9 pr-3 py-2.5 focus:outline-none focus:border-amber-500 transition">
+        <i class="fa-solid fa-search absolute left-3 top-3 text-slate-400 text-xs pointer-events-none"></i>
+      </div>
+    </div>
     <!-- DROPDOWN 1: TAHUN -->
     <div>
       <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">📅 {{t $.Lang "filter.year"}}</label>
@@ -55,6 +63,17 @@
         {{range .Genres}}
         <option value="{{.Slug}}" {{if eq $.CurrentGenre .Slug}}selected{{end}}>{{.Name}}</option>
         {{end}}
+      </select>
+    </div>
+
+    <!-- DROPDOWN SUMBER / PLATFORM -->
+    <div>
+      <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1"><i class="fa-solid fa-server text-amber-500"></i> Sumber</label>
+      <select id="drama-source-select" name="source" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-amber-500 transition font-medium">
+        <option value="">Semua Sumber</option>
+        <option value="meloshort">MeloShort / Melolo</option>
+        <option value="shortmax">ShortMax</option>
+        <option value="mydrama">My Drama</option>
       </select>
     </div>
 
@@ -162,6 +181,8 @@
 <script>
 (function() {
   const form = document.getElementById('drama-filter-form');
+  const searchInput = document.getElementById('drama-search-input');
+  const sourceSelect = document.getElementById('drama-source-select');
   const yearSelect = document.getElementById('drama-year-select');
   const genreSelect = document.getElementById('drama-genre-select');
   const countrySelect = document.getElementById('drama-country-select');
@@ -222,7 +243,11 @@
     </a>`;
   }
 
+  let searchDebounceTimer = null;
+
   window.fetchDramaAjax = function() {
+    const q = searchInput ? searchInput.value.trim() : '';
+    const source = sourceSelect ? sourceSelect.value : '';
     const year = yearSelect ? yearSelect.value : '';
     const genre = genreSelect ? genreSelect.value : '';
     const country = countrySelect ? countrySelect.value : '';
@@ -243,6 +268,8 @@
 
     const params = new URLSearchParams();
     params.append('type', 'drama_pendek');
+    if (q) params.append('q', q);
+    if (source) params.append('source', source);
     params.append('year', year);
     params.append('genre', genre);
     params.append('country', country);
@@ -250,6 +277,8 @@
     params.append('limit', '60');
 
     const queryParams = new URLSearchParams();
+    if (q) queryParams.set('q', q);
+    if (source) queryParams.set('source', source);
     if (year) queryParams.set('year', year);
     if (genre) queryParams.set('genre', genre);
     if (country) queryParams.set('country', country);
@@ -297,6 +326,8 @@
   };
 
   window.resetDramaFilter = function() {
+    if (searchInput) searchInput.value = '';
+    if (sourceSelect) sourceSelect.value = '';
     if (yearSelect) yearSelect.value = '2026';
     if (genreSelect) genreSelect.value = '';
     if (countrySelect) countrySelect.value = '';
@@ -305,6 +336,13 @@
     window.fetchDramaAjax();
   };
 
+  if (searchInput) {
+    searchInput.addEventListener('input', function() {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(window.fetchDramaAjax, 600); // Jeda sopan 600ms anti brute-force
+    });
+  }
+  if (sourceSelect) sourceSelect.addEventListener('change', window.fetchDramaAjax);
   if (yearSelect) yearSelect.addEventListener('change', window.fetchDramaAjax);
   if (genreSelect) genreSelect.addEventListener('change', window.fetchDramaAjax);
   if (countrySelect) countrySelect.addEventListener('change', window.fetchDramaAjax);

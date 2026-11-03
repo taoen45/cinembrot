@@ -1527,6 +1527,7 @@ func (s *Server) HandleAPIMoviesFilter(w http.ResponseWriter, r *http.Request) {
 	yearStr := getVal(jsonPayload.Year, "year")
 	genreStr := getVal(jsonPayload.Genre, "genre")
 	countryStr := getVal(jsonPayload.Country, "country")
+	sourceStr := getVal("", "source")
 	catStr := getVal(jsonPayload.Category, "category")
 	ratingStr := getVal(jsonPayload.Rating, "rating")
 	sortStr := getVal(jsonPayload.Sort, "sort")
@@ -1582,6 +1583,11 @@ func (s *Server) HandleAPIMoviesFilter(w http.ResponseWriter, r *http.Request) {
 	// 5. Filter Negara
 	if countryStr != "" {
 		query = query.Where("country LIKE ?", "%"+countryStr+"%")
+	}
+
+	// Filter Sumber Platform (MeloShort / Melolo, Shortmax, Mydrama)
+	if sourceStr != "" {
+		query = query.Where("source_website LIKE ? OR raw_metadata LIKE ?", "%"+sourceStr+"%", "%"+sourceStr+"%")
 	}
 
 	// 6. Filter Kategori Lisensi
