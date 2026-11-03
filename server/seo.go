@@ -416,6 +416,7 @@ func (s *Server) HandleSitemapXML(w http.ResponseWriter, r *http.Request) {
 	var movies []MovieSummary
 	s.db.Model(&model.Movie{}).
 		Select("slug, title, type, poster_url, updated_at").
+		Where("status NOT IN ('takedown', 'unpublish', 'draft')").
 		Order("id desc").
 		Find(&movies)
 

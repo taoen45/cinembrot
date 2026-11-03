@@ -809,6 +809,12 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Compliance: Sembunyikan film berstatus takedown/unpublish dari akses publik (HTTP 404)
+	if movie.Status == "takedown" || movie.Status == "unpublish" || movie.Status == "draft" {
+		http.NotFound(w, r)
+		return
+	}
+
 	// Update view counter
 	s.db.Model(&movie).UpdateColumn("views", movie.Views+1)
 
