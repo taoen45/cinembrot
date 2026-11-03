@@ -1,32 +1,47 @@
-# Integrasi Vorta API untuk Drama Pendek (Cinembrot)
+# Vorta API & Stealth Drama Scraper Guide (Cinembrot)
 
-Dokumen ini mendokumentasikan integrasi resmi Vorta Tech REST API (`https://api.vorta.tech`) di Cinembrot untuk katalog Drama Pendek Asia.
+Dokumen panduan arsitektur integrasi Vorta Tech REST API (`https://api.vorta.tech`) dan modul scraper sopan anti-ban di Cinembrot.
 
 ---
 
-## 1. Spesifikasi Kredensial & Batasan
+## 1. Kredensial & Batasan Akun
 - **Base URL**: `https://api.vorta.tech`
-- **Tipe Autentikasi**: Signature HMAC-SHA256
-  - Header `X-Timestamp`: Unix epoch milliseconds
-  - Header `X-Signature`: `HMAC-SHA256(SecretKey, "GET:" + path + ":" + timestamp)`
-- **Plan**: Trial (600 requests / hari, reset pukul 00:00 UTC / 07:00 WIB)
-- **Platform Aktif**: `meloshort`, `shortmax`, `mydrama`
-- **Fitur Utama**: Mendukung video streaming HLS/M3U8 langsung (`has_video_access: true`).
+- **Secret Key**: `b15bc8fff70cc4acdb67f6e8a274c065c1c8d579c2297782ac5bb017d1871ae2` (Disimpan aman di `.env` sebagai `VORTA_API_SECRET`)
+- **Autentikasi**: HMAC-SHA256 signature (`X-Timestamp` unix epoch ms, `X-Signature: hex(hmac_sha256(secret, "GET:" + path + ":" + ts))`)
+- **Plan**: Trial (Batas 600 requests / hari, kuota direset tiap 00:00 UTC / 07:00 WIB)
+- **Platform Pool**: `meloshort`, `shortmax`, `mydrama`
+- **Tipe Video**: HLS Streaming Playlist (`.m3u8`) 720p / MP4 dengan validasi auth key
 
 ---
 
-## 2. Aturan Ketat (Anti Mass-Harvesting / Zero Ban Policy)
-> ⚠️ **PERINGATAN KERAS DARI DOKUMENTASI VORTA**:
-> *"This API is for streaming, not for harvesting data. Bulk-scraping is strictly forbidden. Once detected pulling data in bulk, API key is PERMANENTLY BLOCKED."*
+## 2. Sample Data Tersimpan di MariaDB (ID: 8111)
+- **Judul**: *Raja Wall Street Melindungi Putrinya*
+- **Slug**: `raja-wall-street-melindungi-putrinya-2026`
+- **URL Detail**: `https://cinembrot.web.id/movie/raja-wall-street-melindungi-putrinya-2026`
+- **Stream Link ID**: 31441
+- **Server Name**: `Server 1 - Meloshort HD (M3U8)`
+- **Format**: `720p HLS`
 
-### SOP Penggunaan di Cinembrot:
-1. **On-Demand Fetching (Bukan Bulk Download)**:
-   - DILARANG mengunduh seluruh 60 episode sekaligus dalam satu waktu.
-   - Panggilan ke `/api/v2/video` hanya dilakukan saat pengunjung membuka detail episode terkait (just-in-time / on-demand playback).
-2. **Caching Sederhana**:
-   - Cache URL stream M3U8 jangka pendek pada Redis / in-memory cache untuk mencegah request berulang pada episode yang sama dalam rentang menit.
-3. **Mata Rantai Endpoint**:
-   - `GET /api/v2/home?category_p=meloshort&lang=id` -> Mendapatkan katalog beranda.
-   - `GET /api/v2/detail?category_p=meloshort&id={drama_id}&lang=id` -> Mendapatkan metadata judul & daftar chapter.
-   - `GET /api/v2/video?category_p=meloshort&id={drama_id}&chapterId={chapter_id}&lang=id` -> Mendapatkan URL streaming M3U8 (`resolution: 1280x720`).
+---
 
+## 3. Kebijakan Anti-Harvesting / Anti-Ban Vorta
+Penyedia API menerapkan aturan ketat:
+> *"This API is for streaming, not for harvesting data. Bulk-scraping API data is prohibited... Once detected pulling data in bulk, your API key is PERMANENTLY BLOCKED."*
+
+### Pilar Pertahanan Cinembrot:
+1. **Human-like Jitter Delay**: Setiap request disisipi jeda acak manusiawi (misal 5-15 detik) menggunakan generator acak `time.Duration(min + rand(max - min))`.
+2. **Platform Shuffling**: Pengambilan feed tidak monoton dari satu sumber, melainkan diacak antara `meloshort`, `shortmax`, dan `mydrama`.
+3. **Random Item Traversal**: Urutan item dalam feed beranda diacak sebelum diproses, menghindari pola indeks statis (0, 1, 2, ...).
+4. **On-Demand Streaming (Zero Bulk Download)**: Hanya mengambil sampel 1 episode saat mencatat judul. Episode-episode lanjutan diambil on-demand saat dibuka oleh penonton.
+5. **Duplicate Skip**: Jika judul atau slug sudah ada di MariaDB, request detail di-skip untuk menghemat kuota harian.
+
+---
+
+## 4. Perintah Operasional CLI
+```powershell
+# Windows PowerShell (Local Test):
+.\cinembrot.exe -scrape-short-drama -short-limit 1 -short-min-delay 5 -short-max-delay 15
+
+# Linux Ubuntu (Docker di Server taoen45):
+docker compose exec app ./cinembrot -scrape-short-drama -short-limit 1
+```

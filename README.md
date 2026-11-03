@@ -329,7 +329,40 @@ Pada halaman detail film (`/movie/{slug}`), tautan unduhan ditata secara presisi
    - Otomatis memicu bot agregator (Pahe, Otakudesu, Samehadaku, Melongmovie, Dramaid) untuk mengais link video baru dari internet jika link lama mati.
    - **Aturan Cooldown 24 Jam**: Jika URL dari sumber sama persis (sudah versi paling baru), tombol otomatis terkunci (*disabled*) selama **1 hari (24 jam)** secara persisten di browser (`localStorage`) untuk mencegah spam request ke sumber.
 
-### 8. Scraping Film Barat & Domain Publik
+### 8. Integrasi Drama Pendek Asia & Scraper Sopan Anti-Banned (Vorta Stealth Mode)
+
+Cinembrot mendukung katalog khusus **Drama Pendek Asia** (MeloShort, ShortMax, MyDrama) yang dilengkapi pemutar streaming HLS (M3U8) resmi.
+
+#### Data Sample yang Telah Masuk ke MariaDB (ID: 8111):
+- **Judul**: *Raja Wall Street Melindungi Putrinya*
+- **Slug**: \`raja-wall-street-melindungi-putrinya-2026\`
+- **Halaman Detail**: \`https://cinembrot.web.id/movie/raja-wall-street-melindungi-putrinya-2026\`
+- **Episode 1 Stream**: Server 1 - MeloShort HD (M3U8)
+- **Direct Stream**: \`https://api.meloshort.com/v1/play/6ae45b7c229395fbf61e296a/v.m3u8?auth_key=...\`
+- **Resolusi**: 720p HLS
+
+#### Aturan Ketat Anti-Scraping / Anti-Ban Vorta API:
+> ⚠️ **PERINGATAN DARI PENYEDIA API (VORTA TECH):**
+> *"This API is for streaming, not for harvesting data. Bulk-scraping is strictly forbidden. Once detected pulling data in bulk, your API key is PERMANENTLY BLOCKED. No warning, no negotiation."*
+
+Untuk mematuhi aturan tersebut, Cinembrot menerapkan arsitektur **Stealth Ingestion**:
+1. **Random Delay Manusiawi**: Jeda acak (default 5-15 detik) antar pemanggilan HTTP request.
+2. **Platform Shuffle (Rotasi Sumber)**: Sumber platform dirotasi secara acak (\`meloshort\`, \`shortmax\`, \`mydrama\`) sehingga pola request tidak terdeteksi bot/scrapper brute-force.
+3. **On-Demand Single Episode Stream**: Hanya mengambil sampel episode 1 saat ingest judul. Seluruh episode lanjutan diambil secara on-demand saat dibuka oleh penonton.
+4. **Duplicate Safeguard**: Otomatis melewati (*skip*) judul yang sudah ada di MariaDB tanpa melakukan request berulang ke API.
+
+```powershell
+# Jalankan scraper drama pendek sopan (mengambil 1 judul contoh dengan jeda acak 5-15 detik)
+.\cinembrot.exe -scrape-short-drama -short-limit 1 -short-min-delay 5 -short-max-delay 15
+
+# Contoh opsi rotasi platform kustom dengan jeda santai
+.\cinembrot.exe -scrape-short-drama -short-limit 2 -short-platforms "meloshort,shortmax,mydrama" -short-min-delay 10 -short-max-delay 20
+
+# Linux Ubuntu (Docker di Server taoen45):
+docker compose exec app ./cinembrot -scrape-short-drama -short-limit 1
+```
+
+### 9. Scraping Film Barat & Domain Publik
 ```powershell
 # Scrape film rilis tahun tertentu dari provider (tmdb / archive / yts / all)
 .\cinembrot.exe -by-year 2024 -pages 1 -source yts

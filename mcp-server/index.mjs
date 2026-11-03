@@ -135,11 +135,14 @@ const CINEMBROT_KNOWLEDGE = {
   },
   coreFeatures: [
     "Multi-Server Streaming Embed (VidSrc, AutoEmbed, 2Embed, VidLink, SuperEmbed, MultiEmbed, NontonGo)",
+    "Katalog Drama Pendek Asia & Vorta REST API Streaming M3U8 (MeloShort, ShortMax, MyDrama)",
+    "Scraper Sopan Stealth Mode Anti-Ban dengan rotasi platform dan random delay manusiawi",
     "Dwibahasa ID & EN dengan auto-translate sinopsis",
     "Automated Scraper (TMDb, Jikan Anime, TMDb TV Asian Drama, Internet Archive, YTS)",
     "Dual Domain: cinembrot.web.id (Streaming Hub) & cinembrot.my.id (Landing Info)",
     "Local WebP Converter untuk Poster & Backdrop (Hemat bandwidth & storage)",
     "Keamanan HTTP Security Headers, In-Memory Rate Limiting, & Regex Sanitization",
+    "DMCA Takedown Compliance (HTTP 404 & Sitemap Exclusion tanpa data loss)",
   ],
 };
 
