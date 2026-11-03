@@ -1,0 +1,8 @@
+[package]
+name = "media-worker"
+version = "0.1.0"
+edition = "2021"
+description = "Lightweight Rust CLI worker for high-performance media & metadata operations in Cinembrot"
+
+[dependencies]
+

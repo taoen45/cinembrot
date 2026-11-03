@@ -38,3 +38,7 @@ cache/
 
 # MCP Server
 mcp-server/node_modules/
+
+# Rust Target Directory
+crates/*/target/
+target/

@@ -182,18 +182,18 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "run_tests",
         description:
-          "Layer 3 Compact Validation Runner: Menjalankan Go test ('go') atau Playwright E2E ('playwright') dan mengembalikan ringkasan status (passed/failed/failures) secara hemat token tanpa memenuhi layar terminal.",
+          "Layer 3 Compact Validation Runner: Menjalankan Go test ('go'), Rust tests ('cargo'), atau Playwright E2E ('playwright') dan mengembalikan ringkasan status (passed/failed/failures) secara hemat token tanpa memenuhi layar terminal.",
         inputSchema: {
           type: "object",
           properties: {
             suite: {
               type: "string",
-              enum: ["go", "playwright"],
-              description: "Framework testing yang dijalankan: 'go' (Go unit tests) atau 'playwright' (E2E browser tests).",
+              enum: ["go", "cargo", "playwright"],
+              description: "Framework testing yang dijalankan: 'go' (Go unit tests), 'cargo' (Rust crate tests), atau 'playwright' (E2E browser tests).",
             },
             filter: {
               type: "string",
-              description: "Filter nama package/test (opsional, misal './server' atau 'smoke.spec.js').",
+              description: "Filter nama package/test (opsional, misal './server', 'media-worker', atau 'smoke.spec.js').",
             },
           },
           required: ["suite"],
@@ -425,6 +425,42 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                       failurePreview: failLines.slice(0, 5),
                     },
                     rawExcerpt: passed ? "All selected tests passed." : failLines.slice(0, 8).join("\n"),
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
+          };
+        }
+
+        if (suite === "cargo") {
+          const filterArg = filter ? ` -p ${filter}` : " --workspace";
+          const cmd = `cargo test${filterArg}`;
+          const crateDir = path.join(PROJECT_ROOT, "crates", "media-worker");
+          const res = await runExec(cmd, fs.existsSync(crateDir) ? crateDir : PROJECT_ROOT, 1024 * 1024 * 2, 60000);
+          const output = (res.stdout + "\n" + res.stderr).trim();
+          const passed = res.exitCode === 0 && output.includes("test result: ok");
+
+          const lines = output.split(/\r?\n/);
+          const passLines = lines.filter((l) => l.startsWith("test ") && l.endsWith("... ok"));
+          const failLines = lines.filter((l) => l.startsWith("test ") && l.includes("FAILED") || l.includes("error[E"));
+
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(
+                  {
+                    suite: "cargo",
+                    passed,
+                    summary: {
+                      passedCount: passLines.length,
+                      failedCount: failLines.length,
+                      passedTests: passLines,
+                      failurePreview: failLines.slice(0, 5),
+                    },
+                    rawExcerpt: passed ? "All Rust unit tests passed successfully." : failLines.slice(0, 8).join("\n"),
                   },
                   null,
                   2

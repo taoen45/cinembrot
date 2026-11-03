@@ -31,6 +31,7 @@ Dokumen ini mendefinisikan arsitektur 3-Layer yang disesuaikan khusus untuk proj
                                │ Layer 3 — Validation            │
                                │ • Playwright (Browser E2E Test) │
                                │ • Go Test (Unit & Handlers)     │
+                               │ • Cargo Test (Rust Crate Test)  │
                                │ • Compact Test Runner di MCP    │
                                │   (Passed/Failed summary)       │
                                └────────────────┬────────────────┘
@@ -38,7 +39,8 @@ Dokumen ini mendefinisikan arsitektur 3-Layer yang disesuaikan khusus untuk proj
                                                 ▼
                                ┌─────────────────────────────────┐
                                │ Target: Cinembrot Application   │
-                               │ (Golang Engine, Caddy, MariaDB) │
+                               │ • Go Web Engine, Caddy, MariaDB │
+                               │ • Rust Media Worker CLI (opt)   │
                                └─────────────────────────────────┘
 ```
 
