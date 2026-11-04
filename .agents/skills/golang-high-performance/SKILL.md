@@ -15,3 +15,4 @@ description: Optimalisasi performa Golang, goroutines, channel concurrency, GORM
 3. **HTTP Server & Zero-Allocation**:
    - Gunakan `strings.Builder` atau `byte buffer` untuk perakitan teks dinamis.
    - Manfaatkan context timeout (`http.Client{Timeout: ...}`) pada setiap integrasi client eksternal.
+

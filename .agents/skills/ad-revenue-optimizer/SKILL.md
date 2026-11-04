@@ -15,3 +15,4 @@ description: Penempatan unit iklan strategis, monetisasi Adsterra & DSP, ads.txt
    - Berikan modal jeda hitung mundur (3 detik) sebelum download untuk memaksimalkan CTR Smartlink tanpa merusak retensi penonton.
 4. **Anti-AdBlock Ramah Pengunjung**:
    - Deteksi adblocker secara sopan tanpa memblokir akses total penonton; tampilkan notifikasi edukatif untuk mendukung keberlangsungan server gratis.
+

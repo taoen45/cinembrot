@@ -15,3 +15,4 @@ description: Penanganan komplain DMCA, otomatisasi HTTP 404/410, isolasi konten 
    - Pengecualian otomatis slug berstatus takedown dari `sitemap.xml` agar perayap Google segera meng-unindex URL tersebut.
 4. **Respon Resmi Pelapor**:
    - Buatkan balasan sopan dan profesional ke tim abuse (misal: `abusereply@cloudflare.com`) dengan menyertakan Report ID dan bukti verifikasi respon HTTP 404.
+
