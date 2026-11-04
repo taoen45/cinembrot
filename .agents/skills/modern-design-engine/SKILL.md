@@ -15,3 +15,4 @@ description: Estetika modern Anti-AI, CSS 3D transforms, animasi fluid, micro-in
 3. **Micro-Interactions**:
    - Indikator loading halus, feedback tombol klik (`active:scale-95`), dan badge status yang hidup.
    - Tetap ringan tanpa library JavaScript berat.
+

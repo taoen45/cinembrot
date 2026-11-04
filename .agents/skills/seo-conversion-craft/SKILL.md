@@ -14,3 +14,4 @@ description: Arsitektur Schema.org JSON-LD, OpenGraph share preview, Twitter Car
    - Resolusi poster optimal: 1200x630 pixel untuk preview tajam di WhatsApp, Telegram, dan media sosial.
 3. **Conversion Rate Optimization (CRO)**:
    - Tata letak Call-to-Action (CTA) pemutar video dan tombol download yang mencolok, minim distorsi iklan, dan waktu tunggu instan.
+

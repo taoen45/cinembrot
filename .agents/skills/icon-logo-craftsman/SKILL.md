@@ -14,3 +14,4 @@ description: Pembuatan vektor SVG presisi, optimalisasi favicon, dan integrasi i
 3. **Favicon & Web App Manifest**:
    - Sediakan format `favicon.ico`, `favicon.png` (32x32 & 192x192), dan Apple Touch Icon.
    - Kompresi lossless untuk meminimalkan ukuran file (< 5 KB).
+

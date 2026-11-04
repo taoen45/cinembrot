@@ -13,3 +13,4 @@ description: Perancangan funnel transaksi WhatsApp, auto-routing sales, pesan pr
    - Distribusi lead/pesan ke beberapa nomor customer service/admin secara bergantian (round-robin rotasi).
 3. **Tracking & Analytics**:
    - Injeksi event tracking (Google Analytics / Pixel) saat tombol WhatsApp diklik untuk mengukur rasio konversi.
+

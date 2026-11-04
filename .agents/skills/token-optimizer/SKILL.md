@@ -13,3 +13,4 @@ description: Penghematan token ekstrem, representasi data format YAML/JSON compa
 3. **Context Trimming**:
    - Buang log verbose dan dependensi yang tidak relevan dengan inti masalah.
    - Gunakan referensi file:// dan simbol fungsi langsung.
+

@@ -13,3 +13,4 @@ description: Komputasi super-cepat sidecar Rust, high concurrency, asynchronous 
 3. **Safety & Zero-Cost Abstraction**:
    - Memory safety tanpa garbage collection overhead.
    - Pemanfaatan `rayon` untuk paralelisme CPU-bound dan `tokio` untuk concurrent I/O.
+

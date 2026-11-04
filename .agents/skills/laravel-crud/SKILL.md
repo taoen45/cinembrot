@@ -16,3 +16,4 @@ description: Pengembangan backend, Eloquent ORM, FormRequest validation, arsitek
 3. **Admin Panel & Resource Controller**:
    - Controller ramping: delegasikan logika bisnis ke Action/Service classes.
    - Resourceful controller (`index`, `create`, `store`, `show`, `edit`, `update`, `destroy`).
+
