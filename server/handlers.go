@@ -50,6 +50,7 @@ type PageData struct {
 	CurrentType            string
 	CurrentMinRating       string
 	CurrentSort            string
+	CurrentSource          string
 	CurrentPage            int
 	TotalPages             int
 	SearchQuery            string
@@ -696,6 +697,7 @@ func (s *Server) HandleDramaPendek(w http.ResponseWriter, r *http.Request) {
 	}
 	genreStr := strings.TrimSpace(r.URL.Query().Get("genre"))
 	countryStr := strings.TrimSpace(r.URL.Query().Get("country"))
+	sourceStr := strings.TrimSpace(r.URL.Query().Get("source"))
 	sortStr := strings.TrimSpace(r.URL.Query().Get("sort"))
 	if sortStr == "" {
 		sortStr = "year_desc" // Default: Rilis Terbaru
@@ -719,6 +721,10 @@ func (s *Server) HandleDramaPendek(w http.ResponseWriter, r *http.Request) {
 
 	if countryStr != "" {
 		query = query.Where("country LIKE ?", "%"+countryStr+"%")
+	}
+
+	if sourceStr != "" {
+		query = query.Where("source_website LIKE ? OR source_url LIKE ? OR raw_metadata LIKE ?", "%"+sourceStr+"%", "%"+sourceStr+"%", "%"+sourceStr+"%")
 	}
 
 	// Sorting
@@ -770,6 +776,7 @@ func (s *Server) HandleDramaPendek(w http.ResponseWriter, r *http.Request) {
 		CurrentGenre:    genreStr,
 		CurrentCountry:  countryStr,
 		CurrentSort:     sortStr,
+		CurrentSource:   sourceStr,
 		TotalCount:      totalCount,
 		EnableAds:       s.cfg.EnableAds,
 		MetaDescription: "Nonton serial drama pendek, mini series, dan drama China/Korea subtitle Indonesia episode lengkap gratis kualitas jernih di CINEMBROT.",
@@ -1591,9 +1598,9 @@ func (s *Server) HandleAPIMoviesFilter(w http.ResponseWriter, r *http.Request) {
 		query = query.Where("country LIKE ?", "%"+countryStr+"%")
 	}
 
-	// Filter Sumber Platform (MeloShort / Melolo, Shortmax, Mydrama)
+	// Filter Sumber Platform (MeloShort / Melolo, Dramabox, Shortmax, Storyreel, Vibeshort, Dramaverse, Mydrama)
 	if sourceStr != "" {
-		query = query.Where("source_website LIKE ? OR raw_metadata LIKE ?", "%"+sourceStr+"%", "%"+sourceStr+"%")
+		query = query.Where("source_website LIKE ? OR source_url LIKE ? OR raw_metadata LIKE ?", "%"+sourceStr+"%", "%"+sourceStr+"%", "%"+sourceStr+"%")
 	}
 
 	// 6. Filter Kategori Lisensi

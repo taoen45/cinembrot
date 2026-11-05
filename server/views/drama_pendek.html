@@ -23,8 +23,71 @@
   <div class="absolute right-12 bottom-0 w-48 h-48 bg-amber-600/20 rounded-full blur-2xl pointer-events-none"></div>
 </div>
 
-<!-- ==================== 2. FILTER BAR ==================== -->
+<!-- ==================== 2. FILTER BAR & STREAMING PLATFORMS ==================== -->
 <div class="mb-8 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-5 shadow-sm transition-colors">
+  
+  <!-- PLATFORMS SWITCHER STRIP (SEPERTI GAMBAR 2) -->
+  <div class="mb-5 pb-4 border-b border-slate-100 dark:border-dark-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div class="flex items-center gap-2">
+      <div class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-sm shadow-cyan-400/50"></div>
+      <span class="text-[11px] font-black tracking-wider uppercase text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-mono">
+        <i class="fa-solid fa-atom text-cyan-400 text-xs"></i> STREAMING PLATFORMS (VORTA API):
+      </span>
+    </div>
+
+    <!-- BUTTON PILLS PLATFORMS -->
+    <div class="flex flex-wrap items-center gap-2">
+      <button type="button" 
+              onclick="selectPlatformSource('')" 
+              id="source-pill-all"
+              class="platform-pill px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer {{if not $.CurrentSource}}bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm shadow-cyan-500/20{{else}}bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-dark-700{{end}}">
+        <i class="fa-solid fa-layer-group text-[10px]"></i> Semua
+      </button>
+
+      <button type="button" 
+              onclick="selectPlatformSource('melolo')" 
+              id="source-pill-melolo"
+              class="platform-pill px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer {{if or (eq $.CurrentSource "melolo") (eq $.CurrentSource "meloshort")}}bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm shadow-cyan-500/20 active-pill{{else}}bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-dark-700{{end}}">
+        <i class="fa-solid fa-film text-cyan-400 text-[10px]"></i> MeloShort / Melolo
+      </button>
+
+      <button type="button" 
+              onclick="selectPlatformSource('shortmax')" 
+              id="source-pill-shortmax"
+              class="platform-pill px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer {{if eq $.CurrentSource "shortmax"}}bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm shadow-cyan-500/20 active-pill{{else}}bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-dark-700{{end}}">
+        <i class="fa-solid fa-clapperboard text-slate-400 text-[10px]"></i> ShortMax
+      </button>
+
+      <button type="button" 
+              onclick="selectPlatformSource('dramabox')" 
+              id="source-pill-dramabox"
+              class="platform-pill px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer {{if eq $.CurrentSource "dramabox"}}bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm shadow-cyan-500/20 active-pill{{else}}bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-dark-700{{end}}">
+        <i class="fa-solid fa-play text-rose-400 text-[10px]"></i> DramaBox
+      </button>
+
+      <button type="button" 
+              onclick="selectPlatformSource('storyreel')" 
+              id="source-pill-storyreel"
+              class="platform-pill px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer {{if eq $.CurrentSource "storyreel"}}bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm shadow-cyan-500/20 active-pill{{else}}bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-dark-700{{end}}">
+        <i class="fa-solid fa-bolt text-amber-400 text-[10px]"></i> StoryReel
+      </button>
+
+      <button type="button" 
+              onclick="selectPlatformSource('vibeshort')" 
+              id="source-pill-vibeshort"
+              class="platform-pill px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer {{if eq $.CurrentSource "vibeshort"}}bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm shadow-cyan-500/20 active-pill{{else}}bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-dark-700{{end}}">
+        <i class="fa-solid fa-video text-purple-400 text-[10px]"></i> VibeShort
+      </button>
+
+      <button type="button" 
+              onclick="selectPlatformSource('dramaverse')" 
+              id="source-pill-dramaverse"
+              class="platform-pill px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer {{if eq $.CurrentSource "dramaverse"}}bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm shadow-cyan-500/20 active-pill{{else}}bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-dark-700{{end}}">
+        <i class="fa-solid fa-tv text-emerald-400 text-[10px]"></i> DramaVerse
+      </button>
+    </div>
+  </div>
+
   <div class="flex items-center justify-between mb-4">
     <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
       <i class="fa-solid fa-sliders text-brand-500"></i> {{t $.Lang "filter.title"}}
@@ -66,14 +129,17 @@
       </select>
     </div>
 
-    <!-- DROPDOWN SUMBER / PLATFORM -->
+    <!-- DROPDOWN SUMBER / PLATFORM (VORTA API) -->
     <div>
-      <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1"><i class="fa-solid fa-server text-amber-500"></i> Sumber</label>
+      <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1"><i class="fa-solid fa-server text-amber-500"></i> Sumber Drama</label>
       <select id="drama-source-select" name="source" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-amber-500 transition font-medium">
-        <option value="">Semua Sumber</option>
-        <option value="meloshort">MeloShort / Melolo</option>
-        <option value="shortmax">ShortMax</option>
-        <option value="mydrama">My Drama</option>
+        <option value="">Semua Sumber (Vorta)</option>
+        <option value="melolo" {{if or (eq $.CurrentSource "melolo") (eq $.CurrentSource "meloshort")}}selected{{end}}>Melolo (MP4 AES-CTR)</option>
+        <option value="dramabox" {{if eq $.CurrentSource "dramabox"}}selected{{end}}>DramaBox (MP4 AES-ECB)</option>
+        <option value="shortmax" {{if eq $.CurrentSource "shortmax"}}selected{{end}}>ShortMax (HLS WebCrypto)</option>
+        <option value="storyreel" {{if eq $.CurrentSource "storyreel"}}selected{{end}}>StoryReel (HLS Encrypted TS)</option>
+        <option value="vibeshort" {{if eq $.CurrentSource "vibeshort"}}selected{{end}}>VibeShort (Hybrid HLS/MP4)</option>
+        <option value="dramaverse" {{if eq $.CurrentSource "dramaverse"}}selected{{end}}>DramaVerse (Adaptive Bitrate)</option>
       </select>
     </div>
 
@@ -325,6 +391,26 @@
     });
   };
 
+  window.selectPlatformSource = function(platform) {
+    if (sourceSelect) {
+      sourceSelect.value = platform;
+    }
+    // Update visual pills styling
+    document.querySelectorAll('.platform-pill').forEach(pill => {
+      pill.classList.remove('bg-cyan-500/20', 'text-cyan-400', 'border-cyan-500/50', 'shadow-sm', 'shadow-cyan-500/20');
+      pill.classList.add('bg-slate-100', 'dark:bg-dark-800', 'text-slate-600', 'dark:text-slate-300', 'border-slate-200', 'dark:border-dark-700');
+    });
+
+    const activeId = platform ? `source-pill-${platform}` : 'source-pill-all';
+    const activePill = document.getElementById(activeId);
+    if (activePill) {
+      activePill.classList.remove('bg-slate-100', 'dark:bg-dark-800', 'text-slate-600', 'dark:text-slate-300', 'border-slate-200', 'dark:border-dark-700');
+      activePill.classList.add('bg-cyan-500/20', 'text-cyan-400', 'border-cyan-500/50', 'shadow-sm', 'shadow-cyan-500/20');
+    }
+
+    window.fetchDramaAjax();
+  };
+
   window.resetDramaFilter = function() {
     if (searchInput) searchInput.value = '';
     if (sourceSelect) sourceSelect.value = '';
@@ -333,6 +419,17 @@
     if (countrySelect) countrySelect.value = '';
     if (sortSelect) sortSelect.value = 'year_desc';
     if (liveBadge) liveBadge.classList.add('hidden');
+
+    document.querySelectorAll('.platform-pill').forEach(pill => {
+      pill.classList.remove('bg-cyan-500/20', 'text-cyan-400', 'border-cyan-500/50', 'shadow-sm', 'shadow-cyan-500/20');
+      pill.classList.add('bg-slate-100', 'dark:bg-dark-800', 'text-slate-600', 'dark:text-slate-300', 'border-slate-200', 'dark:border-dark-700');
+    });
+    const allPill = document.getElementById('source-pill-all');
+    if (allPill) {
+      allPill.classList.remove('bg-slate-100', 'dark:bg-dark-800', 'text-slate-600', 'dark:text-slate-300', 'border-slate-200', 'dark:border-dark-700');
+      allPill.classList.add('bg-cyan-500/20', 'text-cyan-400', 'border-cyan-500/50', 'shadow-sm', 'shadow-cyan-500/20');
+    }
+
     window.fetchDramaAjax();
   };
 

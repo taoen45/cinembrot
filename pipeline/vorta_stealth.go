@@ -28,7 +28,7 @@ func IngestDramaShortPolite(db *gorm.DB, repo *scraper.Repository, opts StealthO
 	client := vorta.NewClient()
 
 	if len(opts.Platforms) == 0 {
-		opts.Platforms = []string{"meloshort", "shortmax", "mydrama"}
+		opts.Platforms = []string{"melolo", "dramabox", "shortmax", "storyreel", "vibeshort", "dramaverse"}
 	}
 	if opts.MinDelaySec <= 0 {
 		opts.MinDelaySec = 5

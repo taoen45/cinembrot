@@ -83,7 +83,7 @@ func main() {
 	shortLimit := flag.Int("short-limit", 1, "Batas jumlah judul drama pendek yang diambil (default 1 judul)")
 	shortMinDelay := flag.Int("short-min-delay", 5, "Durasi jeda acak minimal dalam detik (default 5 detik)")
 	shortMaxDelay := flag.Int("short-max-delay", 15, "Durasi jeda acak maksimal dalam detik (default 15 detik)")
-	shortPlatforms := flag.String("short-platforms", "meloshort,shortmax,mydrama", "Daftar platform dipisahkan koma yang dirotasi secara acak")
+	shortPlatforms := flag.String("short-platforms", "melolo,dramabox,shortmax,storyreel,vibeshort,dramaverse", "Daftar platform dipisahkan koma yang dirotasi secara acak (melolo, dramabox, shortmax, storyreel, vibeshort, dramaverse)")
 
 	flag.Parse()
 
