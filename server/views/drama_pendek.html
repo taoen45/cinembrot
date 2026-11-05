@@ -23,25 +23,21 @@
   <div class="absolute right-12 bottom-0 w-48 h-48 bg-amber-600/20 rounded-full blur-2xl pointer-events-none"></div>
 </div>
 
-<!-- ==================== 2. STREAMING PLATFORMS SHOWCASE (VORTA API) ==================== -->
+<!-- ==================== 2. PLATFORM DRAMA PENDEK ==================== -->
 <div class="mb-6 bg-slate-900/90 dark:bg-dark-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg backdrop-blur-xs">
-  <div class="flex items-center justify-between mb-3.5 pb-2.5 border-b border-slate-800/80">
-    <div class="flex items-center gap-2">
-      <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-      <span class="text-xs font-black tracking-wider uppercase text-cyan-400 font-mono flex items-center gap-1.5">
-        <i class="fa-solid fa-atom text-cyan-400 text-sm"></i> STREAMING PLATFORMS (VORTA API):
-      </span>
-    </div>
+  <!-- PLATFORM PILL BUTTONS: ICON + TITLE SAJA -->
+  <div class="flex flex-wrap items-center gap-2.5">
+    
+    <!-- SEMUA SUMBER -->
     <button type="button" 
             onclick="selectPlatformSource('')" 
             id="source-card-all"
-            class="platform-select-btn px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer {{if not $.CurrentSource}}bg-cyan-500/20 text-cyan-300 border border-cyan-500/60 shadow-xs shadow-cyan-500/20{{else}}bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700{{end}}">
-      <i class="fa-solid fa-layer-group text-[11px]"></i> Semua Sumber
+            class="platform-select-btn px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer {{if not $.CurrentSource}}bg-cyan-500/20 text-cyan-300 border border-cyan-500/60 shadow-xs shadow-cyan-500/20{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border border-slate-800 hover:border-slate-700{{end}}">
+      <span class="w-6 h-6 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-xs">
+        <i class="fa-solid fa-layer-group text-[11px]"></i>
+      </span>
+      <span>Semua Sumber</span>
     </button>
-  </div>
-
-  <!-- PLATFORM PILL BUTTONS: ICON + TITLE SAJA -->
-  <div class="flex flex-wrap items-center gap-2.5">
     
     <!-- MELOSHORT -->
     <button type="button"
