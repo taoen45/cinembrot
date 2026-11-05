@@ -1,20 +1,20 @@
 {{define "content"}}
 <!-- ==================== 1. DRAMA PENDEK HERO BANNER ==================== -->
-<div class="mb-8 relative rounded-2xl overflow-hidden bg-gradient-to-r from-rose-950 via-amber-950 to-slate-900 border border-amber-800/30 p-6 md:p-10 shadow-xl">
-  <div class="relative z-10 max-w-2xl">
+<div class="mb-8 relative rounded-2xl overflow-hidden bg-gradient-to-r from-rose-950 via-amber-950 to-slate-900 border border-amber-800/30 p-6 md:p-8 shadow-xl">
+  <div class="relative z-10 max-w-3xl">
     <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold mb-3">
       <i class="fa-solid fa-masks-theater text-amber-400"></i> {{t $.Lang "drama.badge"}}
     </div>
-    <h1 class="text-2xl md:text-4xl font-black text-white tracking-tight mb-2 flex items-center gap-3">
+    <h1 class="text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight mb-2 flex items-center gap-3">
       <span>🎭 {{t $.Lang "drama.hero_title"}}</span>
     </h1>
     <p class="text-slate-300 text-xs md:text-sm font-medium leading-relaxed mb-4">
       {{t $.Lang "drama.hero_desc"}}
     </p>
     <div class="flex flex-wrap items-center gap-2.5 sm:gap-4 text-xs font-semibold text-amber-200">
-      <span class="flex items-center gap-1.5"><i class="fa-solid fa-layer-group text-amber-400"></i> Total {{.TotalCount}}</span>
-      <span class="flex items-center gap-1.5"><i class="fa-solid fa-clock text-yellow-400"></i> HD Series</span>
-      <span class="flex items-center gap-1.5"><i class="fa-solid fa-closed-captioning text-rose-400"></i> Dual Subtitles</span>
+      <span class="flex items-center gap-1.5"><i class="fa-solid fa-layer-group text-amber-400"></i> Total {{.TotalCount}} Judul</span>
+      <span class="flex items-center gap-1.5"><i class="fa-solid fa-bolt text-yellow-400"></i> On-Demand Streaming</span>
+      <span class="flex items-center gap-1.5"><i class="fa-solid fa-closed-captioning text-rose-400"></i> Subtitle Indonesia</span>
     </div>
   </div>
 
@@ -23,71 +23,194 @@
   <div class="absolute right-12 bottom-0 w-48 h-48 bg-amber-600/20 rounded-full blur-2xl pointer-events-none"></div>
 </div>
 
-<!-- ==================== 2. FILTER BAR & STREAMING PLATFORMS ==================== -->
-<div class="mb-8 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-5 shadow-sm transition-colors">
-  
-  <!-- PLATFORMS SWITCHER STRIP (SEPERTI GAMBAR 2) -->
-  <div class="mb-5 pb-4 border-b border-slate-100 dark:border-dark-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-    <div class="flex items-center gap-2">
-      <div class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-sm shadow-cyan-400/50"></div>
-      <span class="text-[11px] font-black tracking-wider uppercase text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-mono">
-        <i class="fa-solid fa-atom text-cyan-400 text-xs"></i> STREAMING PLATFORMS (VORTA API):
-      </span>
+<!-- ==================== 2. STREAMING PLATFORMS SHOWCASE (VORTA API) ==================== -->
+<div class="mb-8 bg-slate-900/90 dark:bg-dark-900/90 border border-slate-800 rounded-2xl p-5 shadow-lg backdrop-blur-xs">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-800">
+    <div class="flex items-center gap-2.5">
+      <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
+      <div>
+        <h2 class="text-xs font-black tracking-wider uppercase text-cyan-400 font-mono flex items-center gap-1.5">
+          <i class="fa-solid fa-atom text-cyan-400 text-sm"></i> STREAMING PLATFORMS (VORTA API)
+        </h2>
+        <p class="text-[11px] text-slate-400">Pilih provider untuk memfilter katalog drama pendek sesuai platform streaming resmi</p>
+      </div>
     </div>
 
-    <!-- BUTTON PILLS PLATFORMS -->
-    <div class="flex flex-wrap items-center gap-2">
+    <!-- Active Indicator Badge -->
+    <div class="flex items-center gap-2 self-start sm:self-auto">
       <button type="button" 
               onclick="selectPlatformSource('')" 
-              id="source-pill-all"
-              class="platform-pill px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer {{if not $.CurrentSource}}bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm shadow-cyan-500/20{{else}}bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-dark-700{{end}}">
-        <i class="fa-solid fa-layer-group text-[10px]"></i> Semua
-      </button>
-
-      <button type="button" 
-              onclick="selectPlatformSource('melolo')" 
-              id="source-pill-melolo"
-              class="platform-pill px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer {{if or (eq $.CurrentSource "melolo") (eq $.CurrentSource "meloshort")}}bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm shadow-cyan-500/20 active-pill{{else}}bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-dark-700{{end}}">
-        <i class="fa-solid fa-film text-cyan-400 text-[10px]"></i> MeloShort / Melolo
-      </button>
-
-      <button type="button" 
-              onclick="selectPlatformSource('shortmax')" 
-              id="source-pill-shortmax"
-              class="platform-pill px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer {{if eq $.CurrentSource "shortmax"}}bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm shadow-cyan-500/20 active-pill{{else}}bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-dark-700{{end}}">
-        <i class="fa-solid fa-clapperboard text-slate-400 text-[10px]"></i> ShortMax
-      </button>
-
-      <button type="button" 
-              onclick="selectPlatformSource('dramabox')" 
-              id="source-pill-dramabox"
-              class="platform-pill px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer {{if eq $.CurrentSource "dramabox"}}bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm shadow-cyan-500/20 active-pill{{else}}bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-dark-700{{end}}">
-        <i class="fa-solid fa-play text-rose-400 text-[10px]"></i> DramaBox
-      </button>
-
-      <button type="button" 
-              onclick="selectPlatformSource('storyreel')" 
-              id="source-pill-storyreel"
-              class="platform-pill px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer {{if eq $.CurrentSource "storyreel"}}bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm shadow-cyan-500/20 active-pill{{else}}bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-dark-700{{end}}">
-        <i class="fa-solid fa-bolt text-amber-400 text-[10px]"></i> StoryReel
-      </button>
-
-      <button type="button" 
-              onclick="selectPlatformSource('vibeshort')" 
-              id="source-pill-vibeshort"
-              class="platform-pill px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer {{if eq $.CurrentSource "vibeshort"}}bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm shadow-cyan-500/20 active-pill{{else}}bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-dark-700{{end}}">
-        <i class="fa-solid fa-video text-purple-400 text-[10px]"></i> VibeShort
-      </button>
-
-      <button type="button" 
-              onclick="selectPlatformSource('dramaverse')" 
-              id="source-pill-dramaverse"
-              class="platform-pill px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer {{if eq $.CurrentSource "dramaverse"}}bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm shadow-cyan-500/20 active-pill{{else}}bg-slate-100 hover:bg-slate-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-dark-700{{end}}">
-        <i class="fa-solid fa-tv text-emerald-400 text-[10px]"></i> DramaVerse
+              id="source-card-all"
+              class="platform-select-btn px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer {{if not $.CurrentSource}}bg-cyan-500/20 text-cyan-300 border border-cyan-500/60 shadow-xs shadow-cyan-500/20{{else}}bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700{{end}}">
+        <i class="fa-solid fa-layer-group text-[10px]"></i> Semua Sumber
       </button>
     </div>
   </div>
 
+  <!-- PLATFORM GRID CARDS (BERDASARKAN GAMBAR 1) -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+    
+    <!-- CARD 1: MELOLO -->
+    <div onclick="selectPlatformSource('melolo')" 
+         id="source-card-melolo"
+         class="platform-select-btn group cursor-pointer relative bg-slate-950/70 hover:bg-slate-900/90 rounded-xl p-3 border transition-all duration-200 flex flex-col justify-between {{if or (eq $.CurrentSource "melolo") (eq $.CurrentSource "meloshort")}}border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}border-slate-800 hover:border-slate-700{{end}}">
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-1.5">
+            <span class="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs font-black">
+              <i class="fa-solid fa-film"></i>
+            </span>
+            <span class="text-xs font-black text-white group-hover:text-amber-400 transition">Melolo</span>
+          </div>
+          <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">AES-CTR</span>
+        </div>
+        <p class="text-[10px] text-slate-400 leading-tight mb-2 line-clamp-2">Decrypts MP4 streams with AES-128-CTR sample encryption & DRM neutralization.</p>
+        <div class="bg-black/40 rounded p-1.5 font-mono text-[9px] text-slate-400 space-y-0.5 mb-2">
+          <div class="flex justify-between"><span class="text-slate-500">FORMAT:</span> <span class="text-slate-200">MP4 (CENC)</span></div>
+          <div class="flex justify-between"><span class="text-slate-500">KEY:</span> <span class="text-slate-200">16-Byte Hex</span></div>
+        </div>
+      </div>
+      <div class="pt-2 border-t border-slate-900 flex items-center justify-between text-[10px] font-bold text-cyan-400 group-hover:text-cyan-300">
+        <span>Pilih Sumber</span>
+        <i class="fa-solid fa-arrow-right text-[9px] transform group-hover:translate-x-0.5 transition"></i>
+      </div>
+    </div>
+
+    <!-- CARD 2: DRAMABOX -->
+    <div onclick="selectPlatformSource('dramabox')" 
+         id="source-card-dramabox"
+         class="platform-select-btn group cursor-pointer relative bg-slate-950/70 hover:bg-slate-900/90 rounded-xl p-3 border transition-all duration-200 flex flex-col justify-between {{if eq $.CurrentSource "dramabox"}}border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}border-slate-800 hover:border-slate-700{{end}}">
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-1.5">
+            <span class="w-6 h-6 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center text-xs font-black">
+              <i class="fa-solid fa-play"></i>
+            </span>
+            <span class="text-xs font-black text-white group-hover:text-rose-400 transition">DramaBox</span>
+          </div>
+          <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">AES-ECB</span>
+        </div>
+        <p class="text-[10px] text-slate-400 leading-tight mb-2 line-clamp-2">Decrypts MP4 video frames per sample block using AES-128-ECB key.</p>
+        <div class="bg-black/40 rounded p-1.5 font-mono text-[9px] text-slate-400 space-y-0.5 mb-2">
+          <div class="flex justify-between"><span class="text-slate-500">FORMAT:</span> <span class="text-slate-200">MP4 Video</span></div>
+          <div class="flex justify-between"><span class="text-slate-500">KEY:</span> <span class="text-slate-200">16-Byte Hex</span></div>
+        </div>
+      </div>
+      <div class="pt-2 border-t border-slate-900 flex items-center justify-between text-[10px] font-bold text-cyan-400 group-hover:text-cyan-300">
+        <span>Pilih Sumber</span>
+        <i class="fa-solid fa-arrow-right text-[9px] transform group-hover:translate-x-0.5 transition"></i>
+      </div>
+    </div>
+
+    <!-- CARD 3: SHORTMAX -->
+    <div onclick="selectPlatformSource('shortmax')" 
+         id="source-card-shortmax"
+         class="platform-select-btn group cursor-pointer relative bg-slate-950/70 hover:bg-slate-900/90 rounded-xl p-3 border transition-all duration-200 flex flex-col justify-between {{if eq $.CurrentSource "shortmax"}}border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}border-slate-800 hover:border-slate-700{{end}}">
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-1.5">
+            <span class="w-6 h-6 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center text-xs font-black">
+              <i class="fa-solid fa-clapperboard"></i>
+            </span>
+            <span class="text-xs font-black text-white group-hover:text-orange-400 transition">ShortMax</span>
+          </div>
+          <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">HLS Crypto</span>
+        </div>
+        <p class="text-[10px] text-slate-400 leading-tight mb-2 line-clamp-2">HLS player with fragment loader decrypting TS segments via WebCrypto API.</p>
+        <div class="bg-black/40 rounded p-1.5 font-mono text-[9px] text-slate-400 space-y-0.5 mb-2">
+          <div class="flex justify-between"><span class="text-slate-500">FORMAT:</span> <span class="text-slate-200">HLS (.m3u8)</span></div>
+          <div class="flex justify-between"><span class="text-slate-500">CIPHER:</span> <span class="text-slate-200">AES-128-CBC</span></div>
+        </div>
+      </div>
+      <div class="pt-2 border-t border-slate-900 flex items-center justify-between text-[10px] font-bold text-cyan-400 group-hover:text-cyan-300">
+        <span>Pilih Sumber</span>
+        <i class="fa-solid fa-arrow-right text-[9px] transform group-hover:translate-x-0.5 transition"></i>
+      </div>
+    </div>
+
+    <!-- CARD 4: STORYREEL -->
+    <div onclick="selectPlatformSource('storyreel')" 
+         id="source-card-storyreel"
+         class="platform-select-btn group cursor-pointer relative bg-slate-950/70 hover:bg-slate-900/90 rounded-xl p-3 border transition-all duration-200 flex flex-col justify-between {{if eq $.CurrentSource "storyreel"}}border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}border-slate-800 hover:border-slate-700{{end}}">
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-1.5">
+            <span class="w-6 h-6 rounded-lg bg-pink-500/20 text-pink-400 flex items-center justify-center text-xs font-black">
+              <i class="fa-solid fa-bolt"></i>
+            </span>
+            <span class="text-xs font-black text-white group-hover:text-pink-400 transition">StoryReel</span>
+          </div>
+          <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/30">HLS TS</span>
+        </div>
+        <p class="text-[10px] text-slate-400 leading-tight mb-2 line-clamp-2">Decrypts StoryReel TS segments on-the-fly without waiting for full download.</p>
+        <div class="bg-black/40 rounded p-1.5 font-mono text-[9px] text-slate-400 space-y-0.5 mb-2">
+          <div class="flex justify-between"><span class="text-slate-500">FORMAT:</span> <span class="text-slate-200">HLS (.m3u8)</span></div>
+          <div class="flex justify-between"><span class="text-slate-500">DECRYPT:</span> <span class="text-slate-200">On-The-Fly</span></div>
+        </div>
+      </div>
+      <div class="pt-2 border-t border-slate-900 flex items-center justify-between text-[10px] font-bold text-cyan-400 group-hover:text-cyan-300">
+        <span>Pilih Sumber</span>
+        <i class="fa-solid fa-arrow-right text-[9px] transform group-hover:translate-x-0.5 transition"></i>
+      </div>
+    </div>
+
+    <!-- CARD 5: VIBESHORT -->
+    <div onclick="selectPlatformSource('vibeshort')" 
+         id="source-card-vibeshort"
+         class="platform-select-btn group cursor-pointer relative bg-slate-950/70 hover:bg-slate-900/90 rounded-xl p-3 border transition-all duration-200 flex flex-col justify-between {{if eq $.CurrentSource "vibeshort"}}border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}border-slate-800 hover:border-slate-700{{end}}">
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-1.5">
+            <span class="w-6 h-6 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-black">
+              <i class="fa-solid fa-video"></i>
+            </span>
+            <span class="text-xs font-black text-white group-hover:text-purple-400 transition">VibeShort</span>
+          </div>
+          <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">Hybrid</span>
+        </div>
+        <p class="text-[10px] text-slate-400 leading-tight mb-2 line-clamp-2">Hybrid player auto-detecting HLS encrypted segments or direct MP4 stream.</p>
+        <div class="bg-black/40 rounded p-1.5 font-mono text-[9px] text-slate-400 space-y-0.5 mb-2">
+          <div class="flex justify-between"><span class="text-slate-500">FORMAT:</span> <span class="text-slate-200">HLS / MP4</span></div>
+          <div class="flex justify-between"><span class="text-slate-500">QUALITY:</span> <span class="text-slate-200">Multi-Res</span></div>
+        </div>
+      </div>
+      <div class="pt-2 border-t border-slate-900 flex items-center justify-between text-[10px] font-bold text-cyan-400 group-hover:text-cyan-300">
+        <span>Pilih Sumber</span>
+        <i class="fa-solid fa-arrow-right text-[9px] transform group-hover:translate-x-0.5 transition"></i>
+      </div>
+    </div>
+
+    <!-- CARD 6: DRAMAVERSE -->
+    <div onclick="selectPlatformSource('dramaverse')" 
+         id="source-card-dramaverse"
+         class="platform-select-btn group cursor-pointer relative bg-slate-950/70 hover:bg-slate-900/90 rounded-xl p-3 border transition-all duration-200 flex flex-col justify-between {{if eq $.CurrentSource "dramaverse"}}border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}border-slate-800 hover:border-slate-700{{end}}">
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-1.5">
+            <span class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-black">
+              <i class="fa-solid fa-tv"></i>
+            </span>
+            <span class="text-xs font-black text-white group-hover:text-emerald-400 transition">DramaVerse</span>
+          </div>
+          <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">Adaptive</span>
+        </div>
+        <p class="text-[10px] text-slate-400 leading-tight mb-2 line-clamp-2">Adaptive player multi-resolution (1080p, 720p, 480p) & CDN failover.</p>
+        <div class="bg-black/40 rounded p-1.5 font-mono text-[9px] text-slate-400 space-y-0.5 mb-2">
+          <div class="flex justify-between"><span class="text-slate-500">FORMAT:</span> <span class="text-slate-200">HLS Multi-Q</span></div>
+          <div class="flex justify-between"><span class="text-slate-500">FAILOVER:</span> <span class="text-slate-200">CDN Auto</span></div>
+        </div>
+      </div>
+      <div class="pt-2 border-t border-slate-900 flex items-center justify-between text-[10px] font-bold text-cyan-400 group-hover:text-cyan-300">
+        <span>Pilih Sumber</span>
+        <i class="fa-solid fa-arrow-right text-[9px] transform group-hover:translate-x-0.5 transition"></i>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ==================== 3. FILTER BAR ==================== -->
+<div class="mb-8 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-5 shadow-sm transition-colors">
   <div class="flex items-center justify-between mb-4">
     <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
       <i class="fa-solid fa-sliders text-brand-500"></i> {{t $.Lang "filter.title"}}
@@ -177,7 +300,7 @@
   </form>
 </div>
 
-<!-- ==================== 3. DRAMA PENDEK GRID & AJAX CONTAINER ==================== -->
+<!-- ==================== 4. DRAMA PENDEK GRID & AJAX CONTAINER ==================== -->
 <!-- Loading Spinner Overlay -->
 <div id="drama-movies-loading" class="hidden py-16 text-center">
   <div class="inline-flex items-center gap-3 px-5 py-3 rounded-2xl bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 shadow-xl">
@@ -224,26 +347,34 @@
         <i class="fa-solid fa-star text-[10px]"></i> {{.Rating}}
       </div>
 
-      <!-- Glowing Play Icon on Hover -->
-      <div class="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-        <div class="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs shadow-lg shadow-amber-500/50 transform scale-75 group-hover:scale-100 transition-transform">
-          <i class="fa-solid fa-play ml-0.5"></i>
-        </div>
+      <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+        <span class="text-white text-xs font-semibold flex items-center gap-1.5">
+          <i class="fa-solid fa-circle-play text-amber-500"></i> Nonton Sekarang
+        </span>
       </div>
     </div>
 
     <div class="p-3 flex-1 flex flex-col justify-between">
-      <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-amber-500 line-clamp-1 transition">{{.Title}}</h3>
-      <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2">
-        <span>{{.Year}}</span>
-        <span><i class="fa-solid fa-eye text-[10px]"></i> Nonton</span>
+      <div>
+        <h3 class="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-100 group-hover:text-amber-500 transition line-clamp-1" title="{{.Title}}">
+          {{.Title}}
+        </h3>
+        <div class="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+          <span>{{.Year}}</span>
+          <span>•</span>
+          <span>{{if .DurationFormatted}}{{.DurationFormatted}}{{else}}Mini Series{{end}}</span>
+        </div>
+      </div>
+      <div class="mt-2 pt-2 border-t border-slate-100 dark:border-dark-800 flex items-center justify-between text-[10px] text-slate-400">
+        <span class="truncate max-w-[80px]">{{.Country}}</span>
+        <span class="text-amber-500 font-medium">Episode Lengkap</span>
       </div>
     </div>
   </a>
   {{end}}
 </div>
 
-<!-- ==================== 4. JAVASCRIPT AJAX CONTROLLER ==================== -->
+<!-- ==================== 5. CONTROLLER JAVASCRIPT & AJAX ==================== -->
 <script>
 (function() {
   const form = document.getElementById('drama-filter-form');
@@ -253,84 +384,102 @@
   const genreSelect = document.getElementById('drama-genre-select');
   const countrySelect = document.getElementById('drama-country-select');
   const sortSelect = document.getElementById('drama-sort-select');
-  const liveBadge = document.getElementById('drama-live-badge');
-  const counterBadge = document.getElementById('drama-counter-badge');
   const grid = document.getElementById('drama-movies-grid');
-  const loading = document.getElementById('drama-movies-loading');
   const emptyState = document.getElementById('drama-movies-empty');
-
-  if (!form || !grid) return;
+  const loading = document.getElementById('drama-movies-loading');
+  const counterBadge = document.getElementById('drama-counter-badge');
+  const liveBadge = document.getElementById('drama-live-badge');
 
   let currentAbortController = null;
-
-  function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-  }
-
-  function buildDramaCard(m) {
-    const imgUrl = m.poster_thumb_url || m.poster_url || m.thumbnail_url || '/img/poster-placeholder.svg';
-    const fallbackUrl = m.thumbnail_url || m.poster_url || '/img/poster-placeholder.svg';
-    const rating = m.rating > 0 ? m.rating.toFixed(1) : '0';
-    const quality = m.quality || 'HD';
-    const freeBadge = m.is_free ? '<span class="bg-green-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">GRATIS</span>' : '';
-
-    return `
-    <a href="/movie/${encodeURIComponent(m.slug)}" class="group bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-xl overflow-hidden hover:border-amber-500 hover:shadow-lg dark:hover:border-amber-500 transition duration-300 flex flex-col shadow-sm">
-      <div class="relative aspect-[2/3] overflow-hidden bg-slate-200 dark:bg-dark-800">
-        <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(m.title)}" data-fallback="${escapeHtml(fallbackUrl)}" onerror="if (this.dataset.fallback && this.src !== this.dataset.fallback) { this.src = this.dataset.fallback; } else { this.onerror=null; this.src='/img/poster-placeholder.svg'; }" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" loading="lazy">
-
-        <div class="absolute top-2 left-2 flex flex-col gap-1">
-          <span class="bg-gradient-to-r from-amber-600 to-rose-600 text-white text-[9px] font-black px-2 py-0.5 rounded shadow flex items-center gap-1">
-            <i class="fa-solid fa-masks-theater text-[8px]"></i> DRAMA PENDEK
-          </span>
-          ${freeBadge}
-          <span class="bg-slate-900/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded border border-slate-700 shadow">${escapeHtml(quality)}</span>
-        </div>
-
-        <div class="absolute top-2 right-2 bg-black/80 text-yellow-400 text-xs font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shadow">
-          <i class="fa-solid fa-star text-[10px]"></i> ${rating}
-        </div>
-
-        <div class="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-          <div class="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs shadow-lg shadow-amber-500/50 transform scale-75 group-hover:scale-100 transition-transform">
-            <i class="fa-solid fa-play ml-0.5"></i>
-          </div>
-        </div>
-      </div>
-
-      <div class="p-3 flex-1 flex flex-col justify-between">
-        <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-amber-500 line-clamp-1 transition">${escapeHtml(m.title)}</h3>
-        <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2">
-          <span>${m.year || '-'}</span>
-          <span><i class="fa-solid fa-eye text-[10px]"></i> Nonton</span>
-        </div>
-      </div>
-    </a>`;
-  }
-
   let searchDebounceTimer = null;
 
-  window.fetchDramaAjax = function() {
-    const q = searchInput ? searchInput.value.trim() : '';
-    const source = sourceSelect ? sourceSelect.value : '';
-    const year = yearSelect ? yearSelect.value : '';
-    const genre = genreSelect ? genreSelect.value : '';
-    const country = countrySelect ? countrySelect.value : '';
-    const sort = sortSelect ? sortSelect.value : '';
+  function buildDramaCard(m) {
+    const poster = m.poster_thumb_url || m.poster_url || m.thumbnail_url || '/img/poster-placeholder.svg';
+    const fallback = m.thumbnail_url || m.poster_url || '';
+    const rating = (m.rating && m.rating > 0) ? m.rating.toFixed(1) : '7.5';
+    const duration = m.duration_formatted ? m.duration_formatted : 'Mini Series';
+    const country = m.country ? m.country : 'Asia';
 
-    const isFiltered = (year !== '2026' || genre !== '' || country !== '' || (sort !== 'year_desc' && sort !== ''));
-    if (liveBadge) {
-      if (isFiltered) liveBadge.classList.remove('hidden');
-      else liveBadge.classList.add('hidden');
+    return `
+      <a href="/movie/${m.slug}" class="group bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-xl overflow-hidden hover:border-amber-500 hover:shadow-lg dark:hover:border-amber-500 transition duration-300 flex flex-col shadow-sm">
+        <div class="relative aspect-[2/3] overflow-hidden bg-slate-200 dark:bg-dark-800">
+          <img src="${poster}" alt="${m.title}" data-fallback="${fallback}" onerror="if (this.dataset.fallback && this.src !== this.dataset.fallback) { this.src = this.dataset.fallback; } else { this.onerror=null; this.src='/img/poster-placeholder.svg'; }" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" loading="lazy">
+          <div class="absolute top-2 left-2 flex flex-col gap-1">
+            <span class="bg-gradient-to-r from-amber-600 to-rose-600 text-white text-[9px] font-black px-2 py-0.5 rounded shadow flex items-center gap-1">
+              <i class="fa-solid fa-masks-theater text-[8px]"></i> DRAMA PENDEK
+            </span>
+            ${m.is_free ? '<span class="bg-green-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">GRATIS</span>' : ''}
+          </div>
+          <div class="absolute top-2 right-2 bg-black/80 text-yellow-400 text-xs font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shadow">
+            <i class="fa-solid fa-star text-[10px]"></i> ${rating}
+          </div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+            <span class="text-white text-xs font-semibold flex items-center gap-1.5">
+              <i class="fa-solid fa-circle-play text-amber-500"></i> Nonton Sekarang
+            </span>
+          </div>
+        </div>
+        <div class="p-3 flex-1 flex flex-col justify-between">
+          <div>
+            <h3 class="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-100 group-hover:text-amber-500 transition line-clamp-1" title="${m.title}">
+              ${m.title}
+            </h3>
+            <div class="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+              <span>${m.year}</span>
+              <span>•</span>
+              <span>${duration}</span>
+            </div>
+          </div>
+          <div class="mt-2 pt-2 border-t border-slate-100 dark:border-dark-800 flex items-center justify-between text-[10px] text-slate-400">
+            <span class="truncate max-w-[80px]">${country}</span>
+            <span class="text-amber-500 font-medium">Episode Lengkap</span>
+          </div>
+        </div>
+      </a>
+    `;
+  }
+
+  window.selectPlatformSource = function(platform) {
+    if (sourceSelect) {
+      sourceSelect.value = platform;
+    }
+    // Update visual card styles
+    document.querySelectorAll('.platform-select-btn').forEach(card => {
+      card.classList.remove('border-cyan-400/80', 'ring-1', 'ring-cyan-400/50', 'shadow-md', 'shadow-cyan-900/30', 'bg-cyan-500/20', 'text-cyan-300', 'border-cyan-500/60');
+      card.classList.add('border-slate-800');
+    });
+
+    const activeCardId = platform ? `source-card-${platform}` : 'source-card-all';
+    const activeCard = document.getElementById(activeCardId);
+    if (activeCard) {
+      if (platform) {
+        activeCard.classList.remove('border-slate-800');
+        activeCard.classList.add('border-cyan-400/80', 'ring-1', 'ring-cyan-400/50', 'shadow-md', 'shadow-cyan-900/30');
+      } else {
+        activeCard.classList.add('bg-cyan-500/20', 'text-cyan-300', 'border-cyan-500/60');
+      }
     }
 
-    if (currentAbortController) currentAbortController.abort();
+    window.fetchDramaAjax();
+  };
+
+  window.fetchDramaAjax = function() {
+    if (currentAbortController) {
+      currentAbortController.abort();
+    }
     currentAbortController = new AbortController();
 
-    grid.classList.add('opacity-30');
+    if (liveBadge) liveBadge.classList.remove('hidden');
     if (loading) loading.classList.remove('hidden');
     if (emptyState) emptyState.classList.add('hidden');
+    grid.classList.add('opacity-30');
+
+    const q = searchInput ? searchInput.value.trim() : '';
+    const source = sourceSelect ? sourceSelect.value : '';
+    const year = yearSelect ? yearSelect.value : '2026';
+    const genre = genreSelect ? genreSelect.value : '';
+    const country = countrySelect ? countrySelect.value : '';
+    const sort = sortSelect ? sortSelect.value : 'year_desc';
 
     const params = new URLSearchParams();
     params.append('type', 'drama_pendek');
@@ -391,26 +540,6 @@
     });
   };
 
-  window.selectPlatformSource = function(platform) {
-    if (sourceSelect) {
-      sourceSelect.value = platform;
-    }
-    // Update visual pills styling
-    document.querySelectorAll('.platform-pill').forEach(pill => {
-      pill.classList.remove('bg-cyan-500/20', 'text-cyan-400', 'border-cyan-500/50', 'shadow-sm', 'shadow-cyan-500/20');
-      pill.classList.add('bg-slate-100', 'dark:bg-dark-800', 'text-slate-600', 'dark:text-slate-300', 'border-slate-200', 'dark:border-dark-700');
-    });
-
-    const activeId = platform ? `source-pill-${platform}` : 'source-pill-all';
-    const activePill = document.getElementById(activeId);
-    if (activePill) {
-      activePill.classList.remove('bg-slate-100', 'dark:bg-dark-800', 'text-slate-600', 'dark:text-slate-300', 'border-slate-200', 'dark:border-dark-700');
-      activePill.classList.add('bg-cyan-500/20', 'text-cyan-400', 'border-cyan-500/50', 'shadow-sm', 'shadow-cyan-500/20');
-    }
-
-    window.fetchDramaAjax();
-  };
-
   window.resetDramaFilter = function() {
     if (searchInput) searchInput.value = '';
     if (sourceSelect) sourceSelect.value = '';
@@ -420,14 +549,13 @@
     if (sortSelect) sortSelect.value = 'year_desc';
     if (liveBadge) liveBadge.classList.add('hidden');
 
-    document.querySelectorAll('.platform-pill').forEach(pill => {
-      pill.classList.remove('bg-cyan-500/20', 'text-cyan-400', 'border-cyan-500/50', 'shadow-sm', 'shadow-cyan-500/20');
-      pill.classList.add('bg-slate-100', 'dark:bg-dark-800', 'text-slate-600', 'dark:text-slate-300', 'border-slate-200', 'dark:border-dark-700');
+    document.querySelectorAll('.platform-select-btn').forEach(card => {
+      card.classList.remove('border-cyan-400/80', 'ring-1', 'ring-cyan-400/50', 'shadow-md', 'shadow-cyan-900/30', 'bg-cyan-500/20', 'text-cyan-300', 'border-cyan-500/60');
+      card.classList.add('border-slate-800');
     });
-    const allPill = document.getElementById('source-pill-all');
-    if (allPill) {
-      allPill.classList.remove('bg-slate-100', 'dark:bg-dark-800', 'text-slate-600', 'dark:text-slate-300', 'border-slate-200', 'dark:border-dark-700');
-      allPill.classList.add('bg-cyan-500/20', 'text-cyan-400', 'border-cyan-500/50', 'shadow-sm', 'shadow-cyan-500/20');
+    const allCard = document.getElementById('source-card-all');
+    if (allCard) {
+      allCard.classList.add('bg-cyan-500/20', 'text-cyan-300', 'border-cyan-500/60');
     }
 
     window.fetchDramaAjax();
@@ -439,7 +567,24 @@
       searchDebounceTimer = setTimeout(window.fetchDramaAjax, 600); // Jeda sopan 600ms anti brute-force
     });
   }
-  if (sourceSelect) sourceSelect.addEventListener('change', window.fetchDramaAjax);
+  if (sourceSelect) sourceSelect.addEventListener('change', function() {
+    const val = sourceSelect.value;
+    document.querySelectorAll('.platform-select-btn').forEach(card => {
+      card.classList.remove('border-cyan-400/80', 'ring-1', 'ring-cyan-400/50', 'shadow-md', 'shadow-cyan-900/30', 'bg-cyan-500/20', 'text-cyan-300', 'border-cyan-500/60');
+      card.classList.add('border-slate-800');
+    });
+    const activeCardId = val ? `source-card-${val}` : 'source-card-all';
+    const activeCard = document.getElementById(activeCardId);
+    if (activeCard) {
+      if (val) {
+        activeCard.classList.remove('border-slate-800');
+        activeCard.classList.add('border-cyan-400/80', 'ring-1', 'ring-cyan-400/50', 'shadow-md', 'shadow-cyan-900/30');
+      } else {
+        activeCard.classList.add('bg-cyan-500/20', 'text-cyan-300', 'border-cyan-500/60');
+      }
+    }
+    window.fetchDramaAjax();
+  });
   if (yearSelect) yearSelect.addEventListener('change', window.fetchDramaAjax);
   if (genreSelect) genreSelect.addEventListener('change', window.fetchDramaAjax);
   if (countrySelect) countrySelect.addEventListener('change', window.fetchDramaAjax);
