@@ -24,187 +24,90 @@
 </div>
 
 <!-- ==================== 2. STREAMING PLATFORMS SHOWCASE (VORTA API) ==================== -->
-<div class="mb-8 bg-slate-900/90 dark:bg-dark-900/90 border border-slate-800 rounded-2xl p-5 shadow-lg backdrop-blur-xs">
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-800">
-    <div class="flex items-center gap-2.5">
-      <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
-      <div>
-        <h2 class="text-xs font-black tracking-wider uppercase text-cyan-400 font-mono flex items-center gap-1.5">
-          <i class="fa-solid fa-atom text-cyan-400 text-sm"></i> STREAMING PLATFORMS (VORTA API)
-        </h2>
-        <p class="text-[11px] text-slate-400">Pilih provider untuk memfilter katalog drama pendek sesuai platform streaming resmi</p>
-      </div>
+<div class="mb-6 bg-slate-900/90 dark:bg-dark-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg backdrop-blur-xs">
+  <div class="flex items-center justify-between mb-3.5 pb-2.5 border-b border-slate-800/80">
+    <div class="flex items-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+      <span class="text-xs font-black tracking-wider uppercase text-cyan-400 font-mono flex items-center gap-1.5">
+        <i class="fa-solid fa-atom text-cyan-400 text-sm"></i> STREAMING PLATFORMS (VORTA API):
+      </span>
     </div>
-
-    <!-- Active Indicator Badge -->
-    <div class="flex items-center gap-2 self-start sm:self-auto">
-      <button type="button" 
-              onclick="selectPlatformSource('')" 
-              id="source-card-all"
-              class="platform-select-btn px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer {{if not $.CurrentSource}}bg-cyan-500/20 text-cyan-300 border border-cyan-500/60 shadow-xs shadow-cyan-500/20{{else}}bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700{{end}}">
-        <i class="fa-solid fa-layer-group text-[10px]"></i> Semua Sumber
-      </button>
-    </div>
+    <button type="button" 
+            onclick="selectPlatformSource('')" 
+            id="source-card-all"
+            class="platform-select-btn px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer {{if not $.CurrentSource}}bg-cyan-500/20 text-cyan-300 border border-cyan-500/60 shadow-xs shadow-cyan-500/20{{else}}bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700{{end}}">
+      <i class="fa-solid fa-layer-group text-[11px]"></i> Semua Sumber
+    </button>
   </div>
 
-  <!-- PLATFORM GRID CARDS (BERDASARKAN GAMBAR 1) -->
-  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+  <!-- PLATFORM PILL BUTTONS: ICON + TITLE SAJA -->
+  <div class="flex flex-wrap items-center gap-2.5">
     
-    <!-- CARD 1: MELOLO -->
-    <div onclick="selectPlatformSource('melolo')" 
-         id="source-card-melolo"
-         class="platform-select-btn group cursor-pointer relative bg-slate-950/70 hover:bg-slate-900/90 rounded-xl p-3 border transition-all duration-200 flex flex-col justify-between {{if or (eq $.CurrentSource "melolo") (eq $.CurrentSource "meloshort")}}border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}border-slate-800 hover:border-slate-700{{end}}">
-      <div>
-        <div class="flex items-center justify-between mb-2">
-          <div class="flex items-center gap-1.5">
-            <span class="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs font-black">
-              <i class="fa-solid fa-film"></i>
-            </span>
-            <span class="text-xs font-black text-white group-hover:text-amber-400 transition">Melolo</span>
-          </div>
-          <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">AES-CTR</span>
-        </div>
-        <p class="text-[10px] text-slate-400 leading-tight mb-2 line-clamp-2">Decrypts MP4 streams with AES-128-CTR sample encryption & DRM neutralization.</p>
-        <div class="bg-black/40 rounded p-1.5 font-mono text-[9px] text-slate-400 space-y-0.5 mb-2">
-          <div class="flex justify-between"><span class="text-slate-500">FORMAT:</span> <span class="text-slate-200">MP4 (CENC)</span></div>
-          <div class="flex justify-between"><span class="text-slate-500">KEY:</span> <span class="text-slate-200">16-Byte Hex</span></div>
-        </div>
-      </div>
-      <div class="pt-2 border-t border-slate-900 flex items-center justify-between text-[10px] font-bold text-cyan-400 group-hover:text-cyan-300">
-        <span>Pilih Sumber</span>
-        <i class="fa-solid fa-arrow-right text-[9px] transform group-hover:translate-x-0.5 transition"></i>
-      </div>
-    </div>
+    <!-- SHORTMAX -->
+    <button type="button"
+            onclick="selectPlatformSource('shortmax')" 
+            id="source-card-shortmax"
+            class="platform-select-btn group cursor-pointer px-4 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2 {{if eq $.CurrentSource "shortmax"}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
+      <span class="w-6 h-6 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center text-xs">
+        <i class="fa-solid fa-clapperboard"></i>
+      </span>
+      <span class="group-hover:text-white transition">ShortMax</span>
+    </button>
 
-    <!-- CARD 2: DRAMABOX -->
-    <div onclick="selectPlatformSource('dramabox')" 
-         id="source-card-dramabox"
-         class="platform-select-btn group cursor-pointer relative bg-slate-950/70 hover:bg-slate-900/90 rounded-xl p-3 border transition-all duration-200 flex flex-col justify-between {{if eq $.CurrentSource "dramabox"}}border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}border-slate-800 hover:border-slate-700{{end}}">
-      <div>
-        <div class="flex items-center justify-between mb-2">
-          <div class="flex items-center gap-1.5">
-            <span class="w-6 h-6 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center text-xs font-black">
-              <i class="fa-solid fa-play"></i>
-            </span>
-            <span class="text-xs font-black text-white group-hover:text-rose-400 transition">DramaBox</span>
-          </div>
-          <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">AES-ECB</span>
-        </div>
-        <p class="text-[10px] text-slate-400 leading-tight mb-2 line-clamp-2">Decrypts MP4 video frames per sample block using AES-128-ECB key.</p>
-        <div class="bg-black/40 rounded p-1.5 font-mono text-[9px] text-slate-400 space-y-0.5 mb-2">
-          <div class="flex justify-between"><span class="text-slate-500">FORMAT:</span> <span class="text-slate-200">MP4 Video</span></div>
-          <div class="flex justify-between"><span class="text-slate-500">KEY:</span> <span class="text-slate-200">16-Byte Hex</span></div>
-        </div>
-      </div>
-      <div class="pt-2 border-t border-slate-900 flex items-center justify-between text-[10px] font-bold text-cyan-400 group-hover:text-cyan-300">
-        <span>Pilih Sumber</span>
-        <i class="fa-solid fa-arrow-right text-[9px] transform group-hover:translate-x-0.5 transition"></i>
-      </div>
-    </div>
+    <!-- MELOLO / MELOSHORT -->
+    <button type="button"
+            onclick="selectPlatformSource('melolo')" 
+            id="source-card-melolo"
+            class="platform-select-btn group cursor-pointer px-4 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2 {{if or (eq $.CurrentSource "melolo") (eq $.CurrentSource "meloshort")}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
+      <span class="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs">
+        <i class="fa-solid fa-film"></i>
+      </span>
+      <span class="group-hover:text-white transition">MeloShort</span>
+    </button>
 
-    <!-- CARD 3: SHORTMAX -->
-    <div onclick="selectPlatformSource('shortmax')" 
-         id="source-card-shortmax"
-         class="platform-select-btn group cursor-pointer relative bg-slate-950/70 hover:bg-slate-900/90 rounded-xl p-3 border transition-all duration-200 flex flex-col justify-between {{if eq $.CurrentSource "shortmax"}}border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}border-slate-800 hover:border-slate-700{{end}}">
-      <div>
-        <div class="flex items-center justify-between mb-2">
-          <div class="flex items-center gap-1.5">
-            <span class="w-6 h-6 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center text-xs font-black">
-              <i class="fa-solid fa-clapperboard"></i>
-            </span>
-            <span class="text-xs font-black text-white group-hover:text-orange-400 transition">ShortMax</span>
-          </div>
-          <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">HLS Crypto</span>
-        </div>
-        <p class="text-[10px] text-slate-400 leading-tight mb-2 line-clamp-2">HLS player with fragment loader decrypting TS segments via WebCrypto API.</p>
-        <div class="bg-black/40 rounded p-1.5 font-mono text-[9px] text-slate-400 space-y-0.5 mb-2">
-          <div class="flex justify-between"><span class="text-slate-500">FORMAT:</span> <span class="text-slate-200">HLS (.m3u8)</span></div>
-          <div class="flex justify-between"><span class="text-slate-500">CIPHER:</span> <span class="text-slate-200">AES-128-CBC</span></div>
-        </div>
-      </div>
-      <div class="pt-2 border-t border-slate-900 flex items-center justify-between text-[10px] font-bold text-cyan-400 group-hover:text-cyan-300">
-        <span>Pilih Sumber</span>
-        <i class="fa-solid fa-arrow-right text-[9px] transform group-hover:translate-x-0.5 transition"></i>
-      </div>
-    </div>
+    <!-- DRAMABOX -->
+    <button type="button"
+            onclick="selectPlatformSource('dramabox')" 
+            id="source-card-dramabox"
+            class="platform-select-btn group cursor-pointer px-4 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2 {{if eq $.CurrentSource "dramabox"}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
+      <span class="w-6 h-6 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center text-xs">
+        <i class="fa-solid fa-play"></i>
+      </span>
+      <span class="group-hover:text-white transition">DramaBox</span>
+    </button>
 
-    <!-- CARD 4: STORYREEL -->
-    <div onclick="selectPlatformSource('storyreel')" 
-         id="source-card-storyreel"
-         class="platform-select-btn group cursor-pointer relative bg-slate-950/70 hover:bg-slate-900/90 rounded-xl p-3 border transition-all duration-200 flex flex-col justify-between {{if eq $.CurrentSource "storyreel"}}border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}border-slate-800 hover:border-slate-700{{end}}">
-      <div>
-        <div class="flex items-center justify-between mb-2">
-          <div class="flex items-center gap-1.5">
-            <span class="w-6 h-6 rounded-lg bg-pink-500/20 text-pink-400 flex items-center justify-center text-xs font-black">
-              <i class="fa-solid fa-bolt"></i>
-            </span>
-            <span class="text-xs font-black text-white group-hover:text-pink-400 transition">StoryReel</span>
-          </div>
-          <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/30">HLS TS</span>
-        </div>
-        <p class="text-[10px] text-slate-400 leading-tight mb-2 line-clamp-2">Decrypts StoryReel TS segments on-the-fly without waiting for full download.</p>
-        <div class="bg-black/40 rounded p-1.5 font-mono text-[9px] text-slate-400 space-y-0.5 mb-2">
-          <div class="flex justify-between"><span class="text-slate-500">FORMAT:</span> <span class="text-slate-200">HLS (.m3u8)</span></div>
-          <div class="flex justify-between"><span class="text-slate-500">DECRYPT:</span> <span class="text-slate-200">On-The-Fly</span></div>
-        </div>
-      </div>
-      <div class="pt-2 border-t border-slate-900 flex items-center justify-between text-[10px] font-bold text-cyan-400 group-hover:text-cyan-300">
-        <span>Pilih Sumber</span>
-        <i class="fa-solid fa-arrow-right text-[9px] transform group-hover:translate-x-0.5 transition"></i>
-      </div>
-    </div>
+    <!-- STORYREEL -->
+    <button type="button"
+            onclick="selectPlatformSource('storyreel')" 
+            id="source-card-storyreel"
+            class="platform-select-btn group cursor-pointer px-4 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2 {{if eq $.CurrentSource "storyreel"}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
+      <span class="w-6 h-6 rounded-lg bg-pink-500/20 text-pink-400 flex items-center justify-center text-xs">
+        <i class="fa-solid fa-bolt"></i>
+      </span>
+      <span class="group-hover:text-white transition">StoryReel</span>
+    </button>
 
-    <!-- CARD 5: VIBESHORT -->
-    <div onclick="selectPlatformSource('vibeshort')" 
-         id="source-card-vibeshort"
-         class="platform-select-btn group cursor-pointer relative bg-slate-950/70 hover:bg-slate-900/90 rounded-xl p-3 border transition-all duration-200 flex flex-col justify-between {{if eq $.CurrentSource "vibeshort"}}border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}border-slate-800 hover:border-slate-700{{end}}">
-      <div>
-        <div class="flex items-center justify-between mb-2">
-          <div class="flex items-center gap-1.5">
-            <span class="w-6 h-6 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-black">
-              <i class="fa-solid fa-video"></i>
-            </span>
-            <span class="text-xs font-black text-white group-hover:text-purple-400 transition">VibeShort</span>
-          </div>
-          <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">Hybrid</span>
-        </div>
-        <p class="text-[10px] text-slate-400 leading-tight mb-2 line-clamp-2">Hybrid player auto-detecting HLS encrypted segments or direct MP4 stream.</p>
-        <div class="bg-black/40 rounded p-1.5 font-mono text-[9px] text-slate-400 space-y-0.5 mb-2">
-          <div class="flex justify-between"><span class="text-slate-500">FORMAT:</span> <span class="text-slate-200">HLS / MP4</span></div>
-          <div class="flex justify-between"><span class="text-slate-500">QUALITY:</span> <span class="text-slate-200">Multi-Res</span></div>
-        </div>
-      </div>
-      <div class="pt-2 border-t border-slate-900 flex items-center justify-between text-[10px] font-bold text-cyan-400 group-hover:text-cyan-300">
-        <span>Pilih Sumber</span>
-        <i class="fa-solid fa-arrow-right text-[9px] transform group-hover:translate-x-0.5 transition"></i>
-      </div>
-    </div>
+    <!-- VIBESHORT -->
+    <button type="button"
+            onclick="selectPlatformSource('vibeshort')" 
+            id="source-card-vibeshort"
+            class="platform-select-btn group cursor-pointer px-4 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2 {{if eq $.CurrentSource "vibeshort"}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
+      <span class="w-6 h-6 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs">
+        <i class="fa-solid fa-video"></i>
+      </span>
+      <span class="group-hover:text-white transition">VibeShort</span>
+    </button>
 
-    <!-- CARD 6: DRAMAVERSE -->
-    <div onclick="selectPlatformSource('dramaverse')" 
-         id="source-card-dramaverse"
-         class="platform-select-btn group cursor-pointer relative bg-slate-950/70 hover:bg-slate-900/90 rounded-xl p-3 border transition-all duration-200 flex flex-col justify-between {{if eq $.CurrentSource "dramaverse"}}border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}border-slate-800 hover:border-slate-700{{end}}">
-      <div>
-        <div class="flex items-center justify-between mb-2">
-          <div class="flex items-center gap-1.5">
-            <span class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-black">
-              <i class="fa-solid fa-tv"></i>
-            </span>
-            <span class="text-xs font-black text-white group-hover:text-emerald-400 transition">DramaVerse</span>
-          </div>
-          <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">Adaptive</span>
-        </div>
-        <p class="text-[10px] text-slate-400 leading-tight mb-2 line-clamp-2">Adaptive player multi-resolution (1080p, 720p, 480p) & CDN failover.</p>
-        <div class="bg-black/40 rounded p-1.5 font-mono text-[9px] text-slate-400 space-y-0.5 mb-2">
-          <div class="flex justify-between"><span class="text-slate-500">FORMAT:</span> <span class="text-slate-200">HLS Multi-Q</span></div>
-          <div class="flex justify-between"><span class="text-slate-500">FAILOVER:</span> <span class="text-slate-200">CDN Auto</span></div>
-        </div>
-      </div>
-      <div class="pt-2 border-t border-slate-900 flex items-center justify-between text-[10px] font-bold text-cyan-400 group-hover:text-cyan-300">
-        <span>Pilih Sumber</span>
-        <i class="fa-solid fa-arrow-right text-[9px] transform group-hover:translate-x-0.5 transition"></i>
-      </div>
-    </div>
+    <!-- DRAMAVERSE -->
+    <button type="button"
+            onclick="selectPlatformSource('dramaverse')" 
+            id="source-card-dramaverse"
+            class="platform-select-btn group cursor-pointer px-4 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2 {{if eq $.CurrentSource "dramaverse"}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
+      <span class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">
+        <i class="fa-solid fa-tv"></i>
+      </span>
+      <span class="group-hover:text-white transition">DramaVerse</span>
+    </button>
 
   </div>
 </div>
@@ -221,7 +124,7 @@
     <span id="drama-counter-badge" class="text-xs text-slate-400 font-medium">{{.TotalCount}} titles</span>
   </div>
 
-  <form id="drama-filter-form" action="/drama-pendek" method="GET" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+  <form id="drama-filter-form" action="/drama-pendek" method="GET" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
     <!-- INPUT PENCARIAN JUDUL -->
     <div class="col-span-2 sm:col-span-2 md:col-span-3 lg:col-span-2">
       <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1"><i class="fa-solid fa-magnifying-glass text-amber-500"></i> Cari Judul Drama</label>
@@ -252,19 +155,8 @@
       </select>
     </div>
 
-    <!-- DROPDOWN SUMBER / PLATFORM (VORTA API) -->
-    <div>
-      <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1"><i class="fa-solid fa-server text-amber-500"></i> Sumber Drama</label>
-      <select id="drama-source-select" name="source" class="w-full bg-slate-50 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-slate-800 dark:text-slate-100 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-amber-500 transition font-medium">
-        <option value="">Semua Sumber (Vorta)</option>
-        <option value="melolo" {{if or (eq $.CurrentSource "melolo") (eq $.CurrentSource "meloshort")}}selected{{end}}>Melolo (MP4 AES-CTR)</option>
-        <option value="dramabox" {{if eq $.CurrentSource "dramabox"}}selected{{end}}>DramaBox (MP4 AES-ECB)</option>
-        <option value="shortmax" {{if eq $.CurrentSource "shortmax"}}selected{{end}}>ShortMax (HLS WebCrypto)</option>
-        <option value="storyreel" {{if eq $.CurrentSource "storyreel"}}selected{{end}}>StoryReel (HLS Encrypted TS)</option>
-        <option value="vibeshort" {{if eq $.CurrentSource "vibeshort"}}selected{{end}}>VibeShort (Hybrid HLS/MP4)</option>
-        <option value="dramaverse" {{if eq $.CurrentSource "dramaverse"}}selected{{end}}>DramaVerse (Adaptive Bitrate)</option>
-      </select>
-    </div>
+    <!-- HIDDEN INPUT SUMBER / PLATFORM (DIPILIH MELALUI TOMBOL PLATFORM DI ATAS) -->
+    <input type="hidden" id="drama-source-select" name="source" value="{{.CurrentSource}}">
 
     <!-- DROPDOWN 3: NEGARA -->
     <div>
