@@ -79,6 +79,7 @@ type PageData struct {
 	EpisodesList           []int
 	CurrentEpisode         int
 	TMDbID                 int
+	SupportedLanguages     []vorta.LanguageItem
 
 	// SEO & Search Engine Optimization Fields
 	CanonicalURL       string
@@ -1015,29 +1016,38 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 		typeURL = "/drama-pendek"
 	}
 
+	var supportedLanguages []vorta.LanguageItem
+	if movie.Type == "drama_pendek" && movie.SourceWebsite != "" {
+		vClient := vorta.NewClient()
+		if langs, err := vClient.GetLanguages(movie.SourceWebsite); err == nil && len(langs) > 0 {
+			supportedLanguages = langs
+		}
+	}
+
 	data := PageData{
-		Lang:              lang,
-		Title:             fmt.Sprintf("Nonton %s (%d) Sub Indo HD - Streaming & Download", movie.Title, movie.Year),
-		SiteName:          "CINEMBROT",
-		Movie:             &movie,
-		Related:           related,
-		Genres:            genres,
-		EnableAds:         s.cfg.EnableAds,
-		EnableComments:    s.cfg.EnableComments,
-		ShowTorrentPublic: database.GetShowTorrentPublic(s.db),
-		CaptchaQuestion:   captcha.Question,
-		CaptchaToken:      captcha.Token,
-		EpisodesList:      episodesList,
-		CurrentEpisode:    1,
-		TMDbID:            tmdbID,
-		MetaDescription:   metaDesc,
-		MetaKeywords:      metaKeywords,
-		MetaImage:         metaImg,
-		OGType:            "video.movie",
-		JSONLD:            s.GenerateJSONLDMovie(s.GetSiteURL(r), &movie),
-		BreadcrumbJSONLD:  s.GenerateJSONLDBreadcrumb(s.GetSiteURL(r), &movie, typeLabel, typeURL),
-		MovieTypeLabel:    typeLabel,
-		MovieTypeURL:      typeURL,
+		Lang:               lang,
+		Title:              fmt.Sprintf("Nonton %s (%d) Sub Indo HD - Streaming & Download", movie.Title, movie.Year),
+		SiteName:           "CINEMBROT",
+		Movie:              &movie,
+		Related:            related,
+		Genres:             genres,
+		EnableAds:          s.cfg.EnableAds,
+		EnableComments:     s.cfg.EnableComments,
+		ShowTorrentPublic:  database.GetShowTorrentPublic(s.db),
+		CaptchaQuestion:    captcha.Question,
+		CaptchaToken:       captcha.Token,
+		EpisodesList:       episodesList,
+		CurrentEpisode:     1,
+		TMDbID:             tmdbID,
+		SupportedLanguages: supportedLanguages,
+		MetaDescription:    metaDesc,
+		MetaKeywords:       metaKeywords,
+		MetaImage:          metaImg,
+		OGType:             "video.movie",
+		JSONLD:             s.GenerateJSONLDMovie(s.GetSiteURL(r), &movie),
+		BreadcrumbJSONLD:   s.GenerateJSONLDBreadcrumb(s.GetSiteURL(r), &movie, typeLabel, typeURL),
+		MovieTypeLabel:     typeLabel,
+		MovieTypeURL:       typeURL,
 	}
 
 	s.PopulateSEO(r, &data)
@@ -1901,5 +1911,91 @@ func (s *Server) HandleSafelinkuShorten(w http.ResponseWriter, r *http.Request) 
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":    "success",
 		"short_url": shortURL,
+	})
+}
+
+// HandleDramaEpisodeStream handles GET /api/drama/{id}/episode?ep=X&lang=Y
+func (s *Server) HandleDramaEpisodeStream(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if !RateLimitAction(w, r) {
+		return
+	}
+
+	pathTrimmed := strings.Trim(r.URL.Path, "/")
+	parts := strings.Split(pathTrimmed, "/")
+	var movieID int
+	for i, part := range parts {
+		if part == "drama" && i+1 < len(parts) {
+			if id, err := strconv.Atoi(parts[i+1]); err == nil {
+				movieID = id
+				break
+			}
+		}
+	}
+	if movieID == 0 {
+		if id, err := strconv.Atoi(r.URL.Query().Get("id")); err == nil {
+			movieID = id
+		}
+	}
+
+	epStr := strings.TrimSpace(r.URL.Query().Get("ep"))
+	if epStr == "" {
+		epStr = "1"
+	}
+	lang := strings.TrimSpace(r.URL.Query().Get("lang"))
+	if lang == "" {
+		lang = "id"
+	}
+
+	var movie model.Movie
+	if err := s.db.First(&movie, movieID).Error; err != nil {
+		http.Error(w, `{"success":false,"message":"Drama tidak ditemukan"}`, http.StatusNotFound)
+		return
+	}
+
+	platform := movie.SourceWebsite
+	rawID := ""
+	if strings.HasPrefix(movie.SourceURL, "vorta://") {
+		parts := strings.Split(strings.TrimPrefix(movie.SourceURL, "vorta://"), "/")
+		if len(parts) >= 2 {
+			platform = parts[0]
+			rawID = parts[1]
+		}
+	} else if strings.HasPrefix(movie.RawMetadata, "vorta:") {
+		parts := strings.Split(movie.RawMetadata, ":")
+		if len(parts) >= 3 {
+			platform = parts[1]
+			rawID = parts[2]
+		}
+	}
+
+	if rawID == "" || platform == "" {
+		http.Error(w, `{"success":false,"message":"Metadata provider Vorta tidak valid"}`, http.StatusBadRequest)
+		return
+	}
+
+	client := vorta.NewClient()
+	vData, err := client.GetVideoStream(platform, rawID, epStr, lang)
+	if err != nil || vData == nil || len(vData.Streams) == 0 {
+		http.Error(w, `{"success":false,"message":"Gagal mengambil stream episode"}`, http.StatusBadGateway)
+		return
+	}
+
+	// Prioritaskan codec H264
+	chosenStream := vData.Streams[0]
+	for _, st := range vData.Streams {
+		if strings.EqualFold(st.Encode, "H264") {
+			chosenStream = st
+			break
+		}
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":        true,
+		"stream_url":     chosenStream.URL,
+		"resolution":     chosenStream.Resolution,
+		"episode_index":  vData.EpisodeIndex,
+		"total_episodes": vData.TotalEpisodes,
+		"subtitles":      vData.Subtitles,
 	})
 }

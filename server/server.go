@@ -299,6 +299,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("GET /api/movies/filter", s.HandleAPIMoviesFilter)
 	mux.HandleFunc("POST /api/movie/{id}/refresh-download", s.HandleRefreshDownloadLink)
 	mux.HandleFunc("POST /api/movie/{id}/refresh-stream", s.HandleRefreshStreamLink)
+	mux.HandleFunc("GET /api/drama/{id}/episode", s.HandleDramaEpisodeStream)
 	mux.HandleFunc("POST /api/safelinku/shorten", s.HandleSafelinkuShorten)
 
 	// SEO & Search Engine Discovery Endpoints

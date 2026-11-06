@@ -148,6 +148,25 @@
         <p class="text-white text-xs text-center p-4">Browser Anda tidak mendukung pemutaran video HTML5.</p>
       </video>
 
+      <!-- OVERLAY OTOMATIS: LANJUT KE EPISODE BERIKUTNYA -->
+      <div id="next-episode-overlay" class="absolute inset-0 bg-black/85 backdrop-blur-xs flex flex-col items-center justify-center p-6 text-center z-30 hidden transition-all duration-300">
+        <div class="w-14 h-14 rounded-full bg-purple-600/20 text-purple-400 flex items-center justify-center text-2xl mb-3 shadow-lg border border-purple-500/30">
+          <i class="fa-solid fa-forward-step animate-pulse"></i>
+        </div>
+        <h3 class="text-lg font-black text-white mb-1">Episode Selesai</h3>
+        <p class="text-xs text-slate-300 mb-4 max-w-sm">
+          Memutar <span id="overlay-next-ep-title" class="text-purple-400 font-bold">Episode Berikutnya</span> otomatis dalam <span id="overlay-countdown" class="text-amber-400 font-black text-sm">3</span> detik...
+        </p>
+        <div class="flex items-center gap-3">
+          <button type="button" onclick="cancelNextEpisodeCountdown()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition">
+            Batal
+          </button>
+          <button type="button" onclick="playNextEpisodeImmediately()" class="px-5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-brand-500 hover:from-purple-500 hover:to-brand-400 text-white text-xs font-black transition shadow-lg shadow-purple-600/30 flex items-center gap-1.5 cursor-pointer">
+            <span>Putar Sekarang</span> <i class="fa-solid fa-play text-[10px]"></i>
+          </button>
+        </div>
+      </div>
+
       <!-- Iframe Player untuk embed multi-server Hollywood / Anime -->
       {{if .Movie.StreamLinks}}
       <iframe id="main-stream-player" 
@@ -191,12 +210,14 @@
           <i class="fa-solid fa-server text-emerald-400"></i> Pilihan Server Streaming:
         </span>
         <div class="flex items-center gap-2">
-          <!-- TOMBOL REFRESH / CEK SERVER STREAMING MANDIRI -->
+          <!-- TOMBOL REFRESH / CEK SERVER STREAMING MANDIRI (HANYA UNTUK HOLLYWOOD & ANIME) -->
+          {{if ne .Movie.Type "drama_pendek"}}
           <button type="button" id="btn-refresh-stream" onclick="refreshMovieStream()" class="inline-flex items-center justify-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-[11px] font-bold px-3 py-1.5 rounded-lg border border-slate-700 transition shadow-xs cursor-pointer shrink-0" title="Periksa dan dapatkan URL server streaming baru jika player error / broken">
             <i id="icon-refresh-stream" class="fa-solid fa-arrows-rotate text-emerald-400"></i>
             <span id="text-refresh-stream">Cek / Segarkan Server</span>
           </button>
-          <span class="text-[11px] text-slate-400 italic hidden md:inline">*Jika buffering, pilih server alternatif</span>
+          {{end}}
+          <span class="text-[11px] text-slate-400 italic hidden md:inline">{{if eq .Movie.Type "drama_pendek"}}*Pilih episode di bawah untuk lanjut nonton{{else}}*Jika buffering, pilih server alternatif{{end}}</span>
         </div>
       </div>
       <div class="flex flex-wrap items-center gap-2" id="server-button-container">
@@ -233,14 +254,50 @@
     <!-- EPISODE SELECTOR BAR (KHUSUS ANIME & DRAMA PENDEK) -->
     {{if .EpisodesList}}
     <div class="bg-slate-900/90 p-4 border-t border-slate-800" id="episode-selector-section">
-      <div class="flex items-center justify-between mb-3">
-        <span class="text-xs font-bold text-white flex items-center gap-2">
-          <i class="fa-solid fa-list-ol text-purple-400"></i>
-          <span>Daftar Episode (Total {{len .EpisodesList}} Episode)</span>
-        </span>
-        <span class="text-[11px] text-purple-300 font-semibold bg-purple-950/60 px-2.5 py-0.5 rounded-full border border-purple-800/40">
-          Pilih episode untuk langsung memutar
-        </span>
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-list-ol text-purple-400"></i>
+            <span>Daftar Episode (Total {{len .EpisodesList}} Episode)</span>
+          </span>
+          <span class="text-[11px] text-purple-300 font-semibold bg-purple-950/60 px-2.5 py-0.5 rounded-full border border-purple-800/40">
+            Pilih episode untuk langsung memutar
+          </span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- PILIHAN BAHASA / SUBTITLE (API /api/v2/languages) -->
+          {{if .SupportedLanguages}}
+          <div class="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-800 text-xs">
+            <i class="fa-solid fa-language text-cyan-400 text-sm"></i>
+            <select id="drama-lang-select" onchange="changeDramaLanguage(this.value)" class="bg-transparent text-slate-200 font-bold focus:outline-none cursor-pointer">
+              {{range .SupportedLanguages}}
+              <option value="{{.Code}}" class="bg-slate-900 text-slate-200" {{if eq .Code "id"}}selected{{end}}>{{.Flag}} {{.Native}} ({{.Label}})</option>
+              {{end}}
+            </select>
+          </div>
+          {{end}}
+
+          <!-- NAVIGASI CEPAT PREV / NEXT EPISODE -->
+          <div class="inline-flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <button type="button" 
+                    id="btn-prev-ep" 
+                    onclick="stepEpisode(-1)" 
+                    disabled 
+                    class="px-2.5 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center gap-1" 
+                    title="Episode Sebelumnya">
+              <i class="fa-solid fa-backward-step text-[10px]"></i> Prev
+            </button>
+            <span class="text-slate-600">|</span>
+            <button type="button" 
+                    id="btn-next-ep" 
+                    onclick="stepEpisode(1)" 
+                    class="px-2.5 py-1 rounded-lg text-xs font-bold text-purple-300 hover:text-white hover:bg-purple-900/60 transition flex items-center gap-1" 
+                    title="Episode Berikutnya">
+              Next <i class="fa-solid fa-forward-step text-[10px]"></i>
+            </button>
+          </div>
+        </div>
       </div>
       
       <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-700" style="-webkit-overflow-scrolling: touch;">
@@ -647,18 +704,24 @@
     const tmdbID = metaEl ? parseInt(metaEl.dataset.tmdbId, 10) : 0;
     const isTV = metaEl ? (metaEl.dataset.isTv === 'true') : false;
     const isAnime = metaEl ? (metaEl.dataset.isAnime === 'true') : false;
+    const isDramaPendek = metaEl ? (metaEl.dataset.isDramaPendek === 'true') : false;
+    const totalEpisodesCount = metaEl ? parseInt(metaEl.dataset.totalEpisodes || '1', 10) : 1;
     const officialTrailer = metaEl ? (metaEl.dataset.trailer || '') : '';
 
     let currentServerIndex = 0;
     let currentEpisodeNumber = 1;
+    let currentDramaLang = 'id';
     let currentHls = null;
+    let nextEpisodeTimer = null;
+    let countdownRemaining = 3;
+    let nextEpisodeTargetNumber = 2;
 
     function isHlsStreamURL(url) {
       if (!url) return false;
       return url.includes('.m3u8') || url.includes('/play/') || url.includes('/video/');
     }
 
-    function playStreamSource(url) {
+    function playStreamSource(url, subtitles) {
       const iframePlayer = document.getElementById('main-stream-player');
       const hlsVideo = document.getElementById('hls-video-player');
       const emptyPlaceholder = document.getElementById('empty-stream-placeholder');
@@ -673,6 +736,27 @@
           iframePlayer.src = 'about:blank';
         }
         hlsVideo.classList.remove('hidden');
+
+        // Bersihkan track subtitle lama
+        const oldTracks = hlsVideo.querySelectorAll('track');
+        oldTracks.forEach(t => t.remove());
+
+        // Pasang subtitle resmi jika tersedia
+        if (Array.isArray(subtitles) && subtitles.length > 0) {
+          subtitles.forEach((sub, idx) => {
+            if (sub && sub.url) {
+              const track = document.createElement('track');
+              track.kind = 'subtitles';
+              track.label = sub.label || sub.lang || ('Sub ' + (idx + 1));
+              track.srclang = sub.lang || 'id';
+              track.src = sub.url;
+              if (idx === 0 || sub.lang === 'id' || sub.lang === currentDramaLang) {
+                track.default = true;
+              }
+              hlsVideo.appendChild(track);
+            }
+          });
+        }
 
         if (currentHls) {
           currentHls.destroy();
@@ -769,11 +853,25 @@
       if (typeof window.setCinembrotAdCooldown === 'function') {
         window.setCinembrotAdCooldown(5);
       }
+      cancelNextEpisodeCountdown();
+
       let epNum = epNumOrBtn;
       if (typeof epNumOrBtn === 'object' && epNumOrBtn !== null && epNumOrBtn.dataset) {
         epNum = parseInt(epNumOrBtn.dataset.episode, 10);
       }
+      if (isNaN(epNum) || epNum < 1) epNum = 1;
       currentEpisodeNumber = epNum;
+
+      // Update Navigasi Tombol Prev / Next
+      const prevBtn = document.getElementById('btn-prev-ep');
+      const nextBtn = document.getElementById('btn-next-ep');
+      if (prevBtn) {
+        prevBtn.disabled = (epNum <= 1);
+      }
+      if (nextBtn) {
+        nextBtn.disabled = (epNum >= totalEpisodesCount);
+      }
+
       const badge = document.getElementById('active-episode-badge');
       if (badge) badge.textContent = 'Episode ' + epNum;
 
@@ -785,6 +883,12 @@
           btn.classList.add('bg-purple-600', 'text-white', 'border-purple-500', 'shadow-md', 'shadow-purple-600/30', 'active-episode');
         }
       });
+
+      // KHUSUS DRAMA PENDEK: Panggil On-Demand Episode API Vorta
+      if (isDramaPendek) {
+        fetchDramaEpisodeStream(epNum, currentDramaLang);
+        return;
+      }
 
       // Cek apakah ada server VIP (DoodStream/Streamtape) yang dikhususkan untuk episode ini
       let matchingServerBtn = null;
@@ -803,6 +907,81 @@
           playStreamSource(targetURL);
         }
       }
+    }
+
+    function stepEpisode(delta) {
+      const targetEp = currentEpisodeNumber + delta;
+      if (targetEp >= 1 && targetEp <= totalEpisodesCount) {
+        switchEpisode(targetEp);
+      }
+    }
+
+    function changeDramaLanguage(lang) {
+      currentDramaLang = lang;
+      if (isDramaPendek) {
+        fetchDramaEpisodeStream(currentEpisodeNumber, lang);
+      }
+    }
+
+    function fetchDramaEpisodeStream(epNum, lang) {
+      if (!movieId) return;
+      const hlsVideo = document.getElementById('hls-video-player');
+      if (hlsVideo) {
+        hlsVideo.pause();
+      }
+
+      fetch(`/api/drama/${movieId}/episode?ep=${epNum}&lang=${encodeURIComponent(lang || 'id')}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.success && data.stream_url) {
+            playStreamSource(data.stream_url, data.subtitles);
+          } else {
+            alert('Gagal memuat episode ' + epNum + '. Silakan coba beberapa saat lagi.');
+          }
+        })
+        .catch(err => {
+          console.error('Error fetching drama episode:', err);
+          alert('Terjadi gangguan jaringan saat memuat episode. Coba lagi.');
+        });
+    }
+
+    // Hitung Mundur Otomatis Episode Selanjutnya (Overlay)
+    function triggerNextEpisodeOverlay(targetEp) {
+      if (!targetEp || targetEp > totalEpisodesCount) return;
+      nextEpisodeTargetNumber = targetEp;
+      countdownRemaining = 3;
+
+      const overlay = document.getElementById('next-episode-overlay');
+      const titleSpan = document.getElementById('overlay-next-ep-title');
+      const cdSpan = document.getElementById('overlay-countdown');
+
+      if (titleSpan) titleSpan.textContent = 'Episode ' + targetEp;
+      if (cdSpan) cdSpan.textContent = countdownRemaining.toString();
+      if (overlay) overlay.classList.remove('hidden');
+
+      if (nextEpisodeTimer) clearInterval(nextEpisodeTimer);
+      nextEpisodeTimer = setInterval(() => {
+        countdownRemaining--;
+        if (cdSpan) cdSpan.textContent = countdownRemaining.toString();
+        if (countdownRemaining <= 0) {
+          cancelNextEpisodeCountdown();
+          switchEpisode(nextEpisodeTargetNumber);
+        }
+      }, 1000);
+    }
+
+    function cancelNextEpisodeCountdown() {
+      if (nextEpisodeTimer) {
+        clearInterval(nextEpisodeTimer);
+        nextEpisodeTimer = null;
+      }
+      const overlay = document.getElementById('next-episode-overlay');
+      if (overlay) overlay.classList.add('hidden');
+    }
+
+    function playNextEpisodeImmediately() {
+      cancelNextEpisodeCountdown();
+      switchEpisode(nextEpisodeTargetNumber);
     }
 
     function buildEpisodeEmbedURL(serverIdx, epNum) {
@@ -1086,6 +1265,16 @@
         if (isHlsStreamURL(initURL)) {
           playStreamSource(initURL);
         }
+      }
+
+      // 3. Listener event selesai (ended) video player HTML5 untuk memicu Auto-Next Episode
+      const hlsVideo = document.getElementById('hls-video-player');
+      if (hlsVideo) {
+        hlsVideo.addEventListener('ended', function() {
+          if (isTV && currentEpisodeNumber < totalEpisodesCount) {
+            triggerNextEpisodeOverlay(currentEpisodeNumber + 1);
+          }
+        });
       }
     });
 
