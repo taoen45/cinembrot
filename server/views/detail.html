@@ -149,7 +149,7 @@
       </video>
 
       <!-- OVERLAY PLAYER SETELAH VIDEO SELESAI: HITUNG MUNDUR & TOMBOL PREV/NEXT -->
-      <div id="next-episode-overlay" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-30 hidden transition-all duration-300">
+      <div id="next-episode-overlay" class="absolute inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-50 pointer-events-auto hidden transition-all duration-300">
         <div class="w-16 h-16 rounded-2xl bg-purple-600/20 text-purple-400 flex items-center justify-center text-3xl mb-3 shadow-xl border border-purple-500/30">
           <i class="fa-solid fa-circle-play animate-pulse text-purple-400"></i>
         </div>
@@ -169,7 +169,7 @@
           
           <button type="button" 
                   onclick="cancelNextEpisodeCountdown()" 
-                  class="px-4 py-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs font-bold transition border border-slate-800">
+                  class="px-4 py-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs font-bold transition border border-slate-800 cursor-pointer">
             Batal
           </button>
 
@@ -249,6 +249,7 @@
         </button>
         {{end}}
       </div>
+      {{if ne .Movie.Type "drama_pendek"}}
       <div class="mt-2.5 pt-2 border-t border-slate-900 flex flex-col md:flex-row md:items-center justify-between gap-2 text-[11px] text-slate-400">
         <div class="flex items-center gap-1.5">
           <i class="fa-solid fa-circle-info text-brand-400"></i>
@@ -263,6 +264,7 @@
           <span><b>Subtitle Indonesia:</b> Klik tombol <b>[CC]</b> atau ikon gear ⚙️ di pojok kanan bawah player lalu pilih <i>Indonesian</i></span>
         </div>
       </div>
+      {{end}}
     </div>
     {{end}}
 
@@ -686,6 +688,8 @@
        data-tmdb-id="{{.TMDbID}}" 
        data-is-tv="{{if or (eq .Movie.Type "anime") (eq .Movie.Type "drama_pendek") (eq .Movie.Type "series")}}true{{else}}false{{end}}" 
        data-is-anime="{{if eq .Movie.Type "anime"}}true{{else}}false{{end}}" 
+       data-is-drama-pendek="{{if eq .Movie.Type "drama_pendek"}}true{{else}}false{{end}}"
+       data-total-episodes="{{len .EpisodesList}}"
        data-trailer="{{if .Movie.TrailerURL}}{{youtubeEmbed .Movie.TrailerURL}}{{end}}"
        data-interstitial-enabled="{{if and .EnableAds .EnableDownloadInterstitial}}true{{else}}false{{end}}"
        data-safelinku-enabled="{{if .SafelinkuEnabled}}true{{else}}false{{end}}">
@@ -1317,12 +1321,24 @@
         }
       }
 
-      // 3. Listener event selesai (ended) video player HTML5 untuk memicu Auto-Next Episode
+      // 3. Listener event selesai (ended & timeupdate) video player HTML5 untuk memicu Auto-Next Episode
       const hlsVideo = document.getElementById('hls-video-player');
       if (hlsVideo) {
         hlsVideo.addEventListener('ended', function() {
           if (isTV && currentEpisodeNumber < totalEpisodesCount) {
             triggerNextEpisodeOverlay(currentEpisodeNumber + 1);
+          }
+        });
+
+        // Pengaman: Jika durasi tersisa < 0.5 detik dan video dalam status paused/ended
+        hlsVideo.addEventListener('timeupdate', function() {
+          if (hlsVideo.duration && hlsVideo.currentTime) {
+            const timeLeft = hlsVideo.duration - hlsVideo.currentTime;
+            if (timeLeft <= 0.3 && hlsVideo.currentTime > 2) {
+              if (isTV && currentEpisodeNumber < totalEpisodesCount && !nextEpisodeTimer) {
+                triggerNextEpisodeOverlay(currentEpisodeNumber + 1);
+              }
+            }
           }
         });
       }

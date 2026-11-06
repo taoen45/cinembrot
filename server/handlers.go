@@ -1018,9 +1018,13 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 
 	var supportedLanguages []vorta.LanguageItem
 	if movie.Type == "drama_pendek" && movie.SourceWebsite != "" {
-		vClient := vorta.NewClient()
-		if langs, err := vClient.GetLanguages(movie.SourceWebsite); err == nil && len(langs) > 0 {
-			supportedLanguages = langs
+		// Pilihan bahasa hanya dimunculkan jika platform tersebut mendukung subtitle WebVTT terpisah
+		// (Platform seperti ReelShort/MicroDrama menggunakan video hardsub bahasa Indonesia langsung)
+		if strings.EqualFold(movie.SourceWebsite, "mydrama") {
+			vClient := vorta.NewClient()
+			if langs, err := vClient.GetLanguages(movie.SourceWebsite); err == nil && len(langs) > 0 {
+				supportedLanguages = langs
+			}
 		}
 	}
 
