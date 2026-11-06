@@ -67,8 +67,16 @@
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-slate-600 dark:text-slate-300 my-4 bg-slate-50 dark:bg-dark-950 p-3.5 rounded-xl border border-slate-200 dark:border-dark-800">
         <div><span class="text-slate-400 dark:text-slate-500 font-semibold">{{t $.Lang "detail.duration"}}:</span> {{.Movie.DurationFormatted}}</div>
         <div><span class="text-slate-400 dark:text-slate-500 font-semibold">Rating:</span> {{.Movie.AgeRating}}</div>
-        <div><span class="text-slate-400 dark:text-slate-500 font-semibold">{{t $.Lang "detail.country"}}:</span> {{.Movie.Country}}</div>
-        <div><span class="text-slate-400 dark:text-slate-500 font-semibold">{{t $.Lang "detail.language"}}:</span> {{.Movie.Language}}</div>
+        <div><span class="text-slate-400 dark:text-slate-500 font-semibold">{{t $.Lang "detail.country"}}:</span> 
+          {{if eq .Movie.Type "drama_pendek"}}
+            {{if eq .Movie.SourceWebsite "reelshort"}}Amerika Serikat{{else if eq .Movie.SourceWebsite "mydrama"}}Internasional{{else if .Movie.Country}}{{.Movie.Country}}{{else}}Internasional{{end}}
+          {{else}}
+            {{if .Movie.Country}}{{.Movie.Country}}{{else}}-{{end}}
+          {{end}}
+        </div>
+        <div><span class="text-slate-400 dark:text-slate-500 font-semibold">{{t $.Lang "detail.language"}}:</span> 
+          {{if eq .Movie.Language "id"}}Indonesia (Sub Indo){{else if eq .Movie.Language "en"}}English{{else if .Movie.Language}}{{.Movie.Language}}{{else}}Indonesia{{end}}
+        </div>
         <div><span class="text-slate-400 dark:text-slate-500 font-semibold">Views:</span> {{.Movie.Views}}</div>
       </div>
 
@@ -137,10 +145,10 @@
     </div>
 
     <!-- PLAYER WRAPPER: DUKUNGAN GANDA IFRAME EMBED & HTML5 HLS.JS VIDEO PLAYER -->
-    <div id="player-container" class="aspect-video w-full bg-black relative">
+    <div id="player-container" class="aspect-video w-full bg-black relative flex items-center justify-center overflow-hidden">
       <!-- HTML5 Video Player untuk stream HLS M3U8 langsung (Drama Pendek) -->
       <video id="hls-video-player" 
-             class="w-full h-full hidden" 
+             class="w-full h-full max-h-full object-contain mx-auto hidden" 
              controls 
              playsinline 
              webkit-playsinline 
@@ -217,8 +225,8 @@
       {{end}}
     </div>
 
-    <!-- SERVER SWITCHER BAR -->
-    {{if .Movie.StreamLinks}}
+    <!-- SERVER SWITCHER BAR (HANYA UNTUK HOLLYWOOD & ANIME DENGAN MULTI-SERVER) -->
+    {{if and .Movie.StreamLinks (ne .Movie.Type "drama_pendek")}}
     <div class="bg-slate-950 p-3.5 border-t border-slate-800">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
         <span class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
@@ -226,13 +234,11 @@
         </span>
         <div class="flex items-center gap-2">
           <!-- TOMBOL REFRESH / CEK SERVER STREAMING MANDIRI (HANYA UNTUK HOLLYWOOD & ANIME) -->
-          {{if ne .Movie.Type "drama_pendek"}}
           <button type="button" id="btn-refresh-stream" onclick="refreshMovieStream()" class="inline-flex items-center justify-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-[11px] font-bold px-3 py-1.5 rounded-lg border border-slate-700 transition shadow-xs cursor-pointer shrink-0" title="Periksa dan dapatkan URL server streaming baru jika player error / broken">
             <i id="icon-refresh-stream" class="fa-solid fa-arrows-rotate text-emerald-400"></i>
             <span id="text-refresh-stream">Cek / Segarkan Server</span>
           </button>
-          {{end}}
-          <span class="text-[11px] text-slate-400 italic hidden md:inline">{{if eq .Movie.Type "drama_pendek"}}*Pilih episode di bawah untuk lanjut nonton{{else}}*Jika buffering, pilih server alternatif{{end}}</span>
+          <span class="text-[11px] text-slate-400 italic hidden md:inline">*Jika buffering, pilih server alternatif</span>
         </div>
       </div>
       <div class="flex flex-wrap items-center gap-2" id="server-button-container">
@@ -249,7 +255,6 @@
         </button>
         {{end}}
       </div>
-      {{if ne .Movie.Type "drama_pendek"}}
       <div class="mt-2.5 pt-2 border-t border-slate-900 flex flex-col md:flex-row md:items-center justify-between gap-2 text-[11px] text-slate-400">
         <div class="flex items-center gap-1.5">
           <i class="fa-solid fa-circle-info text-brand-400"></i>
@@ -264,7 +269,6 @@
           <span><b>Subtitle Indonesia:</b> Klik tombol <b>[CC]</b> atau ikon gear ⚙️ di pojok kanan bawah player lalu pilih <i>Indonesian</i></span>
         </div>
       </div>
-      {{end}}
     </div>
     {{end}}
 
@@ -741,6 +745,7 @@
        data-is-anime="{{if eq .Movie.Type "anime"}}true{{else}}false{{end}}" 
        data-is-drama-pendek="{{if eq .Movie.Type "drama_pendek"}}true{{else}}false{{end}}"
        data-total-episodes="{{len .EpisodesList}}"
+       data-init-stream="{{if .Movie.StreamLinks}}{{(index .Movie.StreamLinks 0).EmbedURL}}{{end}}"
        data-trailer="{{if .Movie.TrailerURL}}{{youtubeEmbed .Movie.TrailerURL}}{{end}}"
        data-interstitial-enabled="{{if and .EnableAds .EnableDownloadInterstitial}}true{{else}}false{{end}}"
        data-safelinku-enabled="{{if .SafelinkuEnabled}}true{{else}}false{{end}}">
@@ -841,6 +846,13 @@
           currentHls.attachMedia(hlsVideo);
           currentHls.on(window.Hls.Events.MANIFEST_PARSED, function() {
             hlsVideo.play().catch(function() {});
+          });
+          currentHls.on(window.Hls.Events.BUFFER_EOS, function() {
+            setTimeout(function() {
+              if (typeof window.checkVideoEndedOrNearEnd === 'function') {
+                window.checkVideoEndedOrNearEnd();
+              }
+            }, 400);
           });
           currentHls.on(window.Hls.Events.ERROR, function(event, data) {
             if (data.fatal) {
@@ -1002,8 +1014,8 @@
         }
       }
 
-      // 2. Jika tidak ada track lokal atau stream perlu di-resolve ulang, panggil API episode
-      if (isDramaPendek && !foundLocalTrack) {
+      // 2. Selalu panggil API episode untuk drama pendek agar server Vorta mengembalikan stream / track bahasa yang dipilih
+      if (isDramaPendek) {
         fetchDramaEpisodeStream(currentEpisodeNumber, lang);
       }
     }
@@ -1364,34 +1376,46 @@
       }
 
       // 2. Autoplay stream awal jika berupa HLS stream langsung (Drama Pendek)
-      const firstServerBtn = document.querySelector('.server-btn');
-      if (firstServerBtn && firstServerBtn.dataset && firstServerBtn.dataset.embed) {
-        const initURL = firstServerBtn.dataset.embed;
-        if (isHlsStreamURL(initURL)) {
-          playStreamSource(initURL);
+      let initStreamURL = '';
+      if (metaEl && metaEl.dataset.initStream) {
+        initStreamURL = metaEl.dataset.initStream;
+      }
+      if (!initStreamURL) {
+        const firstServerBtn = document.querySelector('.server-btn');
+        if (firstServerBtn && firstServerBtn.dataset && firstServerBtn.dataset.embed) {
+          initStreamURL = firstServerBtn.dataset.embed;
         }
       }
+      if (initStreamURL && isHlsStreamURL(initStreamURL)) {
+        playStreamSource(initStreamURL);
+      } else if (isDramaPendek && movieId) {
+        fetchDramaEpisodeStream(1, currentDramaLang);
+      }
 
-      // 3. Listener event selesai (ended & timeupdate) video player HTML5 untuk memicu Auto-Next Episode
+      // 3. Listener event selesai (ended, pause dekat akhir, timeupdate) untuk memicu Auto-Next Episode Overlay
       const hlsVideo = document.getElementById('hls-video-player');
-      if (hlsVideo) {
-        hlsVideo.addEventListener('ended', function() {
-          if (isTV && currentEpisodeNumber < totalEpisodesCount) {
+      window.checkVideoEndedOrNearEnd = function() {
+        if (!hlsVideo || nextEpisodeTimer || !isTV) return;
+        if (currentEpisodeNumber >= totalEpisodesCount) return;
+
+        if (hlsVideo.ended) {
+          triggerNextEpisodeOverlay(currentEpisodeNumber + 1);
+          return;
+        }
+
+        if (hlsVideo.duration && hlsVideo.currentTime) {
+          const timeLeft = hlsVideo.duration - hlsVideo.currentTime;
+          // Trigger jika durasi sisa <= 1.5 detik atau jika video dipause saat sisa durasi <= 3 detik
+          if (timeLeft <= 1.5 || (hlsVideo.paused && timeLeft <= 3.0 && hlsVideo.currentTime > 5)) {
             triggerNextEpisodeOverlay(currentEpisodeNumber + 1);
           }
-        });
+        }
+      };
 
-        // Pengaman: Jika durasi tersisa < 0.5 detik dan video dalam status paused/ended
-        hlsVideo.addEventListener('timeupdate', function() {
-          if (hlsVideo.duration && hlsVideo.currentTime) {
-            const timeLeft = hlsVideo.duration - hlsVideo.currentTime;
-            if (timeLeft <= 0.3 && hlsVideo.currentTime > 2) {
-              if (isTV && currentEpisodeNumber < totalEpisodesCount && !nextEpisodeTimer) {
-                triggerNextEpisodeOverlay(currentEpisodeNumber + 1);
-              }
-            }
-          }
-        });
+      if (hlsVideo) {
+        hlsVideo.addEventListener('ended', window.checkVideoEndedOrNearEnd);
+        hlsVideo.addEventListener('pause', window.checkVideoEndedOrNearEnd);
+        hlsVideo.addEventListener('timeupdate', window.checkVideoEndedOrNearEnd);
       }
     });
 

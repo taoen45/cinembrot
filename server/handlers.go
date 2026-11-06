@@ -1040,12 +1040,19 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 
 	typeLabel := "Film"
 	typeURL := "/hollywood"
+	ogType := "video.movie"
 	if movie.Type == "anime" {
 		typeLabel = "Anime"
 		typeURL = "/anime"
-	} else if movie.Type == "short_drama" {
+		ogType = "video.tv_show"
+	} else if movie.Type == "drama_pendek" {
 		typeLabel = "Drama Pendek"
 		typeURL = "/drama-pendek"
+		ogType = "video.tv_show"
+	} else if movie.Type == "series" {
+		typeLabel = "Serial TV"
+		typeURL = "/series"
+		ogType = "video.tv_show"
 	}
 
 	var supportedLanguages []vorta.LanguageItem
@@ -1079,7 +1086,7 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 		MetaDescription:    metaDesc,
 		MetaKeywords:       metaKeywords,
 		MetaImage:          metaImg,
-		OGType:             "video.movie",
+		OGType:             ogType,
 		JSONLD:             s.GenerateJSONLDMovie(s.GetSiteURL(r), &movie),
 		BreadcrumbJSONLD:   s.GenerateJSONLDBreadcrumb(s.GetSiteURL(r), &movie, typeLabel, typeURL),
 		MovieTypeLabel:     typeLabel,

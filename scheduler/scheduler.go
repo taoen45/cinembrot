@@ -628,6 +628,21 @@ func SaveDramaItemToDatabase(db *gorm.DB, item vorta.DramaItem, platform, lang s
 		totalChapters = ch
 	}
 
+	country := "Internasional"
+	switch strings.ToLower(platform) {
+	case "reelshort":
+		country = "Amerika Serikat"
+	case "mydrama":
+		country = "Internasional"
+	case "meloshort", "shortmax", "dramabox", "goodshort", "heatshort":
+		country = "China"
+	}
+
+	langLabel := "Indonesia"
+	if strings.EqualFold(lang, "en") {
+		langLabel = "English"
+	}
+
 	movie := model.Movie{
 		Title:             cleanTitle,
 		OriginalTitle:     cleanTitle,
@@ -635,8 +650,8 @@ func SaveDramaItemToDatabase(db *gorm.DB, item vorta.DramaItem, platform, lang s
 		Type:              "drama_pendek",
 		Year:              time.Now().Year(),
 		Status:            "publish",
-		Country:           "China",
-		Language:          lang,
+		Country:           country,
+		Language:          langLabel,
 		PosterURL:         item.Cover,
 		ThumbnailURL:      item.Cover,
 		DurationFormatted: fmt.Sprintf("%d Episodes", totalChapters),
