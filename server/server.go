@@ -96,8 +96,29 @@ func (s *Server) loadTemplates() {
 				p = strings.ReplaceAll(p, pat, "")
 			}
 			p = strings.TrimSpace(p)
+			low := strings.ToLower(p)
+			switch low {
+			case "reelshort":
+				return "ReelShort"
+			case "meloshort":
+				return "MeloShort"
+			case "mydrama":
+				return "MyDrama"
+			case "microdrama":
+				return "MicroDrama"
+			case "stardusttv":
+				return "StardustTV"
+			case "shortmax":
+				return "ShortMax"
+			case "dramabox":
+				return "DramaBox"
+			case "goodshort":
+				return "GoodShort"
+			case "heatshort":
+				return "HeatShort"
+			}
 			if p == "" {
-				return "Server Lokal"
+				return "Drama Pendek"
 			}
 			return p
 		},

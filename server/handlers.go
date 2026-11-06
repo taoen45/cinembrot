@@ -269,12 +269,12 @@ func (s *Server) HandleHome(w http.ResponseWriter, r *http.Request) {
 		Limit(12).
 		Find(&animePopular)
 
-	// 6. Drama Pendek Asia Populer (Rilis terbaru)
+	// 6. Drama Pendek Vertikal Populer (Rilis terbaru)
 	var dramaPopular []model.Movie
 	s.db.Preload("Genres").
 		Where("type = 'drama_pendek' AND poster_url <> ''").
-		Order("year desc, views desc, id desc").
-		Limit(12).
+		Order("year desc, views desc, rating desc, id desc").
+		Limit(18).
 		Find(&dramaPopular)
 
 	// 7. Film Hollywood & Box Office Populer
