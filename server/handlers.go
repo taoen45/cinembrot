@@ -17,6 +17,8 @@ import (
 	"cinembrot/provider/safelinku"
 	"cinembrot/provider/subtitles"
 	"cinembrot/provider/torrents"
+	"cinembrot/provider/vorta"
+	"cinembrot/scheduler"
 	"cinembrot/scraper"
 	"cinembrot/validator"
 	"gorm.io/gorm"
@@ -1632,6 +1634,35 @@ func (s *Server) HandleAPIMoviesFilter(w http.ResponseWriter, r *http.Request) {
 
 	var totalCount int64
 	query.Count(&totalCount)
+
+	// Jika tipe drama_pendek dan totalCount 0 saat pencarian kata kunci spesifik (min 3 char),
+	// lakukan query on-demand sopan ke Vorta API /api/v2/search dan simpan hasilnya ke DB (Anti-Brute Force: 1 page saja).
+	if typeStr == "drama_pendek" && totalCount == 0 && keyword != "" && len([]rune(keyword)) >= 3 {
+		searchPlatform := sourceStr
+		if searchPlatform == "" || searchPlatform == "all" {
+			searchPlatform = "meloshort"
+		}
+		client := vorta.NewClient()
+		lang := i18n.GetLang(r)
+		if lang == "" {
+			lang = "id"
+		}
+		if sResp, err := client.Search(searchPlatform, keyword, lang, 1); err == nil && sResp != nil && len(sResp.Data) > 0 {
+			for _, item := range sResp.Data {
+				_, _ = scheduler.SaveDramaItemToDatabase(s.db, item, searchPlatform, lang)
+			}
+			// Re-query database lokal setelah item baru disimpan
+			kwPattern := "%" + keyword + "%"
+			query = s.db.Model(&model.Movie{}).Preload("Genres").
+				Where("type = ?", "drama_pendek").
+				Where("title LIKE ? OR original_title LIKE ? OR alternative_titles LIKE ? OR synopsis LIKE ?",
+					kwPattern, kwPattern, kwPattern, kwPattern)
+			if sourceStr != "" && sourceStr != "all" {
+				query = query.Where("source_website LIKE ? OR source_url LIKE ?", "%"+sourceStr+"%", "%"+sourceStr+"%")
+			}
+			query.Count(&totalCount)
+		}
+	}
 
 	// 8. Sorting (Default: Rilis Terbaru & Tahun Terbaru)
 	switch sortStr {

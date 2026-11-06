@@ -374,10 +374,45 @@ Cinembrot mengintegrasikan katalog khusus **Drama Pendek Asia (Vertical Series)*
    - Data platform yang diizinkan (*ReelShort*, *MeloShort*, *StardustTV*, *MicroDrama*, *My Drama*) disimpan ke tabel `drama_categories` di MariaDB lokal.
    - Seluruh pengunjung publik yang mengakses `/drama-pendek` membaca data dari MariaDB lokal, mengonsumsi **0 token API**.
 3. **Spesifikasi Autentikasi HMAC-SHA256**:
-   - Signature: `HMAC-SHA256(SecretKey, "GET:/api/v2/categories:" + TimestampMillis)`
+   - Signature: `HMAC-SHA256(SecretKey, "GET:" + PathAndQuery + ":" + TimestampMillis)`
    - Headers: `X-Timestamp`, `X-Signature`
-4. **Alur Lanjutan (On-Demand Topologi Mendatang)**:
-   - Pengambilan katalog judul dan link video streaming (`/api/v2/home`, `/api/v2/detail`, `/api/v2/video`) dilakukan bertahap secara murni **On-Demand** saat penonton riil menekan tombol play, bukan robotik.
+4. **Topologi Pencarian & Katalog Discovery (Tahap 2)**:
+   - **Katalog Discovery (`/api/v2/discover?category_p={platform}&lang={lang}&page={page}`)**:
+     - Dijadwalkan otomatis 1x seminggu (Senin 03:00 WIB) sesaat setelah sinkronisasi kategori.
+     - Pengambilan discovery berjalan sopan dengan jeda (delay) 5–10 detik antar platform/bahasa untuk menjaga batas wajar API.
+     - Setiap judul yang berhasil diambil langsung disimpan ke MariaDB lokal (`movies`, `genres`, `stream_links`).
+   - **Pencarian Terpadu (`/api/v2/search?category_p={platform}&q={query}&lang={lang}&page={page}`)**:
+     - Menggunakan arsitektur **Cache-First**: Saat penonton mencari judul drama (minimal 3 karakter), sistem memeriksa database lokal MariaDB terlebih dahulu (`SELECT ... LIKE %q%`).
+     - Jika hasil ditemukan di database lokal, data langsung disajikan secara instan (**0 Token API**).
+     - Jika judul belum ada di database lokal, backend melakukan pemanggilan on-demand ke API `/api/v2/search` sebanyak 1 halaman, menyimpan judul-judul baru ke MariaDB, lalu menampilkannya ke pengunjung.
+     - Di sisi frontend, pencarian dilindungi dengan mekanisme **Debounce 600ms** dan pembatasan minimal 3 karakter untuk mencegah request liar dan spamming.
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│               ARSITEKTUR CACHE-FIRST DISCOVERY & SEARCH        │
+└─────────────────────────────────────────────────────────────────┘
+                                 │
+                 User Cari Judul Drama (>= 3 Huruf)
+                                 │
+                                 ▼
+                     Cek Database MariaDB Lokal
+                                 │
+                 ┌───────────────┴───────────────┐
+                 │                               │
+          Ada di MariaDB?                 Tidak Ditemukan?
+                 │                               │
+                 ▼                               ▼
+       Kirim JSON ke Frontend            Panggil API Vorta On-Demand
+          (0 Token API)                /api/v2/search?category_p=...&q=...
+                 │                               │
+                 │                               ▼
+                 │                     Simpan ke MariaDB Lokal
+                 │                     (Sync Sekali untuk Selamanya)
+                 │                               │
+                 └───────────────┬───────────────┘
+                                 ▼
+                    Tampilkan Hasil ke Penonton
+```
 
 #### Data Sample yang Telah Masuk ke MariaDB (ID: 8111):
 - **Judul**: *Raja Wall Street Melindungi Putrinya*

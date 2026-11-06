@@ -2,9 +2,14 @@ package scheduler
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"math/rand"
+	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -13,10 +18,6 @@ import (
 	"cinembrot/pipeline"
 	"cinembrot/provider/vorta"
 	"cinembrot/scraper"
-	"io"
-	"net/http"
-	"os"
-	"path/filepath"
 	"gorm.io/gorm"
 )
 
@@ -461,6 +462,10 @@ func (s *AutoScraper) startWeeklyCategorySyncScheduler() {
 				} else {
 					log.Printf("[WEEKLY-SYNC] ✅ Berhasil memperbarui %d platform drama di database.\n", updated)
 				}
+
+				// Sync katalog discovery mingguan (sopan, 1 halaman per platform, jeda santai 10 detik antar platform)
+				log.Println("[WEEKLY-SYNC] 🍿 Menjalankan sinkronisasi mingguan katalog Discovery drama pendek...")
+				SyncDramaDiscoveryCatalog(s.db)
 			case <-s.stopChan:
 				return
 			}
@@ -547,5 +552,125 @@ func SyncDramaCategories(db *gorm.DB) (int, error) {
 
 	log.Printf("[VORTA-CATEGORIES] Berhasil menyimpan %d platform resmi ke database MariaDB.\n", updatedCount)
 	return updatedCount, nil
+}
+
+// SyncDramaDiscoveryCatalog mengambil katalog drama rilis terkini secara berkala 1x seminggu
+// Sangat sopan: hanya 1 halaman per platform aktif, dengan jeda santai 10 detik antar platform (Anti-Brute Force).
+func SyncDramaDiscoveryCatalog(db *gorm.DB) (int, error) {
+	if db == nil {
+		return 0, fmt.Errorf("database connection is nil")
+	}
+
+	var categories []model.DramaCategory
+	if err := db.Where("is_active = ?", true).Order("`order` asc").Find(&categories).Error; err != nil {
+		return 0, err
+	}
+
+	client := vorta.NewClient()
+	totalSaved := 0
+
+	for _, cat := range categories {
+		log.Printf("[VORTA-DISCOVER] 📥 Mengambil sampel discovery mingguan untuk platform: %s (id & en)...\n", cat.DisplayName)
+
+		for _, lang := range []string{"id", "en"} {
+			resp, err := client.GetDiscover(cat.Name, lang, 1)
+			if err != nil {
+				log.Printf("[VORTA-DISCOVER] ⚠️ Notice fetch %s (%s): %v\n", cat.Name, lang, err)
+				time.Sleep(5 * time.Second)
+				continue
+			}
+
+			for _, item := range resp.Data {
+				saved, err := SaveDramaItemToDatabase(db, item, cat.Name, lang)
+				if err == nil && saved {
+					totalSaved++
+				}
+			}
+
+			// Jeda santai 5 detik antar bahasa
+			time.Sleep(5 * time.Second)
+		}
+
+		// Jeda santai 10 detik antar platform untuk menjaga keamanan API rate limit
+		time.Sleep(10 * time.Second)
+	}
+
+	log.Printf("[VORTA-DISCOVER] ✅ Selesai! %d judul drama berhasil disinkronkan ke MariaDB.\n", totalSaved)
+	return totalSaved, nil
+}
+
+// SaveDramaItemToDatabase menyimpan metadata drama pendek ke tabel movies
+func SaveDramaItemToDatabase(db *gorm.DB, item vorta.DramaItem, platform, lang string) (bool, error) {
+	if db == nil || item.ID == "" || item.Title == "" {
+		return false, nil
+	}
+
+	cleanTitle := strings.TrimSpace(item.Title)
+	slug := generateDramaSlug(cleanTitle)
+
+	var existing model.Movie
+	// Cek apakah drama dengan slug atau source_url sama sudah ada di database
+	sourceURL := fmt.Sprintf("vorta://%s/%s", platform, item.ID)
+	err := db.Where("source_url = ? OR slug = ?", sourceURL, slug).First(&existing).Error
+	if err == nil {
+		// Update cover atau episode jika berubah
+		if existing.PosterURL == "" && item.Cover != "" {
+			existing.PosterURL = item.Cover
+			existing.ThumbnailURL = item.Cover
+			_ = db.Save(&existing)
+		}
+		return false, nil
+	}
+
+	totalChapters := 1
+	if ch, err := strconv.Atoi(strings.TrimSpace(item.Chapters)); err == nil && ch > 0 {
+		totalChapters = ch
+	}
+
+	movie := model.Movie{
+		Title:             cleanTitle,
+		OriginalTitle:     cleanTitle,
+		Slug:              slug,
+		Type:              "drama_pendek",
+		Year:              time.Now().Year(),
+		Status:            "publish",
+		Country:           "China",
+		Language:          lang,
+		PosterURL:         item.Cover,
+		ThumbnailURL:      item.Cover,
+		DurationFormatted: fmt.Sprintf("%d Episodes", totalChapters),
+		SourceWebsite:     platform,
+		SourceURL:         sourceURL,
+		RawMetadata:       fmt.Sprintf("vorta:%s:%s", platform, item.ID),
+		Views:             100,
+		Rating:            8.5,
+		Synopsis:          fmt.Sprintf("Serial drama pendek vertikal resmi dari platform %s. Ikuti keseruan jalan ceritanya dengan plot cepat dan penuh intrik.", strings.ToUpper(platform[:1])+platform[1:]),
+	}
+
+	if err := db.Create(&movie).Error; err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func generateDramaSlug(title string) string {
+	slug := strings.ToLower(title)
+	var sb strings.Builder
+	for _, r := range slug {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			sb.WriteRune(r)
+		} else if r == ' ' || r == '-' || r == '_' {
+			sb.WriteRune('-')
+		}
+	}
+	clean := strings.Trim(sb.String(), "-")
+	for strings.Contains(clean, "--") {
+		clean = strings.ReplaceAll(clean, "--", "-")
+	}
+	if clean == "" {
+		clean = fmt.Sprintf("drama-%d", time.Now().UnixNano()%100000)
+	}
+	return fmt.Sprintf("%s-%d", clean, time.Now().Year())
 }
 

@@ -186,27 +186,68 @@ func (c *Client) GetHomeFeed(platform, lang string) ([]DramaItem, error) {
 	return res.Data, nil
 }
 
-// Search mencari drama pendek berdasarkan kata kunci dengan jeda aman anti-brute force
-func (c *Client) Search(platform, query, lang string) ([]DramaItem, error) {
+// DiscoverResponse merepresentasikan respons discovery katalog drama
+type DiscoverResponse struct {
+	Success  bool        `json:"success"`
+	Platform string      `json:"platform"`
+	Total    int         `json:"total"`
+	Page     int         `json:"page"`
+	HasMore  bool        `json:"hasMore"`
+	Limit    int         `json:"limit"`
+	Language string      `json:"language"`
+	Data     []DramaItem `json:"data"`
+}
+
+// GetDiscover mengambil katalog judul drama dari endpoint /api/v2/discover
+func (c *Client) GetDiscover(platform, lang string, page int) (*DiscoverResponse, error) {
 	if platform == "" {
 		platform = "meloshort"
 	}
 	if lang == "" {
 		lang = "id"
 	}
+	if page < 1 {
+		page = 1
+	}
 
-	path := fmt.Sprintf("/api/v2/search?category_p=%s&q=%s&lang=%s", url.QueryEscape(platform), url.QueryEscape(query), url.QueryEscape(lang))
+	path := fmt.Sprintf("/api/v2/discover?category_p=%s&lang=%s&page=%d", url.QueryEscape(platform), url.QueryEscape(lang), page)
 	body, err := c.executeRequest("GET", path)
 	if err != nil {
 		return nil, err
 	}
 
-	var res HomeResponse
+	var res DiscoverResponse
+	if err := json.Unmarshal(body, &res); err != nil {
+		return nil, fmt.Errorf("gagal unmarshal discover response: %w", err)
+	}
+
+	return &res, nil
+}
+
+// Search mencari drama pendek berdasarkan kata kunci dengan jeda aman anti-brute force
+func (c *Client) Search(platform, query, lang string, page int) (*DiscoverResponse, error) {
+	if platform == "" {
+		platform = "meloshort"
+	}
+	if lang == "" {
+		lang = "id"
+	}
+	if page < 1 {
+		page = 1
+	}
+
+	path := fmt.Sprintf("/api/v2/search?category_p=%s&q=%s&lang=%s&page=%d", url.QueryEscape(platform), url.QueryEscape(query), url.QueryEscape(lang), page)
+	body, err := c.executeRequest("GET", path)
+	if err != nil {
+		return nil, err
+	}
+
+	var res DiscoverResponse
 	if err := json.Unmarshal(body, &res); err != nil {
 		return nil, fmt.Errorf("gagal unmarshal search results: %w", err)
 	}
 
-	return res.Data, nil
+	return &res, nil
 }
 
 // ChapterInfo merepresentasikan episode dalam drama
