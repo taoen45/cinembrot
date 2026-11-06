@@ -135,6 +135,12 @@
             {{end}}
           </select>
         </div>
+        {{else if .DramaHardsub}}
+        <div class="flex items-center gap-1.5 bg-slate-800/60 px-2.5 py-1 rounded-lg border border-slate-700 text-[11px] text-slate-300" title="Teks terjemahan sudah menyatu di dalam video dan tidak bisa diganti">
+          <i class="fa-solid fa-closed-captioning text-slate-400"></i>
+          <span class="hidden sm:inline">Subtitle Indonesia (tertanam di video)</span>
+          <span class="sm:hidden">Sub Indo</span>
+        </div>
         {{end}}
         <!-- TOMBOL FULLSCREEN PLAYER -->
         <button type="button" id="btn-fullscreen-player" onclick="togglePlayerFullScreen()" class="text-xs text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1.5 transition px-3 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-700/60 cursor-pointer shadow-xs active:scale-95" title="Nonton Layar Penuh (Fullscreen)">
@@ -1043,6 +1049,8 @@
         .then(data => {
           if (data && data.success && data.stream_url) {
             playStreamSource(data.stream_url, data.subtitles);
+          } else if (data && data.need_sequential) {
+            alert(data.message);
           } else {
             alert('Gagal memuat episode ' + epNum + '. Silakan coba beberapa saat lagi.');
           }

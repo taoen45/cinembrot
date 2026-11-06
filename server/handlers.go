@@ -80,6 +80,7 @@ type PageData struct {
 	CurrentEpisode         int
 	TMDbID                 int
 	SupportedLanguages     []vorta.LanguageItem
+	DramaHardsub           bool
 
 	// SEO & Search Engine Optimization Fields
 	CanonicalURL       string
@@ -1060,10 +1061,16 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var supportedLanguages []vorta.LanguageItem
+	dramaHardsub := false
 	if movie.Type == "drama_pendek" && movie.SourceWebsite != "" {
-		vClient := vorta.NewClient()
-		if langs, err := vClient.GetLanguages(movie.SourceWebsite); err == nil && len(langs) > 0 {
-			supportedLanguages = langs
+		if hardsubPlatforms[strings.ToLower(movie.SourceWebsite)] {
+			// Subtitle sudah tertanam permanen di video, tidak ada pilihan bahasa
+			dramaHardsub = true
+		} else {
+			vClient := vorta.NewClient()
+			if langs, err := vClient.GetLanguages(movie.SourceWebsite); err == nil && len(langs) > 0 {
+				supportedLanguages = langs
+			}
 		}
 	}
 
@@ -1083,6 +1090,7 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 		CurrentEpisode:     1,
 		TMDbID:             tmdbID,
 		SupportedLanguages: supportedLanguages,
+		DramaHardsub:       dramaHardsub,
 		MetaDescription:    metaDesc,
 		MetaKeywords:       metaKeywords,
 		MetaImage:          metaImg,
@@ -1452,7 +1460,15 @@ func (s *Server) HandleRefreshStreamLink(w http.ResponseWriter, r *http.Request)
 			}
 
 			// Ambil video stream segar untuk episode 1 (atau chapter pertama)
-			vData, err := client.GetVideoStream(platform, rawID, "1", lang)
+			firstChapter, chapterKnown := resolveChapterID(client, &movie, platform, rawID, 1)
+			var vData *vorta.VideoStreamData
+			var err error = fmt.Errorf("chapter pertama tidak diketahui")
+			if chapterKnown {
+				vData, err = client.GetVideoStream(platform, rawID, firstChapter, lang)
+				if err == nil && vData != nil && chapterIDPlatforms[strings.ToLower(platform)] && vData.NextVideoID != "" {
+					rememberChapterID(platform, rawID, 2, vData.NextVideoID)
+				}
+			}
 			if err == nil && vData != nil && len(vData.Streams) > 0 {
 				// Prioritaskan stream dengan codec H264 yang 100% didukung seluruh browser (mencegah layar hitam akibat HEVC/H265)
 				chosenStream := vData.Streams[0]
@@ -2018,10 +2034,31 @@ func (s *Server) HandleDramaEpisodeStream(w http.ResponseWriter, r *http.Request
 	}
 
 	client := vorta.NewClient()
-	vData, err := client.GetVideoStream(platform, rawID, epStr, lang)
+	epNum, convErr := strconv.Atoi(epStr)
+	if convErr != nil || epNum < 1 {
+		epNum = 1
+	}
+
+	chapterID, known := resolveChapterID(client, &movie, platform, rawID, epNum)
+	if !known {
+		// Episode belum bisa dibuka: ID-nya baru diketahui setelah episode sebelumnya ditonton (alur organik)
+		w.WriteHeader(http.StatusConflict)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"success":          false,
+			"need_sequential":  true,
+			"highest_known":    highestKnownEpisode(platform, rawID),
+			"message":          "Episode ini belum bisa dibuka langsung. Tonton episode sebelumnya secara berurutan terlebih dahulu.",
+		})
+		return
+	}
+
+	vData, err := client.GetVideoStream(platform, rawID, chapterID, lang)
 	if err != nil || vData == nil || len(vData.Streams) == 0 {
 		http.Error(w, `{"success":false,"message":"Gagal mengambil stream episode"}`, http.StatusBadGateway)
 		return
+	}
+	if chapterIDPlatforms[strings.ToLower(platform)] && vData.NextVideoID != "" {
+		rememberChapterID(platform, rawID, epNum+1, vData.NextVideoID)
 	}
 
 	// Prioritaskan codec H264
