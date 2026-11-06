@@ -136,8 +136,19 @@
       </div>
     </div>
 
-    <!-- PLAYER IFRAME WRAPPER -->
+    <!-- PLAYER WRAPPER: DUKUNGAN GANDA IFRAME EMBED & HTML5 HLS.JS VIDEO PLAYER -->
     <div id="player-container" class="aspect-video w-full bg-black relative">
+      <!-- HTML5 Video Player untuk stream HLS M3U8 langsung (Drama Pendek) -->
+      <video id="hls-video-player" 
+             class="w-full h-full hidden" 
+             controls 
+             playsinline 
+             webkit-playsinline 
+             preload="auto">
+        <p class="text-white text-xs text-center p-4">Browser Anda tidak mendukung pemutaran video HTML5.</p>
+      </video>
+
+      <!-- Iframe Player untuk embed multi-server Hollywood / Anime -->
       {{if .Movie.StreamLinks}}
       <iframe id="main-stream-player" 
               src="{{(index .Movie.StreamLinks 0).EmbedURL}}" 
@@ -161,7 +172,7 @@
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen">
       </iframe>
       {{else}}
-      <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 p-6 text-center">
+      <div id="empty-stream-placeholder" class="w-full h-full flex flex-col items-center justify-center text-slate-400 p-6 text-center">
         <i class="fa-solid fa-video-slash text-5xl mb-3 text-slate-600"></i>
         <p class="mb-3">Player streaming sedang disiapkan atau film tersedia melalui link download di bawah.</p>
         <button type="button" id="btn-refresh-stream-empty" onclick="refreshMovieStream()" class="inline-flex items-center justify-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition shadow-md cursor-pointer" title="Cari server streaming embed mandiri untuk judul ini">
@@ -629,6 +640,7 @@
   </div>
 
   <!-- CLIENT SCRIPT STREAMING & EPISODE SWITCHER -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.8/dist/hls.min.js"></script>
   <script>
     const metaEl = document.getElementById('movie-client-meta');
     const movieId = metaEl ? parseInt(metaEl.dataset.movieId, 10) : 0;
@@ -639,6 +651,83 @@
 
     let currentServerIndex = 0;
     let currentEpisodeNumber = 1;
+    let currentHls = null;
+
+    function isHlsStreamURL(url) {
+      if (!url) return false;
+      return url.includes('.m3u8') || url.includes('/play/') || url.includes('/video/');
+    }
+
+    function playStreamSource(url) {
+      const iframePlayer = document.getElementById('main-stream-player');
+      const hlsVideo = document.getElementById('hls-video-player');
+      const emptyPlaceholder = document.getElementById('empty-stream-placeholder');
+
+      if (!url) return;
+      if (emptyPlaceholder) emptyPlaceholder.classList.add('hidden');
+
+      if (isHlsStreamURL(url) && hlsVideo) {
+        // Tampilkan video player HTML5 dan sembunyikan iframe
+        if (iframePlayer) {
+          iframePlayer.classList.add('hidden');
+          iframePlayer.src = 'about:blank';
+        }
+        hlsVideo.classList.remove('hidden');
+
+        if (currentHls) {
+          currentHls.destroy();
+          currentHls = null;
+        }
+
+        if (window.Hls && window.Hls.isSupported()) {
+          currentHls = new window.Hls({
+            enableWorker: true,
+            lowLatencyMode: true,
+            backBufferLength: 90
+          });
+          currentHls.loadSource(url);
+          currentHls.attachMedia(hlsVideo);
+          currentHls.on(window.Hls.Events.MANIFEST_PARSED, function() {
+            hlsVideo.play().catch(function() {});
+          });
+          currentHls.on(window.Hls.Events.ERROR, function(event, data) {
+            if (data.fatal) {
+              switch (data.type) {
+                case window.Hls.ErrorTypes.NETWORK_ERROR:
+                  currentHls.startLoad();
+                  break;
+                case window.Hls.ErrorTypes.MEDIA_ERROR:
+                  currentHls.recoverMediaError();
+                  break;
+                default:
+                  currentHls.destroy();
+                  break;
+              }
+            }
+          });
+        } else if (hlsVideo.canPlayType('application/vnd.apple.mpegurl')) {
+          // Native HLS untuk Safari / iOS
+          hlsVideo.src = url;
+          hlsVideo.addEventListener('loadedmetadata', function() {
+            hlsVideo.play().catch(function() {});
+          });
+        } else {
+          hlsVideo.src = url;
+        }
+      } else if (iframePlayer) {
+        // Fallback untuk iframe embed multi-server (Hollywood & Anime)
+        if (hlsVideo) {
+          hlsVideo.pause();
+          hlsVideo.classList.add('hidden');
+          if (currentHls) {
+            currentHls.destroy();
+            currentHls = null;
+          }
+        }
+        iframePlayer.classList.remove('hidden');
+        iframePlayer.src = url;
+      }
+    }
 
     function switchServer(indexOrBtn, embedURL, serverName) {
       if (typeof window.setCinembrotAdCooldown === 'function') {
@@ -671,8 +760,8 @@
         targetURL = buildEpisodeEmbedURL(index, currentEpisodeNumber);
       }
 
-      if (player && targetURL) {
-        player.src = targetURL;
+      if (targetURL) {
+        playStreamSource(targetURL);
       }
     }
 
@@ -709,9 +798,9 @@
       if (matchingServerBtn) {
         switchServer(matchingServerBtn);
       } else {
-        const player = document.getElementById('main-stream-player');
-        if (player) {
-          player.src = buildEpisodeEmbedURL(currentServerIndex, epNum);
+        const targetURL = buildEpisodeEmbedURL(currentServerIndex, epNum);
+        if (targetURL) {
+          playStreamSource(targetURL);
         }
       }
     }
@@ -988,6 +1077,15 @@
       // 1. Aktifkan masa tenang iklan 5 menit di halaman movie detail
       if (typeof window.setCinembrotAdCooldown === 'function') {
         window.setCinembrotAdCooldown(5);
+      }
+
+      // 2. Autoplay stream awal jika berupa HLS stream langsung (Drama Pendek)
+      const firstServerBtn = document.querySelector('.server-btn');
+      if (firstServerBtn && firstServerBtn.dataset && firstServerBtn.dataset.embed) {
+        const initURL = firstServerBtn.dataset.embed;
+        if (isHlsStreamURL(initURL)) {
+          playStreamSource(initURL);
+        }
       }
     });
 

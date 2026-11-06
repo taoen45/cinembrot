@@ -834,6 +834,62 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 	// Embed & Streaming Resolver: populate multi-server streams if not present in database or contains dead domains
 	tmdbID := s.resolveMovieTMDbID(&movie)
 
+	// Khusus drama pendek (VORTA): jika stream_links kosong, generate stream link H.264 episode 1 secara on-demand
+	if movie.Type == "drama_pendek" && len(movie.StreamLinks) == 0 {
+		platform := movie.SourceWebsite
+		rawID := ""
+		if strings.HasPrefix(movie.SourceURL, "vorta://") {
+			parts := strings.Split(strings.TrimPrefix(movie.SourceURL, "vorta://"), "/")
+			if len(parts) >= 2 {
+				platform = parts[0]
+				rawID = parts[1]
+			}
+		} else if strings.HasPrefix(movie.RawMetadata, "vorta:") {
+			parts := strings.Split(movie.RawMetadata, ":")
+			if len(parts) >= 3 {
+				platform = parts[1]
+				rawID = parts[2]
+			}
+		}
+
+		if rawID != "" && platform != "" {
+			client := vorta.NewClient()
+			vLang := lang
+			if vLang == "" {
+				vLang = "id"
+			}
+			if vData, err := client.GetVideoStream(platform, rawID, "1", vLang); err == nil && vData != nil && len(vData.Streams) > 0 {
+				chosenStream := vData.Streams[0]
+				for _, st := range vData.Streams {
+					if strings.EqualFold(st.Encode, "H264") {
+						chosenStream = st
+						break
+					}
+				}
+				newStreamURL := chosenStream.URL
+				quality := chosenStream.Resolution
+				if quality == "" {
+					quality = chosenStream.Quality
+				}
+				if quality == "" {
+					quality = "HD 720p"
+				}
+				sl := model.StreamLink{
+					MovieID:    movie.ID,
+					ServerName: fmt.Sprintf("Server 1 - %s HD", strings.ToUpper(platform[:1])+platform[1:]),
+					EmbedURL:   newStreamURL,
+					DirectURL:  newStreamURL,
+					Provider:   platform,
+					Quality:    quality,
+					Status:     "ACTIVE",
+					IsValid:    true,
+				}
+				s.db.Create(&sl)
+				movie.StreamLinks = append(movie.StreamLinks, sl)
+			}
+		}
+	}
+
 	// Check if existing streams are empty or contain dead/unreachable domains (e.g. vidsrc.xyz, autoembed.cc)
 	hasDeadStream := false
 	for _, sl := range movie.StreamLinks {
@@ -1345,8 +1401,20 @@ func (s *Server) HandleRefreshStreamLink(w http.ResponseWriter, r *http.Request)
 			// Ambil video stream segar untuk episode 1 (atau chapter pertama)
 			vData, err := client.GetVideoStream(platform, rawID, "1", lang)
 			if err == nil && vData != nil && len(vData.Streams) > 0 {
-				newStreamURL := vData.Streams[0].URL
-				quality := vData.Streams[0].Resolution
+				// Prioritaskan stream dengan codec H264 yang 100% didukung seluruh browser (mencegah layar hitam akibat HEVC/H265)
+				chosenStream := vData.Streams[0]
+				for _, st := range vData.Streams {
+					if strings.EqualFold(st.Encode, "H264") {
+						chosenStream = st
+						break
+					}
+				}
+
+				newStreamURL := chosenStream.URL
+				quality := chosenStream.Resolution
+				if quality == "" {
+					quality = chosenStream.Quality
+				}
 				if quality == "" {
 					quality = "HD 720p"
 				}

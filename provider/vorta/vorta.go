@@ -299,6 +299,7 @@ type VideoStreamItem struct {
 	Quality          string `json:"quality"`
 	Resolution       string `json:"resolution"`
 	URL              string `json:"url"`
+	Encode           string `json:"encode"`
 	Encrypted        bool   `json:"encrypted"`
 	EncryptionMethod string `json:"encryptionMethod"`
 	Key              string `json:"key"`
