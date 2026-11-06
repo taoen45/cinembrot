@@ -13,6 +13,10 @@ import (
 	"cinembrot/pipeline"
 	"cinembrot/provider/vorta"
 	"cinembrot/scraper"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
 	"gorm.io/gorm"
 )
 
@@ -481,7 +485,36 @@ func SyncDramaCategories(db *gorm.DB) (int, error) {
 	}
 
 	updatedCount := 0
+	// Pastikan direktori lokal untuk logo ada
+	localLogoDir := filepath.Join("public", "img", "platforms")
+	_ = os.MkdirAll(localLogoDir, 0755)
+
 	for _, c := range cats {
+		// Download atau pastikan logo tersimpan lokal untuk mencegah blokir hotlink / CORS
+		savedLogoPath := c.LogoURL
+		if c.LogoURL != "" {
+			fileName := fmt.Sprintf("%s.png", c.Name)
+			localFilePath := filepath.Join(localLogoDir, fileName)
+			webPath := fmt.Sprintf("/img/platforms/%s", fileName)
+
+			// Download logo jika belum ada di lokal
+			if _, statErr := os.Stat(localFilePath); os.IsNotExist(statErr) {
+				req, _ := http.NewRequest("GET", c.LogoURL, nil)
+				req.Header.Set("User-Agent", "Cinembrot/1.0")
+				client := &http.Client{Timeout: 10 * time.Second}
+				if resp, err := client.Do(req); err == nil && resp.StatusCode == http.StatusOK {
+					defer resp.Body.Close()
+					if out, err := os.Create(localFilePath); err == nil {
+						_, _ = io.Copy(out, resp.Body)
+						out.Close()
+						savedLogoPath = webPath
+					}
+				}
+			} else {
+				savedLogoPath = webPath
+			}
+		}
+
 		var existing model.DramaCategory
 		err := db.Where("name = ?", c.Name).First(&existing).Error
 		if err != nil {
@@ -490,7 +523,7 @@ func SyncDramaCategories(db *gorm.DB) (int, error) {
 				ExternalID:  c.ID,
 				Name:        c.Name,
 				DisplayName: c.DisplayName,
-				LogoURL:     c.LogoURL,
+				LogoURL:     savedLogoPath,
 				Order:       c.Order,
 				IsActive:    c.IsActive,
 				Is18Plus:    c.Is18Plus,
@@ -502,7 +535,7 @@ func SyncDramaCategories(db *gorm.DB) (int, error) {
 			// Update data yang ada
 			existing.ExternalID = c.ID
 			existing.DisplayName = c.DisplayName
-			existing.LogoURL = c.LogoURL
+			existing.LogoURL = savedLogoPath
 			existing.Order = c.Order
 			existing.IsActive = c.IsActive
 			existing.Is18Plus = c.Is18Plus

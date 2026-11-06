@@ -28,17 +28,6 @@
   <!-- PLATFORM PILL BUTTONS: ICON + TITLE SAJA (SUMBER DATABASE VIA API /api/v2/categories) -->
   <div class="flex flex-wrap items-center gap-2.5">
     
-    <!-- SEMUA SUMBER -->
-    <button type="button" 
-            onclick="selectPlatformSource('')" 
-            id="source-card-all"
-            class="platform-select-btn px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer {{if not $.CurrentSource}}bg-cyan-500/20 text-cyan-300 border border-cyan-500/60 shadow-xs shadow-cyan-500/20{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border border-slate-800 hover:border-slate-700{{end}}">
-      <span class="w-6 h-6 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-xs">
-        <i class="fa-solid fa-layer-group text-[11px]"></i>
-      </span>
-      <span>Semua Sumber</span>
-    </button>
-    
     {{if .DramaCategories}}
       {{range .DramaCategories}}
       <button type="button"
@@ -47,7 +36,7 @@
               class="platform-select-btn group cursor-pointer px-3.5 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2.5 {{if or (eq $.CurrentSource .Name) (and (eq .Name "meloshort") (eq $.CurrentSource "melolo"))}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
         <span class="w-6 h-6 rounded-lg bg-black/60 border border-slate-800 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
           {{if .LogoURL}}
-            <img src="{{.LogoURL}}" alt="{{.DisplayName}}" class="w-4 h-4 object-contain rounded" loading="lazy" onerror="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');">
+            <img src="{{.LogoURL}}" alt="{{.DisplayName}}" class="w-4 h-4 object-contain rounded" loading="lazy" referrerpolicy="no-referrer" onerror="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');">
             <span class="hidden text-xs text-amber-400"><i class="fa-solid fa-play"></i></span>
           {{else}}
             <span class="text-xs text-cyan-400"><i class="fa-solid fa-film"></i></span>
@@ -63,7 +52,7 @@
               id="source-card-reelshort"
               class="platform-select-btn group cursor-pointer px-3.5 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2.5 {{if eq $.CurrentSource "reelshort"}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
         <span class="w-6 h-6 rounded-lg bg-black/60 border border-slate-800 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
-          <img src="https://api.vorta.tech/logo/reelshort.png" alt="ReelShort" class="w-4 h-4 object-contain rounded">
+          <img src="/img/platforms/reelshort.png" alt="ReelShort" class="w-4 h-4 object-contain rounded" referrerpolicy="no-referrer">
         </span>
         <span class="group-hover:text-white transition">ReelShort</span>
       </button>
@@ -73,7 +62,7 @@
               id="source-card-meloshort"
               class="platform-select-btn group cursor-pointer px-3.5 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2.5 {{if or (eq $.CurrentSource "meloshort") (eq $.CurrentSource "melolo")}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
         <span class="w-6 h-6 rounded-lg bg-black/60 border border-slate-800 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
-          <img src="https://api.vorta.tech/logo/meloshort.png" alt="MeloShort" class="w-4 h-4 object-contain rounded">
+          <img src="/img/platforms/meloshort.png" alt="MeloShort" class="w-4 h-4 object-contain rounded" referrerpolicy="no-referrer">
         </span>
         <span class="group-hover:text-white transition">MeloShort</span>
       </button>
@@ -83,7 +72,7 @@
               id="source-card-stardusttv"
               class="platform-select-btn group cursor-pointer px-3.5 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2.5 {{if eq $.CurrentSource "stardusttv"}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
         <span class="w-6 h-6 rounded-lg bg-black/60 border border-slate-800 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
-          <img src="https://api.vorta.tech/logo/stardusttv.png" alt="StardustTV" class="w-4 h-4 object-contain rounded">
+          <img src="/img/platforms/stardusttv.png" alt="StardustTV" class="w-4 h-4 object-contain rounded" referrerpolicy="no-referrer">
         </span>
         <span class="group-hover:text-white transition">StardustTV</span>
       </button>
@@ -93,7 +82,7 @@
               id="source-card-microdrama"
               class="platform-select-btn group cursor-pointer px-3.5 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2.5 {{if eq $.CurrentSource "microdrama"}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
         <span class="w-6 h-6 rounded-lg bg-black/60 border border-slate-800 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
-          <img src="https://api.vorta.tech/logo/microdrama.png" alt="MicroDrama" class="w-4 h-4 object-contain rounded">
+          <img src="/img/platforms/microdrama.png" alt="MicroDrama" class="w-4 h-4 object-contain rounded" referrerpolicy="no-referrer">
         </span>
         <span class="group-hover:text-white transition">MicroDrama</span>
       </button>
@@ -103,7 +92,7 @@
               id="source-card-mydrama"
               class="platform-select-btn group cursor-pointer px-3.5 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2.5 {{if eq $.CurrentSource "mydrama"}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
         <span class="w-6 h-6 rounded-lg bg-black/60 border border-slate-800 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
-          <img src="https://api.vorta.tech/logo/mydrama.png" alt="My Drama" class="w-4 h-4 object-contain rounded">
+          <img src="/img/platforms/mydrama.png" alt="My Drama" class="w-4 h-4 object-contain rounded" referrerpolicy="no-referrer">
         </span>
         <span class="group-hover:text-white transition">My Drama</span>
       </button>
