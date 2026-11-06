@@ -825,9 +825,41 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Related movies
+	// Related movies: Sesuaikan dengan tipe konten (Drama Pendek vs Film/Anime)
 	var related []model.Movie
-	s.db.Preload("Genres").Where("id <> ?", movie.ID).Order("rating desc, id desc").Limit(6).Find(&related)
+	if movie.Type == "drama_pendek" {
+		// Prioritaskan drama pendek dengan genre sama atau platform sama, diurutkan trending (views / rating)
+		var genreIDs []uint
+		for _, g := range movie.Genres {
+			genreIDs = append(genreIDs, g.ID)
+		}
+		relQuery := s.db.Preload("Genres").Where("type = ? AND id <> ?", "drama_pendek", movie.ID)
+		if len(genreIDs) > 0 {
+			relQuery = relQuery.Joins("LEFT JOIN movie_genres ON movie_genres.movie_id = movies.id").
+				Where("movie_genres.genre_id IN (?) OR source_website = ?", genreIDs, movie.SourceWebsite).
+				Distinct()
+		} else if movie.SourceWebsite != "" {
+			relQuery = relQuery.Where("source_website = ?", movie.SourceWebsite)
+		}
+		relQuery.Order("views desc, rating desc, id desc").Limit(6).Find(&related)
+
+		// Fallback jika belum cukup 6
+		if len(related) < 6 {
+			var extra []model.Movie
+			excludeIDs := []uint{movie.ID}
+			for _, rM := range related {
+				excludeIDs = append(excludeIDs, rM.ID)
+			}
+			s.db.Preload("Genres").Where("type = ? AND id NOT IN (?)", "drama_pendek", excludeIDs).
+				Order("views desc, rating desc, id desc").Limit(6 - len(related)).Find(&extra)
+			related = append(related, extra...)
+		}
+	} else {
+		s.db.Preload("Genres").Where("id <> ? AND type = ?", movie.ID, movie.Type).Order("rating desc, id desc").Limit(6).Find(&related)
+		if len(related) == 0 {
+			s.db.Preload("Genres").Where("id <> ?", movie.ID).Order("rating desc, id desc").Limit(6).Find(&related)
+		}
+	}
 
 	var genres []model.Genre
 	s.db.Find(&genres)
