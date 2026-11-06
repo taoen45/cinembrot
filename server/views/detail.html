@@ -65,8 +65,12 @@
       {{if .Movie.Tagline}}<p class="text-brand-500 italic text-sm mb-3">"{{.Movie.Tagline}}"</p>{{end}}
 
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-slate-600 dark:text-slate-300 my-4 bg-slate-50 dark:bg-dark-950 p-3.5 rounded-xl border border-slate-200 dark:border-dark-800">
+        {{if and .Movie.DurationFormatted (ne .Movie.DurationFormatted "0 Episodes") (ne .Movie.DurationFormatted "0 Menit") (ne .Movie.DurationFormatted "0 min")}}
         <div><span class="text-slate-400 dark:text-slate-500 font-semibold">{{t $.Lang "detail.duration"}}:</span> {{.Movie.DurationFormatted}}</div>
+        {{end}}
+        {{if .Movie.AgeRating}}
         <div><span class="text-slate-400 dark:text-slate-500 font-semibold">Rating:</span> {{.Movie.AgeRating}}</div>
+        {{end}}
         <div><span class="text-slate-400 dark:text-slate-500 font-semibold">{{t $.Lang "detail.country"}}:</span> 
           {{if eq .Movie.Type "drama_pendek"}}
             {{if eq .Movie.SourceWebsite "reelshort"}}Amerika Serikat{{else if eq .Movie.SourceWebsite "mydrama"}}Internasional{{else if .Movie.Country}}{{.Movie.Country}}{{else}}Internasional{{end}}
@@ -121,6 +125,17 @@
       </div>
       
       <div class="flex items-center gap-2">
+        <!-- PILIHAN BAHASA / SUBTITLE (API /api/v2/languages) -->
+        {{if .SupportedLanguages}}
+        <div class="flex items-center gap-1.5 bg-cyan-950/50 px-2.5 py-1 rounded-lg border border-cyan-700/50 text-xs" title="Ganti bahasa subtitle">
+          <i class="fa-solid fa-closed-captioning text-cyan-400"></i>
+          <select id="drama-lang-select" onchange="changeDramaLanguage(this.value)" class="bg-transparent text-slate-100 font-bold focus:outline-none cursor-pointer max-w-[150px]">
+            {{range .SupportedLanguages}}
+            <option value="{{.Code}}" class="bg-slate-900 text-slate-200" {{if eq .Code "id"}}selected{{end}}>{{.Flag}} {{.Native}}</option>
+            {{end}}
+          </select>
+        </div>
+        {{end}}
         <!-- TOMBOL FULLSCREEN PLAYER -->
         <button type="button" id="btn-fullscreen-player" onclick="togglePlayerFullScreen()" class="text-xs text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1.5 transition px-3 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-700/60 cursor-pointer shadow-xs active:scale-95" title="Nonton Layar Penuh (Fullscreen)">
           <i id="icon-fullscreen-player" class="fa-solid fa-expand text-xs"></i>
@@ -286,19 +301,7 @@
           </span>
         </div>
 
-        <div class="flex items-center gap-2">
-          <!-- PILIHAN BAHASA / SUBTITLE (API /api/v2/languages) -->
-          {{if .SupportedLanguages}}
-          <div class="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-800 text-xs">
-            <i class="fa-solid fa-language text-cyan-400 text-sm"></i>
-            <select id="drama-lang-select" onchange="changeDramaLanguage(this.value)" class="bg-transparent text-slate-200 font-bold focus:outline-none cursor-pointer">
-              {{range .SupportedLanguages}}
-              <option value="{{.Code}}" class="bg-slate-900 text-slate-200" {{if eq .Code "id"}}selected{{end}}>{{.Flag}} {{.Native}} ({{.Label}})</option>
-              {{end}}
-            </select>
-          </div>
-          {{end}}
-        </div>
+
       </div>
       
       <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-700" style="-webkit-overflow-scrolling: touch;">
@@ -766,6 +769,7 @@
     let currentServerIndex = 0;
     let currentEpisodeNumber = 1;
     let currentDramaLang = 'id';
+    let pendingSeekTime = 0;
     let currentHls = null;
     let nextEpisodeTimer = null;
     let countdownRemaining = 3;
@@ -845,6 +849,10 @@
           currentHls.loadSource(url);
           currentHls.attachMedia(hlsVideo);
           currentHls.on(window.Hls.Events.MANIFEST_PARSED, function() {
+            if (pendingSeekTime > 0) {
+              hlsVideo.currentTime = pendingSeekTime;
+              pendingSeekTime = 0;
+            }
             hlsVideo.play().catch(function() {});
           });
           currentHls.on(window.Hls.Events.BUFFER_EOS, function() {
@@ -930,6 +938,7 @@
     }
 
     function switchEpisode(epNumOrBtn) {
+      pendingSeekTime = 0;
       if (typeof window.setCinembrotAdCooldown === 'function') {
         window.setCinembrotAdCooldown(5);
       }
@@ -1016,6 +1025,8 @@
 
       // 2. Selalu panggil API episode untuk drama pendek agar server Vorta mengembalikan stream / track bahasa yang dipilih
       if (isDramaPendek) {
+        // Simpan posisi tonton agar ganti bahasa tidak mengulang dari awal
+        pendingSeekTime = (hlsVideo && hlsVideo.currentTime > 1) ? hlsVideo.currentTime : 0;
         fetchDramaEpisodeStream(currentEpisodeNumber, lang);
       }
     }

@@ -986,14 +986,18 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 	var episodesList []int
 	if movie.Type == "anime" || movie.Type == "drama_pendek" || movie.Type == "series" {
 		totalEps := embed.ExtractEpisodeCount(&movie)
-		if totalEps < 1 {
-			totalEps = 1
-		}
-		if totalEps > 100 {
-			totalEps = 100 // Safe upper bound for UI display
-		}
-		for ep := 1; ep <= totalEps; ep++ {
-			episodesList = append(episodesList, ep)
+		if movie.Type == "drama_pendek" && totalEps <= 0 {
+			// Jika informasi episode tidak diketahui, jangan buat tombol episode dummy
+		} else {
+			if totalEps < 1 {
+				totalEps = 1
+			}
+			if totalEps > 150 {
+				totalEps = 150 // Safe upper bound for UI display
+			}
+			for ep := 1; ep <= totalEps; ep++ {
+				episodesList = append(episodesList, ep)
+			}
 		}
 	}
 
@@ -1057,13 +1061,9 @@ func (s *Server) HandleMovieDetail(w http.ResponseWriter, r *http.Request) {
 
 	var supportedLanguages []vorta.LanguageItem
 	if movie.Type == "drama_pendek" && movie.SourceWebsite != "" {
-		// Pilihan bahasa hanya dimunculkan jika platform tersebut mendukung subtitle WebVTT terpisah
-		// (Platform seperti ReelShort/MicroDrama menggunakan video hardsub bahasa Indonesia langsung)
-		if strings.EqualFold(movie.SourceWebsite, "mydrama") {
-			vClient := vorta.NewClient()
-			if langs, err := vClient.GetLanguages(movie.SourceWebsite); err == nil && len(langs) > 0 {
-				supportedLanguages = langs
-			}
+		vClient := vorta.NewClient()
+		if langs, err := vClient.GetLanguages(movie.SourceWebsite); err == nil && len(langs) > 0 {
+			supportedLanguages = langs
 		}
 	}
 

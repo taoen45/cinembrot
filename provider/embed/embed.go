@@ -102,16 +102,30 @@ func ExtractEpisodeCount(movie *model.Movie) int {
 		}
 	}
 
-	// 2. From Tagline: "Anime TV • 24 Episodes • Skor 8.5/10"
-	reEps := regexp.MustCompile(`(\d+)\s+Episodes?`)
+	// 2. From DurationFormatted: "37 Episodes", "80 Episodes", etc.
+	reEps := regexp.MustCompile(`(?i)(\d+)\s+Episodes?`)
+	if movie.DurationFormatted != "" {
+		if matches := reEps.FindStringSubmatch(movie.DurationFormatted); len(matches) > 1 {
+			if eps, err := strconv.Atoi(matches[1]); err == nil && eps > 0 {
+				return eps
+			}
+		}
+	}
+
+	// 3. From Tagline: "Anime TV • 24 Episodes • Skor 8.5/10"
 	if matches := reEps.FindStringSubmatch(movie.Tagline); len(matches) > 1 {
 		if eps, err := strconv.Atoi(matches[1]); err == nil && eps > 0 {
 			return eps
 		}
 	}
 
-	// Default for ongoing / unspecified anime or drama
-	if movie.Type == "anime" || movie.Type == "drama_pendek" || movie.Type == "series" {
+	// Jika drama pendek tidak memiliki informasi episode yang jelas, jangan buat dummy 12
+	if movie.Type == "drama_pendek" {
+		return 0
+	}
+
+	// Default for ongoing / unspecified anime or regular TV series
+	if movie.Type == "anime" || movie.Type == "series" {
 		return 12
 	}
 

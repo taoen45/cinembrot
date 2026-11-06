@@ -11,6 +11,8 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 )
 
@@ -382,8 +384,25 @@ type LanguagesResponse struct {
 	Data     []LanguageItem `json:"data"`
 }
 
-// GetLanguages mengambil daftar bahasa resmi dari platform tertentu
+var (
+	langsCacheMutex sync.RWMutex
+	langsCache      = make(map[string][]LanguageItem)
+)
+
+// GetLanguages mengambil daftar bahasa resmi dari platform tertentu (dengan in-memory caching)
 func (c *Client) GetLanguages(platform string) ([]LanguageItem, error) {
+	platform = strings.ToLower(strings.TrimSpace(platform))
+	if platform == "" {
+		return nil, nil
+	}
+
+	langsCacheMutex.RLock()
+	if cached, ok := langsCache[platform]; ok && len(cached) > 0 {
+		langsCacheMutex.RUnlock()
+		return cached, nil
+	}
+	langsCacheMutex.RUnlock()
+
 	path := fmt.Sprintf("/api/v2/languages?category_p=%s", url.QueryEscape(platform))
 	body, err := c.executeRequest("GET", path)
 	if err != nil {
@@ -394,6 +413,10 @@ func (c *Client) GetLanguages(platform string) ([]LanguageItem, error) {
 	if err := json.Unmarshal(body, &res); err != nil {
 		return nil, fmt.Errorf("gagal unmarshal languages: %w", err)
 	}
+
+	langsCacheMutex.Lock()
+	langsCache[platform] = res.Data
+	langsCacheMutex.Unlock()
 
 	return res.Data, nil
 }
