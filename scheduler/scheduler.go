@@ -11,6 +11,7 @@ import (
 	"cinembrot/config"
 	"cinembrot/model"
 	"cinembrot/pipeline"
+	"cinembrot/provider/vorta"
 	"cinembrot/scraper"
 	"gorm.io/gorm"
 )
@@ -102,7 +103,10 @@ func (s *AutoScraper) Start() {
 	// 1. Pengawas Jadwal Harian Tetap (Pukul 05:00 & 17:00 WIB)
 	s.startDailyFixedScheduler()
 
-	// 2. Interval Auto-Scraper umum
+	// 2. Pengawas Sinkronisasi Mingguan Platform Drama Pendek (/api/v2/categories)
+	s.startWeeklyCategorySyncScheduler()
+
+	// 3. Interval Auto-Scraper umum
 	go func() {
 		// Run initial check after 10 seconds of startup
 		time.Sleep(10 * time.Second)
@@ -407,5 +411,108 @@ func (s *AutoScraper) RunDailyCatchupCycle(targetYear int) (int, error) {
 		"SUCCESS", totalIngested, "", duration)
 
 	return totalIngested, nil
+}
+
+// startWeeklyCategorySyncScheduler menjalankan sinkronisasi platform /api/v2/categories sekali seminggu (setiap Senin 03:00 WIB)
+// serta melakukan pengecekan awal saat startup jika tabel drama_categories masih kosong.
+func (s *AutoScraper) startWeeklyCategorySyncScheduler() {
+	go func() {
+		// Pengecekan awal saat startup: jika tabel masih kosong, sync segera
+		time.Sleep(15 * time.Second)
+		var count int64
+		if s.db != nil {
+			s.db.Model(&model.DramaCategory{}).Count(&count)
+			if count == 0 {
+				log.Println("[WEEKLY-SYNC] 🚀 Tabel drama_categories kosong, menjalankan initial sync /api/v2/categories...")
+				if _, err := SyncDramaCategories(s.db); err != nil {
+					log.Printf("[WEEKLY-SYNC] Initial sync error: %v\n", err)
+				}
+			}
+		}
+
+		for {
+			loc, err := time.LoadLocation("Asia/Jakarta")
+			if err != nil {
+				loc = time.FixedZone("WIB", 7*3600)
+			}
+			now := time.Now().In(loc)
+
+			// Target: Setiap hari Senin pukul 03:00 WIB
+			target := time.Date(now.Year(), now.Month(), now.Day(), 3, 0, 0, 0, loc)
+			daysUntilMonday := (int(time.Monday) - int(now.Weekday()) + 7) % 7
+			if daysUntilMonday == 0 && now.After(target) {
+				daysUntilMonday = 7
+			}
+			target = target.AddDate(0, 0, daysUntilMonday)
+
+			sleepDuration := target.Sub(now)
+			log.Printf("[WEEKLY-SYNC] 📅 Jadwal sinkronisasi mingguan platform drama berikutnya: %s (%v lagi)\n",
+				target.Format("2006-01-02 15:04:05 MST"), sleepDuration.Round(time.Minute))
+
+			select {
+			case <-time.After(sleepDuration):
+				log.Println("[WEEKLY-SYNC] 🔄 Menjalankan sinkronisasi mingguan platform drama dari /api/v2/categories...")
+				if updated, err := SyncDramaCategories(s.db); err != nil {
+					log.Printf("[WEEKLY-SYNC] ⚠️ Gagal sinkronisasi mingguan platform: %v\n", err)
+				} else {
+					log.Printf("[WEEKLY-SYNC] ✅ Berhasil memperbarui %d platform drama di database.\n", updated)
+				}
+			case <-s.stopChan:
+				return
+			}
+		}
+	}()
+}
+
+// SyncDramaCategories mengambil data platform resmi dari /api/v2/categories dan menyimpannya ke MariaDB
+func SyncDramaCategories(db *gorm.DB) (int, error) {
+	if db == nil {
+		return 0, fmt.Errorf("database connection is nil")
+	}
+
+	client := vorta.NewClient()
+	cats, err := client.GetCategories()
+	if err != nil {
+		return 0, fmt.Errorf("gagal memanggil /api/v2/categories: %w", err)
+	}
+
+	if len(cats) == 0 {
+		return 0, nil
+	}
+
+	updatedCount := 0
+	for _, c := range cats {
+		var existing model.DramaCategory
+		err := db.Where("name = ?", c.Name).First(&existing).Error
+		if err != nil {
+			// Insert record baru
+			newCat := model.DramaCategory{
+				ExternalID:  c.ID,
+				Name:        c.Name,
+				DisplayName: c.DisplayName,
+				LogoURL:     c.LogoURL,
+				Order:       c.Order,
+				IsActive:    c.IsActive,
+				Is18Plus:    c.Is18Plus,
+			}
+			if err := db.Create(&newCat).Error; err == nil {
+				updatedCount++
+			}
+		} else {
+			// Update data yang ada
+			existing.ExternalID = c.ID
+			existing.DisplayName = c.DisplayName
+			existing.LogoURL = c.LogoURL
+			existing.Order = c.Order
+			existing.IsActive = c.IsActive
+			existing.Is18Plus = c.Is18Plus
+			if err := db.Save(&existing).Error; err == nil {
+				updatedCount++
+			}
+		}
+	}
+
+	log.Printf("[VORTA-CATEGORIES] Berhasil menyimpan %d platform resmi ke database MariaDB.\n", updatedCount)
+	return updatedCount, nil
 }
 

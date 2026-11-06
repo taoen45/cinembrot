@@ -78,13 +78,6 @@ func main() {
 	// CLI Scheduler Harian Lengkap (05:00 & 17:00 WIB)
 	dailyScrape := flag.Bool("daily-scrape", false, "Jalankan 1 siklus lengkap scraper harian (Anime On-Going, Drama Asia, Hollywood, TMDb, YTS) untuk tahun sekarang")
 
-	// CLI Scraper Drama Pendek Sopan (Vorta Stealth Mode Anti-Ban)
-	scrapeShortDrama := flag.Bool("scrape-short-drama", false, "Scrape drama pendek dari platform Vorta secara sopan dengan jeda acak dan rotasi platform anti-bot")
-	shortLimit := flag.Int("short-limit", 1, "Batas jumlah judul drama pendek yang diambil (default 1 judul)")
-	shortMinDelay := flag.Int("short-min-delay", 5, "Durasi jeda acak minimal dalam detik (default 5 detik)")
-	shortMaxDelay := flag.Int("short-max-delay", 15, "Durasi jeda acak maksimal dalam detik (default 15 detik)")
-	shortPlatforms := flag.String("short-platforms", "melolo,dramabox,shortmax,storyreel,vibeshort,dramaverse", "Daftar platform dipisahkan koma yang dirotasi secara acak (melolo, dramabox, shortmax, storyreel, vibeshort, dramaverse)")
-
 	flag.Parse()
 
 	fmt.Println("================================================================")
@@ -409,28 +402,6 @@ func main() {
 			log.Printf("[ERROR] Siklus scraper harian gagal: %v\n", err)
 		} else {
 			fmt.Printf("\n[SUCCESS] Berhasil! Total %d konten baru/diperbarui untuk tahun %d.\n", count, targetYear)
-		}
-		printDatabaseStats(db)
-		return
-	}
-
-	if *scrapeShortDrama {
-		var platforms []string
-		for _, p := range strings.Split(*shortPlatforms, ",") {
-			p = strings.TrimSpace(p)
-			if p != "" {
-				platforms = append(platforms, p)
-			}
-		}
-		opts := pipeline.StealthOptions{
-			MinDelaySec: *shortMinDelay,
-			MaxDelaySec: *shortMaxDelay,
-			Platforms:   platforms,
-			Limit:       *shortLimit,
-		}
-		fmt.Println("\n[ACTION] 🎭 Menjalankan Scraper Drama Pendek Sopan (Stealth Mode Anti-Ban)...")
-		if err := pipeline.IngestDramaShortPolite(db, repo, opts); err != nil {
-			log.Printf("[ERROR] Scraper drama pendek gagal: %v\n", err)
 		}
 		printDatabaseStats(db)
 		return

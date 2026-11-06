@@ -69,6 +69,7 @@ func InitDB(cfg *config.Config) (*gorm.DB, error) {
 		&model.ScrapeSource{},
 		&model.SystemSetting{},
 		&model.TorrentTask{},
+		&model.DramaCategory{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to auto-migrate tables: %w", err)

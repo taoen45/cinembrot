@@ -25,7 +25,7 @@
 
 <!-- ==================== 2. PLATFORM DRAMA PENDEK ==================== -->
 <div class="mb-6 bg-slate-900/90 dark:bg-dark-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg backdrop-blur-xs">
-  <!-- PLATFORM PILL BUTTONS: ICON + TITLE SAJA -->
+  <!-- PLATFORM PILL BUTTONS: ICON + TITLE SAJA (SUMBER DATABASE VIA API /api/v2/categories) -->
   <div class="flex flex-wrap items-center gap-2.5">
     
     <!-- SEMUA SUMBER -->
@@ -39,144 +39,78 @@
       <span>Semua Sumber</span>
     </button>
     
-    <!-- MELOSHORT -->
-    <button type="button"
-            onclick="selectPlatformSource('melolo')" 
-            id="source-card-melolo"
-            class="platform-select-btn group cursor-pointer px-3.5 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2.5 {{if or (eq $.CurrentSource "melolo") (eq $.CurrentSource "meloshort")}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
-      <span class="w-6 h-6 rounded-lg bg-black/60 border border-slate-800 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
-        <!-- MeloShort SVG Brand Icon (M stylized gradient) -->
-        <svg viewBox="0 0 32 32" class="w-4 h-4" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="32" height="32" rx="6" fill="#18181B"/>
-          <path d="M7 23V9L13 17L19 9V23" stroke="url(#melo_grad)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-          <defs>
-            <linearGradient id="melo_grad" x1="7" y1="9" x2="19" y2="23" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#FF2E74"/>
-              <stop offset="1" stop-color="#00F2FE"/>
-            </linearGradient>
-          </defs>
-        </svg>
-      </span>
-      <span class="group-hover:text-white transition">MeloShort</span>
-    </button>
+    {{if .DramaCategories}}
+      {{range .DramaCategories}}
+      <button type="button"
+              onclick="selectPlatformSource('{{.Name}}')" 
+              id="source-card-{{.Name}}"
+              class="platform-select-btn group cursor-pointer px-3.5 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2.5 {{if or (eq $.CurrentSource .Name) (and (eq .Name "meloshort") (eq $.CurrentSource "melolo"))}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
+        <span class="w-6 h-6 rounded-lg bg-black/60 border border-slate-800 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+          {{if .LogoURL}}
+            <img src="{{.LogoURL}}" alt="{{.DisplayName}}" class="w-4 h-4 object-contain rounded" loading="lazy" onerror="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');">
+            <span class="hidden text-xs text-amber-400"><i class="fa-solid fa-play"></i></span>
+          {{else}}
+            <span class="text-xs text-cyan-400"><i class="fa-solid fa-film"></i></span>
+          {{end}}
+        </span>
+        <span class="group-hover:text-white transition">{{.DisplayName}}</span>
+      </button>
+      {{end}}
+    {{else}}
+      <!-- FALLBACK JIKA DATABASE BELUM DI-SEED/DI-SYNC -->
+      <button type="button"
+              onclick="selectPlatformSource('reelshort')" 
+              id="source-card-reelshort"
+              class="platform-select-btn group cursor-pointer px-3.5 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2.5 {{if eq $.CurrentSource "reelshort"}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
+        <span class="w-6 h-6 rounded-lg bg-black/60 border border-slate-800 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+          <img src="https://api.vorta.tech/logo/reelshort.png" alt="ReelShort" class="w-4 h-4 object-contain rounded">
+        </span>
+        <span class="group-hover:text-white transition">ReelShort</span>
+      </button>
 
-    <!-- REELSHORT -->
-    <button type="button"
-            onclick="selectPlatformSource('reelshort')" 
-            id="source-card-reelshort"
-            class="platform-select-btn group cursor-pointer px-3.5 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2.5 {{if eq $.CurrentSource "reelshort"}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
-      <span class="w-6 h-6 rounded-lg bg-black/60 border border-slate-800 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
-        <!-- ReelShort SVG Brand Icon (Crimson R with TV tag) -->
-        <svg viewBox="0 0 32 32" class="w-4 h-4" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="32" height="32" rx="6" fill="#E11D48"/>
-          <path d="M10 23V9H17C19.2091 9 21 10.7909 21 13C21 15.2091 19.2091 17 17 17H10" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
-          <path d="M16 17L21 23" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
-          <text x="20" y="8" fill="white" font-size="5" font-weight="900" font-family="sans-serif">TV</text>
-        </svg>
-      </span>
-      <span class="group-hover:text-white transition">ReelShort</span>
-    </button>
+      <button type="button"
+              onclick="selectPlatformSource('meloshort')" 
+              id="source-card-meloshort"
+              class="platform-select-btn group cursor-pointer px-3.5 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2.5 {{if or (eq $.CurrentSource "meloshort") (eq $.CurrentSource "melolo")}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
+        <span class="w-6 h-6 rounded-lg bg-black/60 border border-slate-800 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+          <img src="https://api.vorta.tech/logo/meloshort.png" alt="MeloShort" class="w-4 h-4 object-contain rounded">
+        </span>
+        <span class="group-hover:text-white transition">MeloShort</span>
+      </button>
 
-    <!-- SHORTMAX -->
-    <button type="button"
-            onclick="selectPlatformSource('shortmax')" 
-            id="source-card-shortmax"
-            class="platform-select-btn group cursor-pointer px-3.5 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2.5 {{if eq $.CurrentSource "shortmax"}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
-      <span class="w-6 h-6 rounded-lg bg-black/60 border border-slate-800 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
-        <!-- ShortMax SVG Brand Icon (S badge) -->
-        <svg viewBox="0 0 32 32" class="w-4 h-4" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="32" height="32" rx="6" fill="#EA580C"/>
-          <path d="M21 12C21 10.3431 19.6569 9 18 9H13C11.3431 9 10 10.3431 10 12C10 13.6569 11.3431 15 13 15H19C20.6569 15 22 16.3431 22 18C22 19.6569 20.6569 21 19 21H13C11.3431 21 10 19.6569 10 18" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
-        </svg>
-      </span>
-      <span class="group-hover:text-white transition">ShortMax</span>
-    </button>
+      <button type="button"
+              onclick="selectPlatformSource('stardusttv')" 
+              id="source-card-stardusttv"
+              class="platform-select-btn group cursor-pointer px-3.5 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2.5 {{if eq $.CurrentSource "stardusttv"}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
+        <span class="w-6 h-6 rounded-lg bg-black/60 border border-slate-800 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+          <img src="https://api.vorta.tech/logo/stardusttv.png" alt="StardustTV" class="w-4 h-4 object-contain rounded">
+        </span>
+        <span class="group-hover:text-white transition">StardustTV</span>
+      </button>
 
-    <!-- DRAMABOX -->
-    <button type="button"
-            onclick="selectPlatformSource('dramabox')" 
-            id="source-card-dramabox"
-            class="platform-select-btn group cursor-pointer px-3.5 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2.5 {{if eq $.CurrentSource "dramabox"}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
-      <span class="w-6 h-6 rounded-lg bg-black/60 border border-slate-800 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
-        <!-- DramaBox SVG Brand Icon (Red box with play triangle) -->
-        <svg viewBox="0 0 32 32" class="w-4 h-4" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="32" height="32" rx="6" fill="#E11D48"/>
-          <path d="M12 10L22 16L12 22V10Z" fill="white"/>
-        </svg>
-      </span>
-      <span class="group-hover:text-white transition">DramaBox</span>
-    </button>
+      <button type="button"
+              onclick="selectPlatformSource('microdrama')" 
+              id="source-card-microdrama"
+              class="platform-select-btn group cursor-pointer px-3.5 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2.5 {{if eq $.CurrentSource "microdrama"}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
+        <span class="w-6 h-6 rounded-lg bg-black/60 border border-slate-800 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+          <img src="https://api.vorta.tech/logo/microdrama.png" alt="MicroDrama" class="w-4 h-4 object-contain rounded">
+        </span>
+        <span class="group-hover:text-white transition">MicroDrama</span>
+      </button>
 
-    <!-- MICRODRAMA -->
-    <button type="button"
-            onclick="selectPlatformSource('microdrama')" 
-            id="source-card-microdrama"
-            class="platform-select-btn group cursor-pointer px-3.5 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2.5 {{if eq $.CurrentSource "microdrama"}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
-      <span class="w-6 h-6 rounded-lg bg-black/60 border border-slate-800 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
-        <!-- MicroDrama SVG Brand Icon (Play gradient icon) -->
-        <svg viewBox="0 0 32 32" class="w-4 h-4" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="32" height="32" rx="6" fill="#18181B"/>
-          <path d="M11 9L23 16L11 23V9Z" fill="url(#micro_grad)"/>
-          <defs>
-            <linearGradient id="micro_grad" x1="11" y1="9" x2="23" y2="23" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#FF512F"/>
-              <stop offset="0.5" stop-color="#F09819"/>
-              <stop offset="1" stop-color="#7000FF"/>
-            </linearGradient>
-          </defs>
-        </svg>
-      </span>
-      <span class="group-hover:text-white transition">MicroDrama</span>
-    </button>
-
-    <!-- STARDUSTTV -->
-    <button type="button"
-            onclick="selectPlatformSource('stardusttv')" 
-            id="source-card-stardusttv"
-            class="platform-select-btn group cursor-pointer px-3.5 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2.5 {{if eq $.CurrentSource "stardusttv"}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
-      <span class="w-6 h-6 rounded-lg bg-black/60 border border-slate-800 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
-        <!-- StardustTV SVG Brand Icon (Pink/Magenta Star-A glyph) -->
-        <svg viewBox="0 0 32 32" class="w-4 h-4" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="32" height="32" rx="6" fill="#DB2777"/>
-          <path d="M16 8L22 22H18.5L16 16.5L13.5 22H10L16 8Z" fill="white"/>
-        </svg>
-      </span>
-      <span class="group-hover:text-white transition">StardustTV</span>
-    </button>
-
-    <!-- MYDRAMA -->
-    <button type="button"
-            onclick="selectPlatformSource('mydrama')" 
-            id="source-card-mydrama"
-            class="platform-select-btn group cursor-pointer px-3.5 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2.5 {{if eq $.CurrentSource "mydrama"}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
-      <span class="w-6 h-6 rounded-lg bg-black/60 border border-slate-800 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
-        <!-- MyDrama SVG Brand Icon (Purple pill with heart D) -->
-        <svg viewBox="0 0 32 32" class="w-4 h-4" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="32" height="32" rx="6" fill="#6366F1"/>
-          <path d="M10 10V22H15C18.3137 22 21 19.3137 21 16C21 12.6863 18.3137 10 15 10H10Z" stroke="white" stroke-width="2.5"/>
-          <path d="M15 14C14.4477 14 14 14.4477 14 15C14 16.5 16 17.5 16 17.5C16 17.5 18 16.5 18 15C18 14.4477 17.5523 14 17 14C16.5 14 16 14.5 16 14.5C16 14.5 15.5 14 15 14Z" fill="#F43F5E"/>
-        </svg>
-      </span>
-      <span class="group-hover:text-white transition">MyDrama</span>
-    </button>
-
-    <!-- STORYREEL -->
-    <button type="button"
-            onclick="selectPlatformSource('storyreel')" 
-            id="source-card-storyreel"
-            class="platform-select-btn group cursor-pointer px-3.5 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2.5 {{if eq $.CurrentSource "storyreel"}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
-      <span class="w-6 h-6 rounded-lg bg-black/60 border border-slate-800 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
-        <svg viewBox="0 0 32 32" class="w-4 h-4" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="32" height="32" rx="6" fill="#D946EF"/>
-          <path d="M17 7L10 17H16L15 25L22 15H16L17 7Z" fill="white"/>
-        </svg>
-      </span>
-      <span class="group-hover:text-white transition">StoryReel</span>
-    </button>
+      <button type="button"
+              onclick="selectPlatformSource('mydrama')" 
+              id="source-card-mydrama"
+              class="platform-select-btn group cursor-pointer px-3.5 py-2 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2.5 {{if eq $.CurrentSource "mydrama"}}bg-cyan-500/20 text-cyan-300 border-cyan-400/80 ring-1 ring-cyan-400/50 shadow-md shadow-cyan-900/30{{else}}bg-slate-950/70 hover:bg-slate-800/80 text-slate-300 border-slate-800 hover:border-slate-700{{end}}">
+        <span class="w-6 h-6 rounded-lg bg-black/60 border border-slate-800 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+          <img src="https://api.vorta.tech/logo/mydrama.png" alt="My Drama" class="w-4 h-4 object-contain rounded">
+        </span>
+        <span class="group-hover:text-white transition">My Drama</span>
+      </button>
+    {{end}}
 
   </div>
 </div>
-
 <!-- ==================== 3. FILTER BAR ==================== -->
 <div class="mb-8 bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-800 rounded-2xl p-5 shadow-sm transition-colors">
   <div class="flex items-center justify-between mb-4">

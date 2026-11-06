@@ -43,6 +43,7 @@ type PageData struct {
 	Years                  []int
 	Countries              []string
 	Categories             []string
+	DramaCategories        []model.DramaCategory
 	CurrentYear            int
 	CurrentGenre           string
 	CurrentCountry         string
@@ -764,6 +765,10 @@ func (s *Server) HandleDramaPendek(w http.ResponseWriter, r *http.Request) {
 		countries = []string{"China", "Korea Selatan", "Indonesia", "Thailand"}
 	}
 
+	// Ambil daftar kategori/platform resmi yang tersimpan di database MariaDB (hasil sync mingguan API)
+	var dramaCategories []model.DramaCategory
+	s.db.Where("is_active = ?", true).Order("`order` asc, id asc").Find(&dramaCategories)
+
 	data := PageData{
 		Lang:            i18n.GetLang(r),
 		Title:           "Serial Drama Pendek & Mini Series Sub Indo Lengkap HD",
@@ -773,6 +778,7 @@ func (s *Server) HandleDramaPendek(w http.ResponseWriter, r *http.Request) {
 		Genres:          genres,
 		Years:           years,
 		Countries:       countries,
+		DramaCategories: dramaCategories,
 		CurrentGenre:    genreStr,
 		CurrentCountry:  countryStr,
 		CurrentSort:     sortStr,

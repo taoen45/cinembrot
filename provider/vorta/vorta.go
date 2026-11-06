@@ -121,7 +121,9 @@ type CategoryItem struct {
 	Name        string `json:"name"`
 	DisplayName string `json:"display_name"`
 	LogoURL     string `json:"logo_url"`
+	Order       int    `json:"order"`
 	IsActive    bool   `json:"is_active"`
+	Is18Plus    bool   `json:"is_18_plus"`
 }
 
 type CategoriesResponse struct {

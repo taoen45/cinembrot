@@ -378,3 +378,18 @@ type TorrentTask struct {
 	UpdatedAt          time.Time      `json:"updated_at"`
 	DeletedAt          gorm.DeletedAt `gorm:"index" json:"-"`
 }
+
+// DramaCategory represents short drama streaming platforms cached from API (/api/v2/categories)
+type DramaCategory struct {
+	ID          uint           `gorm:"primaryKey" json:"id"`
+	ExternalID  int            `gorm:"index" json:"external_id"`
+	Name        string         `gorm:"size:100;uniqueIndex;not null" json:"name"` // e.g. "reelshort", "meloshort"
+	DisplayName string         `gorm:"size:150;not null" json:"display_name"`     // e.g. "ReelShort", "MeloShort"
+	LogoURL     string         `gorm:"size:500" json:"logo_url"`
+	Order       int            `gorm:"default:0" json:"order"`
+	IsActive    bool           `gorm:"default:true;index" json:"is_active"`
+	Is18Plus    bool           `gorm:"default:false" json:"is_18_plus"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
+}
