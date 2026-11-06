@@ -148,21 +148,36 @@
         <p class="text-white text-xs text-center p-4">Browser Anda tidak mendukung pemutaran video HTML5.</p>
       </video>
 
-      <!-- OVERLAY OTOMATIS: LANJUT KE EPISODE BERIKUTNYA -->
-      <div id="next-episode-overlay" class="absolute inset-0 bg-black/85 backdrop-blur-xs flex flex-col items-center justify-center p-6 text-center z-30 hidden transition-all duration-300">
-        <div class="w-14 h-14 rounded-full bg-purple-600/20 text-purple-400 flex items-center justify-center text-2xl mb-3 shadow-lg border border-purple-500/30">
-          <i class="fa-solid fa-forward-step animate-pulse"></i>
+      <!-- OVERLAY PLAYER SETELAH VIDEO SELESAI: HITUNG MUNDUR & TOMBOL PREV/NEXT -->
+      <div id="next-episode-overlay" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-30 hidden transition-all duration-300">
+        <div class="w-16 h-16 rounded-2xl bg-purple-600/20 text-purple-400 flex items-center justify-center text-3xl mb-3 shadow-xl border border-purple-500/30">
+          <i class="fa-solid fa-circle-play animate-pulse text-purple-400"></i>
         </div>
-        <h3 class="text-lg font-black text-white mb-1">Episode Selesai</h3>
-        <p class="text-xs text-slate-300 mb-4 max-w-sm">
-          Memutar <span id="overlay-next-ep-title" class="text-purple-400 font-bold">Episode Berikutnya</span> otomatis dalam <span id="overlay-countdown" class="text-amber-400 font-black text-sm">3</span> detik...
+        <h3 class="text-xl font-black text-white mb-1">Episode Selesai</h3>
+        <p class="text-xs text-slate-300 mb-5 max-w-sm">
+          Melanjutkan ke <span id="overlay-next-ep-title" class="text-purple-400 font-bold">Episode Berikutnya</span> otomatis dalam <span id="overlay-countdown" class="text-amber-400 font-black text-base">5</span> detik...
         </p>
-        <div class="flex items-center gap-3">
-          <button type="button" onclick="cancelNextEpisodeCountdown()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition">
+
+        <!-- KONTROL NAVIGASI PREV, BATAL & NEXT DI TAMPILAN PLAYER SELESAI -->
+        <div class="flex items-center gap-2.5">
+          <button type="button" 
+                  id="overlay-btn-prev"
+                  onclick="overlayStepEpisode(-1)" 
+                  class="px-4 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition border border-slate-700 flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+            <i class="fa-solid fa-backward-step text-xs"></i> <span>Episode Sebelumnya</span>
+          </button>
+          
+          <button type="button" 
+                  onclick="cancelNextEpisodeCountdown()" 
+                  class="px-4 py-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs font-bold transition border border-slate-800">
             Batal
           </button>
-          <button type="button" onclick="playNextEpisodeImmediately()" class="px-5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-brand-500 hover:from-purple-500 hover:to-brand-400 text-white text-xs font-black transition shadow-lg shadow-purple-600/30 flex items-center gap-1.5 cursor-pointer">
-            <span>Putar Sekarang</span> <i class="fa-solid fa-play text-[10px]"></i>
+
+          <button type="button" 
+                  id="overlay-btn-next"
+                  onclick="playNextEpisodeImmediately()" 
+                  class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-brand-500 hover:from-purple-500 hover:to-brand-400 text-white text-xs font-black transition shadow-lg shadow-purple-600/30 flex items-center gap-1.5 cursor-pointer">
+            <span>Episode Selanjutnya</span> <i class="fa-solid fa-forward-step text-xs"></i>
           </button>
         </div>
       </div>
@@ -277,26 +292,6 @@
             </select>
           </div>
           {{end}}
-
-          <!-- NAVIGASI CEPAT PREV / NEXT EPISODE -->
-          <div class="inline-flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
-            <button type="button" 
-                    id="btn-prev-ep" 
-                    onclick="stepEpisode(-1)" 
-                    disabled 
-                    class="px-2.5 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center gap-1" 
-                    title="Episode Sebelumnya">
-              <i class="fa-solid fa-backward-step text-[10px]"></i> Prev
-            </button>
-            <span class="text-slate-600">|</span>
-            <button type="button" 
-                    id="btn-next-ep" 
-                    onclick="stepEpisode(1)" 
-                    class="px-2.5 py-1 rounded-lg text-xs font-bold text-purple-300 hover:text-white hover:bg-purple-900/60 transition flex items-center gap-1" 
-                    title="Episode Berikutnya">
-              Next <i class="fa-solid fa-forward-step text-[10px]"></i>
-            </button>
-          </div>
         </div>
       </div>
       
@@ -747,15 +742,33 @@
             if (sub && sub.url) {
               const track = document.createElement('track');
               track.kind = 'subtitles';
-              track.label = sub.label || sub.lang || ('Sub ' + (idx + 1));
-              track.srclang = sub.lang || 'id';
+              const langCode = (sub.languageCode || sub.lang || '').toLowerCase();
+              const langName = sub.language || sub.label || langCode || ('Sub ' + (idx + 1));
+              track.label = langName;
+              track.srclang = langCode || 'id';
               track.src = sub.url;
-              if (idx === 0 || sub.lang === 'id' || sub.lang === currentDramaLang) {
+              if (langCode === currentDramaLang.toLowerCase() || (idx === 0 && !currentDramaLang)) {
                 track.default = true;
               }
               hlsVideo.appendChild(track);
             }
           });
+
+          // Sinkronisasi otomatis ke textTracks player
+          setTimeout(() => {
+            if (hlsVideo.textTracks && hlsVideo.textTracks.length > 0) {
+              for (let i = 0; i < hlsVideo.textTracks.length; i++) {
+                const tt = hlsVideo.textTracks[i];
+                if (tt.language && tt.language.toLowerCase() === currentDramaLang.toLowerCase()) {
+                  tt.mode = 'showing';
+                } else if (!currentDramaLang && i === 0) {
+                  tt.mode = 'showing';
+                } else {
+                  tt.mode = 'disabled';
+                }
+              }
+            }
+          }, 300);
         }
 
         if (currentHls) {
@@ -918,7 +931,24 @@
 
     function changeDramaLanguage(lang) {
       currentDramaLang = lang;
-      if (isDramaPendek) {
+      const hlsVideo = document.getElementById('hls-video-player');
+
+      // 1. Cek apakah di elemen video sudah ada track subtitle dengan bahasa ini
+      let foundLocalTrack = false;
+      if (hlsVideo && hlsVideo.textTracks && hlsVideo.textTracks.length > 0) {
+        for (let i = 0; i < hlsVideo.textTracks.length; i++) {
+          const tt = hlsVideo.textTracks[i];
+          if (tt.language && tt.language.toLowerCase() === lang.toLowerCase()) {
+            tt.mode = 'showing';
+            foundLocalTrack = true;
+          } else {
+            tt.mode = 'disabled';
+          }
+        }
+      }
+
+      // 2. Jika tidak ada track lokal atau stream perlu di-resolve ulang, panggil API episode
+      if (isDramaPendek && !foundLocalTrack) {
         fetchDramaEpisodeStream(currentEpisodeNumber, lang);
       }
     }
@@ -945,29 +975,49 @@
         });
     }
 
-    // Hitung Mundur Otomatis Episode Selanjutnya (Overlay)
+    // Hitung Mundur Otomatis Episode Selanjutnya (Overlay Player Selesai)
     function triggerNextEpisodeOverlay(targetEp) {
       if (!targetEp || targetEp > totalEpisodesCount) return;
       nextEpisodeTargetNumber = targetEp;
-      countdownRemaining = 3;
+      countdownRemaining = 5;
 
       const overlay = document.getElementById('next-episode-overlay');
       const titleSpan = document.getElementById('overlay-next-ep-title');
       const cdSpan = document.getElementById('overlay-countdown');
+      const prevBtn = document.getElementById('overlay-btn-prev');
+      const nextBtn = document.getElementById('overlay-btn-next');
 
       if (titleSpan) titleSpan.textContent = 'Episode ' + targetEp;
       if (cdSpan) cdSpan.textContent = countdownRemaining.toString();
+      
+      // Update tombol prev/next di overlay player
+      if (prevBtn) {
+        prevBtn.disabled = (currentEpisodeNumber <= 1);
+      }
+      if (nextBtn) {
+        nextBtn.disabled = (targetEp > totalEpisodesCount);
+      }
+
       if (overlay) overlay.classList.remove('hidden');
 
       if (nextEpisodeTimer) clearInterval(nextEpisodeTimer);
       nextEpisodeTimer = setInterval(() => {
         countdownRemaining--;
         if (cdSpan) cdSpan.textContent = countdownRemaining.toString();
+        // Jika tidak ada respon sampai hitungan mundur habis, otomatis lanjut / next
         if (countdownRemaining <= 0) {
           cancelNextEpisodeCountdown();
           switchEpisode(nextEpisodeTargetNumber);
         }
       }, 1000);
+    }
+
+    function overlayStepEpisode(delta) {
+      cancelNextEpisodeCountdown();
+      const targetEp = currentEpisodeNumber + delta;
+      if (targetEp >= 1 && targetEp <= totalEpisodesCount) {
+        switchEpisode(targetEp);
+      }
     }
 
     function cancelNextEpisodeCountdown() {
