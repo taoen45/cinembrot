@@ -329,38 +329,63 @@ Pada halaman detail film (`/movie/{slug}`), tautan unduhan ditata secara presisi
    - Otomatis memicu bot agregator (Pahe, Otakudesu, Samehadaku, Melongmovie, Dramaid) untuk mengais link video baru dari internet jika link lama mati.
    - **Aturan Cooldown 24 Jam**: Jika URL dari sumber sama persis (sudah versi paling baru), tombol otomatis terkunci (*disabled*) selama **1 hari (24 jam)** secara persisten di browser (`localStorage`) untuk mencegah spam request ke sumber.
 
-### 8. Integrasi Drama Pendek Asia & Scraper Sopan Anti-Banned (Vorta Stealth Mode)
+### 8. Topologi & Integrasi Streaming Drama Pendek (Vorta Tech)
 
-Cinembrot mendukung katalog khusus **Drama Pendek Asia** (MeloShort, ShortMax, MyDrama) yang dilengkapi pemutar streaming HLS (M3U8) resmi.
+Cinembrot mengintegrasikan katalog khusus **Drama Pendek Asia (Vertical Series)** yang bersumber dari portal API resmi Vorta Tech (`https://api.vorta.tech`).
+
+#### 📐 Topologi Arsitektur Pengambilan Data (Tahap 1: Kategori & Sumber Platform)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                 VORTA TECH REST API ENDPOINT                    │
+│                  GET /api/v2/categories                         │
+│       Auth: HMAC-SHA256 (X-Timestamp + X-Signature)            │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │ (Sync Otomatis: 1x Seminggu / Senin 03:00 WIB)
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   CINEMBROT SCHEDULER WORKER                    │
+│             scheduler.startWeeklyCategorySyncScheduler          │
+│          - Initial sync otomatis saat database kosong           │
+│          - Menjaga nol kuota request pada traffic penonton      │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   MARIADB LOCAL DATABASE                        │
+│                   Tabel: `drama_categories`                     │
+│   (ReelShort, MeloShort, StardustTV, MicroDrama, My Drama)      │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │ (Query Lokal / Tanpa Kuota API)
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                 FRONTEND USER INTERFACE                         │
+│               URL: /drama-pendek (Template)                     │
+│    Tombol Switcher Filter Sumber: [Icon] + Platform Name        │
+│    Filter Instan Katalog via AJAX POST Tanpa Reload Halaman     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Kebijakan Penting & Efisiensi Kuota Token API:
+1. **Zero Bot Policy (Penghapusan Bot Massal)**:
+   - Konsep bot mass-scraping / bulk-harvesting ditiadakan secara permanen guna mematuhi *strict warning* penyedia API dan melindungi API key dari ancaman *permanent ban*.
+2. **Weekly Database Caching (Penghematan Kuota Ekstrem)**:
+   - Data kategori platform **hanya dipanggil 1 kali per minggu** (setiap hari Senin pukul 03:00 WIB) melalui endpoint `/api/v2/categories`.
+   - Data platform yang diizinkan (*ReelShort*, *MeloShort*, *StardustTV*, *MicroDrama*, *My Drama*) disimpan ke tabel `drama_categories` di MariaDB lokal.
+   - Seluruh pengunjung publik yang mengakses `/drama-pendek` membaca data dari MariaDB lokal, mengonsumsi **0 token API**.
+3. **Spesifikasi Autentikasi HMAC-SHA256**:
+   - Signature: `HMAC-SHA256(SecretKey, "GET:/api/v2/categories:" + TimestampMillis)`
+   - Headers: `X-Timestamp`, `X-Signature`
+4. **Alur Lanjutan (On-Demand Topologi Mendatang)**:
+   - Pengambilan katalog judul dan link video streaming (`/api/v2/home`, `/api/v2/detail`, `/api/v2/video`) dilakukan bertahap secara murni **On-Demand** saat penonton riil menekan tombol play, bukan robotik.
 
 #### Data Sample yang Telah Masuk ke MariaDB (ID: 8111):
 - **Judul**: *Raja Wall Street Melindungi Putrinya*
-- **Slug**: \`raja-wall-street-melindungi-putrinya-2026\`
-- **Halaman Detail**: \`https://cinembrot.web.id/movie/raja-wall-street-melindungi-putrinya-2026\`
+- **Slug**: `raja-wall-street-melindungi-putrinya-2026`
+- **Halaman Detail**: `https://cinembrot.web.id/movie/raja-wall-street-melindungi-putrinya-2026`
 - **Episode 1 Stream**: Server 1 - MeloShort HD (M3U8)
-- **Direct Stream**: \`https://api.meloshort.com/v1/play/6ae45b7c229395fbf61e296a/v.m3u8?auth_key=...\`
+- **Direct Stream**: `https://api.meloshort.com/v1/play/6ae45b7c229395fbf61e296a/v.m3u8?auth_key=...`
 - **Resolusi**: 720p HLS
-
-#### Aturan Ketat Anti-Scraping / Anti-Ban Vorta API:
-> ⚠️ **PERINGATAN DARI PENYEDIA API (VORTA TECH):**
-> *"This API is for streaming, not for harvesting data. Bulk-scraping is strictly forbidden. Once detected pulling data in bulk, your API key is PERMANENTLY BLOCKED. No warning, no negotiation."*
-
-Untuk mematuhi aturan tersebut, Cinembrot menerapkan arsitektur **Stealth Ingestion**:
-1. **Random Delay Manusiawi**: Jeda acak (default 5-15 detik) antar pemanggilan HTTP request.
-2. **Platform Shuffle (Rotasi Sumber)**: Sumber platform dirotasi secara acak (\`meloshort\`, \`shortmax\`, \`mydrama\`) sehingga pola request tidak terdeteksi bot/scrapper brute-force.
-3. **On-Demand Single Episode Stream**: Hanya mengambil sampel episode 1 saat ingest judul. Seluruh episode lanjutan diambil secara on-demand saat dibuka oleh penonton.
-4. **Duplicate Safeguard**: Otomatis melewati (*skip*) judul yang sudah ada di MariaDB tanpa melakukan request berulang ke API.
-
-```powershell
-# Jalankan scraper drama pendek sopan (mengambil 1 judul contoh dengan jeda acak 5-15 detik)
-.\cinembrot.exe -scrape-short-drama -short-limit 1 -short-min-delay 5 -short-max-delay 15
-
-# Contoh opsi rotasi platform kustom dengan jeda santai
-.\cinembrot.exe -scrape-short-drama -short-limit 2 -short-platforms "meloshort,shortmax,mydrama" -short-min-delay 10 -short-max-delay 20
-
-# Linux Ubuntu (Docker di Server taoen45):
-docker compose exec app ./cinembrot -scrape-short-drama -short-limit 1
-```
 
 ### 9. Scraping Film Barat & Domain Publik
 ```powershell
