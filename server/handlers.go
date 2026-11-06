@@ -21,6 +21,7 @@ import (
 	"cinembrot/scheduler"
 	"cinembrot/scraper"
 	"cinembrot/validator"
+
 	"gorm.io/gorm"
 )
 
@@ -1098,11 +1099,11 @@ func (s *Server) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	s.db.Find(&genres)
 
 	data := PageData{
-		Lang:        i18n.GetLang(r),
-		Title:       "Hasil Pencarian: " + query,
-		SiteName:    "CINEMBROT",
-		SearchQuery: query,
-		Movies:      movies,
+		Lang:            i18n.GetLang(r),
+		Title:           "Hasil Pencarian: " + query,
+		SiteName:        "CINEMBROT",
+		SearchQuery:     query,
+		Movies:          movies,
 		Genres:          genres,
 		TotalCount:      int64(len(movies)),
 		EnableAds:       s.cfg.EnableAds,
@@ -1834,5 +1835,3 @@ func (s *Server) HandleSafelinkuShorten(w http.ResponseWriter, r *http.Request) 
 		"short_url": shortURL,
 	})
 }
-
-
