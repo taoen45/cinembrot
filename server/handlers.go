@@ -1316,6 +1316,65 @@ func (s *Server) HandleRefreshStreamLink(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// KHUSUS DRAMA PENDEK (VORTA): Pembaruan stream link on-demand via /api/v2/video atau /api/v2/resolve-link
+	if movie.Type == "drama_pendek" {
+		platform := movie.SourceWebsite
+		rawID := ""
+		if strings.HasPrefix(movie.SourceURL, "vorta://") {
+			parts := strings.Split(strings.TrimPrefix(movie.SourceURL, "vorta://"), "/")
+			if len(parts) >= 2 {
+				platform = parts[0]
+				rawID = parts[1]
+			}
+		} else if strings.HasPrefix(movie.RawMetadata, "vorta:") {
+			parts := strings.Split(movie.RawMetadata, ":")
+			if len(parts) >= 3 {
+				platform = parts[1]
+				rawID = parts[2]
+			}
+		}
+
+		if rawID != "" && platform != "" {
+			client := vorta.NewClient()
+			lang := i18n.GetLang(r)
+			if lang == "" {
+				lang = "id"
+			}
+
+			// Ambil video stream segar untuk episode 1 (atau chapter pertama)
+			vData, err := client.GetVideoStream(platform, rawID, "1", lang)
+			if err == nil && vData != nil && len(vData.Streams) > 0 {
+				newStreamURL := vData.Streams[0].URL
+				quality := vData.Streams[0].Resolution
+				if quality == "" {
+					quality = "HD 720p"
+				}
+
+				// Simpan atau update stream link episode 1
+				streamLink := model.StreamLink{
+					MovieID:    movie.ID,
+					ServerName: fmt.Sprintf("Server 1 - %s HD", strings.ToUpper(platform[:1])+platform[1:]),
+					EmbedURL:   newStreamURL,
+					DirectURL:  newStreamURL,
+					Provider:   platform,
+					Quality:    quality,
+					Status:     "ACTIVE",
+					IsValid:    true,
+				}
+				s.db.Create(&streamLink)
+
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"success":     true,
+					"status":      "updated",
+					"message":     fmt.Sprintf("Berhasil memperbarui tautan streaming resmi dari %s!", platform),
+					"stream_url":  newStreamURL,
+					"added_count": 1,
+				})
+				return
+			}
+		}
+	}
+
 	// Kumpulkan URL streaming yang saat ini tersimpan
 	existingURLs := make(map[string]bool)
 	for _, sl := range movie.StreamLinks {
@@ -1642,20 +1701,23 @@ func (s *Server) HandleAPIMoviesFilter(w http.ResponseWriter, r *http.Request) {
 			}
 			query.Count(&totalCount)
 		}
-	} else if typeStr == "drama_pendek" && totalCount == 0 && keyword == "" && sourceStr != "" && sourceStr != "all" {
-		// B. Filter platform on-demand discovery (page 1) jika platform belum ada data sama sekali di MariaDB
-		client := vorta.NewClient()
-		lang := i18n.GetLang(r)
-		if lang == "" {
-			lang = "id"
-		}
-		if dResp, err := client.GetDiscover(sourceStr, lang, 1); err == nil && dResp != nil && len(dResp.Data) > 0 {
-			for _, item := range dResp.Data {
-				_, _ = scheduler.SaveDramaItemToDatabase(s.db, item, sourceStr, lang)
+	} else if typeStr == "drama_pendek" && keyword == "" && sourceStr != "" && sourceStr != "all" {
+		// B. Filter platform on-demand discovery jika database lokal belum mencukupi untuk page yang diminta
+		neededCount := int64(page * pageSize)
+		if totalCount < neededCount {
+			client := vorta.NewClient()
+			lang := i18n.GetLang(r)
+			if lang == "" {
+				lang = "id"
 			}
-			query = s.db.Model(&model.Movie{}).Where("type = ?", "drama_pendek").Preload("Genres").
-				Where("source_website LIKE ? OR source_url LIKE ? OR raw_metadata LIKE ?", "%"+sourceStr+"%", "%"+sourceStr+"%", "%"+sourceStr+"%")
-			query.Count(&totalCount)
+			if dResp, err := client.GetDiscover(sourceStr, lang, page); err == nil && dResp != nil && len(dResp.Data) > 0 {
+				for _, item := range dResp.Data {
+					_, _ = scheduler.SaveDramaItemToDatabase(s.db, item, sourceStr, lang)
+				}
+				query = s.db.Model(&model.Movie{}).Where("type = ?", "drama_pendek").Preload("Genres").
+					Where("source_website LIKE ? OR source_url LIKE ? OR raw_metadata LIKE ?", "%"+sourceStr+"%", "%"+sourceStr+"%", "%"+sourceStr+"%")
+				query.Count(&totalCount)
+			}
 		}
 	}
 

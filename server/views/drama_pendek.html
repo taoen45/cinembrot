@@ -214,6 +214,32 @@
   {{end}}
 </div>
 
+<!-- ==================== 5. SEKUANSIAL PAGINATION (PREV & NEXT) ==================== -->
+<div id="drama-pagination-container" class="mt-8 flex items-center justify-between border-t border-slate-200 dark:border-dark-800 pt-5">
+  <button type="button" 
+          id="drama-prev-btn" 
+          onclick="changeDramaPage(-1)" 
+          disabled
+          class="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-dark-700 bg-white dark:bg-dark-900 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-50 dark:hover:bg-dark-800 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-xs">
+    <i class="fa-solid fa-chevron-left text-[11px]"></i>
+    <span>{{if eq $.Lang "en"}}Previous{{else}}Sebelumnya{{end}}</span>
+  </button>
+
+  <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+    <span>{{if eq $.Lang "en"}}Page{{else}}Halaman{{end}}</span>
+    <span id="drama-current-page-display" class="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 font-black border border-amber-500/20">1</span>
+    <span id="drama-total-page-display" class="text-slate-400">/ 1</span>
+  </div>
+
+  <button type="button" 
+          id="drama-next-btn" 
+          onclick="changeDramaPage(1)" 
+          class="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-dark-700 bg-white dark:bg-dark-900 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-50 dark:hover:bg-dark-800 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-xs">
+    <span>{{if eq $.Lang "en"}}Next{{else}}Berikutnya{{end}}</span>
+    <i class="fa-solid fa-chevron-right text-[11px]"></i>
+  </button>
+</div>
+
 <!-- ==================== 5. CONTROLLER JAVASCRIPT & AJAX ==================== -->
 <script>
 (function() {
@@ -225,9 +251,42 @@
   const loading = document.getElementById('drama-movies-loading');
   const counterBadge = document.getElementById('drama-counter-badge');
   const liveBadge = document.getElementById('drama-live-badge');
+  const prevBtn = document.getElementById('drama-prev-btn');
+  const nextBtn = document.getElementById('drama-next-btn');
+  const curPageEl = document.getElementById('drama-current-page-display');
+  const totPageEl = document.getElementById('drama-total-page-display');
 
   let currentAbortController = null;
   let searchDebounceTimer = null;
+  let currentPage = 1;
+  let totalPages = 1;
+  let isPageChangeCooling = false;
+
+  window.changeDramaPage = function(delta) {
+    if (isPageChangeCooling) return;
+    const targetPage = currentPage + delta;
+    if (targetPage < 1 || (totalPages > 0 && targetPage > totalPages)) return;
+
+    // Cooldown 1.2s anti-troll spam clicking
+    isPageChangeCooling = true;
+    if (prevBtn) prevBtn.disabled = true;
+    if (nextBtn) nextBtn.disabled = true;
+
+    currentPage = targetPage;
+    window.fetchDramaAjax(currentPage);
+
+    setTimeout(() => {
+      isPageChangeCooling = false;
+      updatePaginationControls();
+    }, 1200);
+  };
+
+  function updatePaginationControls() {
+    if (curPageEl) curPageEl.textContent = currentPage;
+    if (totPageEl) totPageEl.textContent = `/ ${totalPages || 1}`;
+    if (prevBtn) prevBtn.disabled = (currentPage <= 1 || isPageChangeCooling);
+    if (nextBtn) nextBtn.disabled = (currentPage >= totalPages || isPageChangeCooling);
+  }
 
   function buildDramaCard(m) {
     const poster = m.poster_thumb_url || m.poster_url || m.thumbnail_url || '/img/poster-placeholder.svg';
@@ -299,7 +358,13 @@
     window.fetchDramaAjax();
   };
 
-  window.fetchDramaAjax = function() {
+  window.fetchDramaAjax = function(pageNumber) {
+    if (pageNumber && typeof pageNumber === 'number') {
+      currentPage = pageNumber;
+    } else {
+      currentPage = 1;
+    }
+
     if (currentAbortController) {
       currentAbortController.abort();
     }
@@ -317,11 +382,13 @@
     params.append('type', 'drama_pendek');
     if (q) params.append('q', q);
     if (source) params.append('source', source);
-    params.append('limit', '60');
+    params.append('page', currentPage.toString());
+    params.append('limit', '24');
 
     const queryParams = new URLSearchParams();
     if (q) queryParams.set('q', q);
     if (source) queryParams.set('source', source);
+    if (currentPage > 1) queryParams.set('p', currentPage.toString());
     const newUrl = window.location.pathname + (queryParams.toString() ? '?' + queryParams.toString() : '');
     window.history.pushState(null, '', newUrl);
 
@@ -343,8 +410,13 @@
         grid.innerHTML = '';
         if (emptyState) emptyState.classList.remove('hidden');
         if (counterBadge) counterBadge.textContent = '0 titles';
+        totalPages = 1;
+        updatePaginationControls();
         return;
       }
+
+      totalPages = data.total_pages || 1;
+      updatePaginationControls();
 
       let html = '';
       data.movies.forEach(m => {
@@ -361,6 +433,7 @@
       console.error('Gagal memuat drama via AJAX:', err);
       grid.classList.remove('opacity-30');
       if (loading) loading.classList.add('hidden');
+      updatePaginationControls();
     });
   };
 

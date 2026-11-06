@@ -393,13 +393,21 @@ Cinembrot mengintegrasikan katalog khusus **Drama Pendek Asia (Vertical Series)*
      - Jika hasil ditemukan di database lokal, data langsung disajikan secara instan (**0 Token API**).
      - Jika judul belum ada di database lokal, backend melakukan pemanggilan on-demand ke API `/api/v2/search` sebanyak 1 halaman, menyimpan judul-judul baru ke MariaDB, lalu menampilkannya ke pengunjung.
      - Di sisi frontend, pencarian dilindungi dengan mekanisme **Debounce 600ms** dan pembatasan minimal 3 karakter untuk mencegah request liar dan spamming.
+   - **Paginasi Sekuensial & Cooldown Anti-Troll (Tahap 3)**:
+     - Dilengkapi tombol paginasi dwibahasa (**`< Sebelumnya (Prev)`** & **`Berikutnya (Next) >`**) dan indikator nomor halaman.
+     - Proteksi **Cooldown 1.2 detik** pada tombol untuk mencegah spamming / click troll.
+     - Paginasi menerapkan arsitektur Cache-First: memeriksa MariaDB lokal terlebih dahulu; jika data halaman tersebut belum ada, memanggil on-demand `/api/v2/discover` 1 halaman untuk platform tersebut lalu menyimpannya ke database.
+   - **Pembaruan Link Streaming & Fallback (Just-In-Time)**:
+     - Mengingat link streaming M3U8 drama pendek membawa token kedaluwarsa (`?auth_key=...`), disediakan tombol **"🔄 Perbarui Link Streaming"** (`POST /api/movie/{id}/refresh-stream`).
+     - Endpoint ini memanggil `/api/v2/video` secara on-demand untuk memperbarui token streaming secara instan ke MariaDB tanpa penonton harus me-refresh halaman.
+     - Endpoint `/api/v2/resolve-link` siap digunakan untuk mengurai tautan serial web resmi menjadi metadata film dan ID streaming.
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
 │               ARSITEKTUR CACHE-FIRST DISCOVERY & SEARCH        │
 └─────────────────────────────────────────────────────────────────┘
                                  │
-           User Buka /drama-pendek atau Ganti Platform
+           User Buka /drama-pendek atau Ganti Platform / Next Page
                                  │
                                  ▼
            Deteksi Platform Paling Kiri / Dipilih di DB
@@ -413,7 +421,7 @@ Cinembrot mengintegrasikan katalog khusus **Drama Pendek Asia (Vertical Series)*
                  │                               │
                  ▼                               ▼
        Kirim JSON / Render               Panggil Vorta API On-Demand
-          (0 Token API)                /api/v2/discover?category_p=...&p=1
+          (0 Token API)                /api/v2/discover?category_p=...&p=page
                  │                     atau /api/v2/search?q=...
                  │                               │
                  │                               ▼

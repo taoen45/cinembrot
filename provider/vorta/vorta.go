@@ -305,9 +305,19 @@ type VideoStreamItem struct {
 	KID              string `json:"kid"`
 }
 
+// SubtitleItem merepresentasikan metadata track subtitle resmi
+type SubtitleItem struct {
+	Language     string `json:"language"`
+	LanguageCode string `json:"languageCode"`
+	Format       string `json:"format"`
+	URL          string `json:"url"`
+	Index        int    `json:"index"`
+}
+
 // VideoStreamData merepresentasikan data stream episode
 type VideoStreamData struct {
 	Streams       []VideoStreamItem `json:"streams"`
+	Subtitles     []SubtitleItem    `json:"subtitles"`
 	EpisodeIndex  int               `json:"episode_index"`
 	TotalEpisodes int               `json:"total_episodes"`
 	NextVideoID   string            `json:"next_video_id"`
@@ -319,6 +329,72 @@ type VideoStreamData struct {
 type VideoStreamResponse struct {
 	Success bool            `json:"success"`
 	Data    VideoStreamData `json:"data"`
+}
+
+// ResolveLinkData merepresentasikan hasil resolve URL resmi
+type ResolveLinkData struct {
+	CategoryP string      `json:"category_p"`
+	Platform  string      `json:"platform"`
+	Language  string      `json:"language"`
+	Data      DramaDetail `json:"data"`
+}
+
+type ResolveLinkResponse struct {
+	Success   bool            `json:"success"`
+	CategoryP string          `json:"category_p"`
+	Platform  string          `json:"platform"`
+	Language  string          `json:"language"`
+	Data      DramaDetail     `json:"data"`
+}
+
+// ResolveLink mengurai URL web resmi (misal: my-drama.com/series/...) menjadi metadata film
+func (c *Client) ResolveLink(rawURL, lang string) (*DramaDetail, string, error) {
+	if lang == "" {
+		lang = "id"
+	}
+	path := fmt.Sprintf("/api/v2/resolve-link?url=%s&lang=%s", url.QueryEscape(rawURL), url.QueryEscape(lang))
+	body, err := c.executeRequest("GET", path)
+	if err != nil {
+		return nil, "", err
+	}
+
+	var res ResolveLinkResponse
+	if err := json.Unmarshal(body, &res); err != nil {
+		return nil, "", fmt.Errorf("gagal unmarshal resolve link: %w", err)
+	}
+
+	return &res.Data, res.CategoryP, nil
+}
+
+// LanguageItem merepresentasikan bahasa/subtitle resmi platform
+type LanguageItem struct {
+	Code   string `json:"code"`
+	Label  string `json:"label"`
+	Native string `json:"native"`
+	Flag   string `json:"flag"`
+}
+
+type LanguagesResponse struct {
+	Success  bool           `json:"success"`
+	Platform string         `json:"platform"`
+	Default  string         `json:"default"`
+	Data     []LanguageItem `json:"data"`
+}
+
+// GetLanguages mengambil daftar bahasa resmi dari platform tertentu
+func (c *Client) GetLanguages(platform string) ([]LanguageItem, error) {
+	path := fmt.Sprintf("/api/v2/languages?category_p=%s", url.QueryEscape(platform))
+	body, err := c.executeRequest("GET", path)
+	if err != nil {
+		return nil, err
+	}
+
+	var res LanguagesResponse
+	if err := json.Unmarshal(body, &res); err != nil {
+		return nil, fmt.Errorf("gagal unmarshal languages: %w", err)
+	}
+
+	return res.Data, nil
 }
 
 // GetVideoStream mengambil URL streaming (HLS/M3U8 atau MP4) per episode secara on-demand
