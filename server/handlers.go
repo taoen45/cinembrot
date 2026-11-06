@@ -693,14 +693,16 @@ func (s *Server) HandleAnime(w http.ResponseWriter, r *http.Request) {
 
 // HandleDramaPendek displays the dedicated Drama Pendek / Mini Series catalog with multi-parameter filtering
 func (s *Server) HandleDramaPendek(w http.ResponseWriter, r *http.Request) {
-	yearParamExists := r.URL.Query().Has("year")
-	yearStr := strings.TrimSpace(r.URL.Query().Get("year"))
-	if !yearParamExists {
-		yearStr = "2026" // Default tahun sekarang saat halaman pertama kali dimuat
-	}
-	genreStr := strings.TrimSpace(r.URL.Query().Get("genre"))
-	countryStr := strings.TrimSpace(r.URL.Query().Get("country"))
+	// Ambil daftar kategori/platform resmi yang tersimpan di database MariaDB (hasil sync mingguan API)
+	var dramaCategories []model.DramaCategory
+	s.db.Where("is_active = ?", true).Order("`order` asc, id asc").Find(&dramaCategories)
+
 	sourceStr := strings.TrimSpace(r.URL.Query().Get("source"))
+	// Jika belum ada sumber yang dipilih (akses awal), otomatis gunakan platform paling kiri (order terendah)
+	if sourceStr == "" && len(dramaCategories) > 0 {
+		sourceStr = dramaCategories[0].Name
+	}
+
 	sortStr := strings.TrimSpace(r.URL.Query().Get("sort"))
 	if sortStr == "" {
 		sortStr = "year_desc" // Default: Rilis Terbaru
@@ -708,26 +710,30 @@ func (s *Server) HandleDramaPendek(w http.ResponseWriter, r *http.Request) {
 
 	query := s.db.Model(&model.Movie{}).Where("type = ?", "drama_pendek").Preload("Genres")
 
-	if yearStr != "" && yearStr != "all" {
-		if y, err := strconv.Atoi(yearStr); err == nil && y > 0 {
-			query = query.Where("year = ?", y)
-		}
-	}
-
-	if genreStr != "" {
-		var genre model.Genre
-		if err := s.db.Where("slug = ? OR name = ?", genreStr, genreStr).First(&genre).Error; err == nil {
-			query = query.Joins("JOIN movie_genres ON movie_genres.movie_id = movies.id").
-				Where("movie_genres.genre_id = ?", genre.ID)
-		}
-	}
-
-	if countryStr != "" {
-		query = query.Where("country LIKE ?", "%"+countryStr+"%")
-	}
-
 	if sourceStr != "" {
 		query = query.Where("source_website LIKE ? OR source_url LIKE ? OR raw_metadata LIKE ?", "%"+sourceStr+"%", "%"+sourceStr+"%", "%"+sourceStr+"%")
+	}
+
+	var totalCount int64
+	query.Count(&totalCount)
+
+	// Jika di database lokal belum ada judul sama sekali untuk platform aktif ini,
+	// panggil Discovery API Page 1 sekali saja secara on-demand dan simpan ke database lokal.
+	if totalCount == 0 && sourceStr != "" {
+		client := vorta.NewClient()
+		lang := i18n.GetLang(r)
+		if lang == "" {
+			lang = "id"
+		}
+		if dResp, err := client.GetDiscover(sourceStr, lang, 1); err == nil && dResp != nil && len(dResp.Data) > 0 {
+			for _, item := range dResp.Data {
+				_, _ = scheduler.SaveDramaItemToDatabase(s.db, item, sourceStr, lang)
+			}
+			// Re-query database lokal setelah item tersimpan
+			query = s.db.Model(&model.Movie{}).Where("type = ?", "drama_pendek").Preload("Genres")
+			query = query.Where("source_website LIKE ? OR source_url LIKE ? OR raw_metadata LIKE ?", "%"+sourceStr+"%", "%"+sourceStr+"%", "%"+sourceStr+"%")
+			query.Count(&totalCount)
+		}
 	}
 
 	// Sorting
@@ -746,30 +752,11 @@ func (s *Server) HandleDramaPendek(w http.ResponseWriter, r *http.Request) {
 		query = query.Order("year desc, release_date desc, id desc") // Default: Rilis Terbaru
 	}
 
-	var totalCount int64
-	query.Count(&totalCount)
-
 	var movies []model.Movie
 	query.Limit(60).Find(&movies)
 
 	var genres []model.Genre
 	s.db.Order("name asc").Find(&genres)
-
-	var years []int
-	s.db.Model(&model.Movie{}).Distinct().Where("type = ? AND year > 0", "drama_pendek").Order("year desc").Pluck("year", &years)
-	if len(years) == 0 {
-		years = []int{2026, 2025, 2024, 2023, 2022}
-	}
-
-	var countries []string
-	s.db.Model(&model.Movie{}).Distinct().Where("type = ? AND country <> ''", "drama_pendek").Order("country asc").Pluck("country", &countries)
-	if len(countries) == 0 {
-		countries = []string{"China", "Korea Selatan", "Indonesia", "Thailand"}
-	}
-
-	// Ambil daftar kategori/platform resmi yang tersimpan di database MariaDB (hasil sync mingguan API)
-	var dramaCategories []model.DramaCategory
-	s.db.Where("is_active = ?", true).Order("`order` asc, id asc").Find(&dramaCategories)
 
 	data := PageData{
 		Lang:            i18n.GetLang(r),
@@ -778,20 +765,13 @@ func (s *Server) HandleDramaPendek(w http.ResponseWriter, r *http.Request) {
 		ActiveMenu:      "drama_pendek",
 		Movies:          movies,
 		Genres:          genres,
-		Years:           years,
-		Countries:       countries,
 		DramaCategories: dramaCategories,
-		CurrentGenre:    genreStr,
-		CurrentCountry:  countryStr,
 		CurrentSort:     sortStr,
 		CurrentSource:   sourceStr,
 		TotalCount:      totalCount,
 		EnableAds:       s.cfg.EnableAds,
 		MetaDescription: "Nonton serial drama pendek, mini series, dan drama China/Korea subtitle Indonesia episode lengkap gratis kualitas jernih di CINEMBROT.",
 		MetaKeywords:    "nonton drama pendek, mini series sub indo, drama china pendek, drama korea pendek, streaming drama pendek, cinembrot drama",
-	}
-	if y, err := strconv.Atoi(yearStr); err == nil {
-		data.CurrentYear = y
 	}
 
 	s.PopulateSEO(r, &data)
@@ -1635,12 +1615,12 @@ func (s *Server) HandleAPIMoviesFilter(w http.ResponseWriter, r *http.Request) {
 	var totalCount int64
 	query.Count(&totalCount)
 
-	// Jika tipe drama_pendek dan totalCount 0 saat pencarian kata kunci spesifik (min 3 char),
-	// lakukan query on-demand sopan ke Vorta API /api/v2/search dan simpan hasilnya ke DB (Anti-Brute Force: 1 page saja).
+	// Jika tipe drama_pendek dan totalCount 0:
+	// A. Pencarian kata kunci on-demand (min 3 char) via /api/v2/search
 	if typeStr == "drama_pendek" && totalCount == 0 && keyword != "" && len([]rune(keyword)) >= 3 {
 		searchPlatform := sourceStr
 		if searchPlatform == "" || searchPlatform == "all" {
-			searchPlatform = "meloshort"
+			searchPlatform = "reelshort"
 		}
 		client := vorta.NewClient()
 		lang := i18n.GetLang(r)
@@ -1660,6 +1640,21 @@ func (s *Server) HandleAPIMoviesFilter(w http.ResponseWriter, r *http.Request) {
 			if sourceStr != "" && sourceStr != "all" {
 				query = query.Where("source_website LIKE ? OR source_url LIKE ?", "%"+sourceStr+"%", "%"+sourceStr+"%")
 			}
+			query.Count(&totalCount)
+		}
+	} else if typeStr == "drama_pendek" && totalCount == 0 && keyword == "" && sourceStr != "" && sourceStr != "all" {
+		// B. Filter platform on-demand discovery (page 1) jika platform belum ada data sama sekali di MariaDB
+		client := vorta.NewClient()
+		lang := i18n.GetLang(r)
+		if lang == "" {
+			lang = "id"
+		}
+		if dResp, err := client.GetDiscover(sourceStr, lang, 1); err == nil && dResp != nil && len(dResp.Data) > 0 {
+			for _, item := range dResp.Data {
+				_, _ = scheduler.SaveDramaItemToDatabase(s.db, item, sourceStr, lang)
+			}
+			query = s.db.Model(&model.Movie{}).Where("type = ?", "drama_pendek").Preload("Genres").
+				Where("source_website LIKE ? OR source_url LIKE ? OR raw_metadata LIKE ?", "%"+sourceStr+"%", "%"+sourceStr+"%", "%"+sourceStr+"%")
 			query.Count(&totalCount)
 		}
 	}

@@ -377,7 +377,14 @@ Cinembrot mengintegrasikan katalog khusus **Drama Pendek Asia (Vertical Series)*
    - Signature: `HMAC-SHA256(SecretKey, "GET:" + PathAndQuery + ":" + TimestampMillis)`
    - Headers: `X-Timestamp`, `X-Signature`
 4. **Topologi Pencarian & Katalog Discovery (Tahap 2)**:
-   - **Katalog Discovery (`/api/v2/discover?category_p={platform}&lang={lang}&page={page}`)**:
+   - **Default Tampilan Pertama (Platform Paling Kiri / Order Terendah)**:
+     - Saat pengunjung membuka `/drama-pendek`, sistem membaca kategori platform aktif dari MariaDB dengan `order` terendah (posisi paling kiri, yaitu **ReelShort**).
+     - Tombol platform tersebut langsung aktif secara default.
+     - **Mekanisme On-Demand Discovery (Cache-First)**:
+       - Sistem mengecek MariaDB lokal: apakah sudah ada film dari platform aktif tersebut?
+       - Jika **sudah ada**, langsung disajikan dari MariaDB lokal (**0 Kuota Token API**).
+       - Jika **belum ada / 0**, backend memanggil Discovery API Page 1 (`/api/v2/discover?category_p={platform}&lang=id&page=1`) sebanyak 1 kali, otomatis menyimpan seluruh judulnya ke tabel `movies` MariaDB, lalu menampilkannya.
+   - **Katalog Discovery Berkala (`/api/v2/discover?category_p={platform}&lang={lang}&page={page}`)**:
      - Dijadwalkan otomatis 1x seminggu (Senin 03:00 WIB) sesaat setelah sinkronisasi kategori.
      - Pengambilan discovery berjalan sopan dengan jeda (delay) 5–10 detik antar platform/bahasa untuk menjaga batas wajar API.
      - Setiap judul yang berhasil diambil langsung disimpan ke MariaDB lokal (`movies`, `genres`, `stream_links`).
@@ -392,18 +399,22 @@ Cinembrot mengintegrasikan katalog khusus **Drama Pendek Asia (Vertical Series)*
 │               ARSITEKTUR CACHE-FIRST DISCOVERY & SEARCH        │
 └─────────────────────────────────────────────────────────────────┘
                                  │
-                 User Cari Judul Drama (>= 3 Huruf)
+           User Buka /drama-pendek atau Ganti Platform
+                                 │
+                                 ▼
+           Deteksi Platform Paling Kiri / Dipilih di DB
                                  │
                                  ▼
                      Cek Database MariaDB Lokal
                                  │
                  ┌───────────────┴───────────────┐
                  │                               │
-          Ada di MariaDB?                 Tidak Ditemukan?
+          Ada di MariaDB?                 Tidak Ada / Kosong?
                  │                               │
                  ▼                               ▼
-       Kirim JSON ke Frontend            Panggil API Vorta On-Demand
-          (0 Token API)                /api/v2/search?category_p=...&q=...
+       Kirim JSON / Render               Panggil Vorta API On-Demand
+          (0 Token API)                /api/v2/discover?category_p=...&p=1
+                 │                     atau /api/v2/search?q=...
                  │                               │
                  │                               ▼
                  │                     Simpan ke MariaDB Lokal

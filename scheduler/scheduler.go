@@ -2,12 +2,8 @@ package scheduler
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"math/rand"
-	"net/http"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -18,6 +14,11 @@ import (
 	"cinembrot/pipeline"
 	"cinembrot/provider/vorta"
 	"cinembrot/scraper"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+
 	"gorm.io/gorm"
 )
 
@@ -673,4 +674,3 @@ func generateDramaSlug(title string) string {
 	}
 	return fmt.Sprintf("%s-%d", clean, time.Now().Year())
 }
-
