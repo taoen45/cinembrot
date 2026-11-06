@@ -401,6 +401,21 @@ Cinembrot mengintegrasikan katalog khusus **Drama Pendek Asia (Vertical Series)*
      - Mengingat link streaming M3U8 drama pendek membawa token kedaluwarsa (`?auth_key=...`), disediakan tombol **"🔄 Perbarui Link Streaming"** (`POST /api/movie/{id}/refresh-stream`).
      - Endpoint ini memanggil `/api/v2/video` secara on-demand untuk memperbarui token streaming secara instan ke MariaDB tanpa penonton harus me-refresh halaman.
      - Endpoint `/api/v2/resolve-link` siap digunakan untuk mengurai tautan serial web resmi menjadi metadata film dan ID streaming.
+    - **Topologi Pemutaran Streaming On-Demand & Penghematan Kuota Token Organik (Tahap 4)**:
+      - **Isolasi Karakteristik Subtitle Platform**:
+        - *Hardsub Murni* (`ReelShort`, `MicroDrama`, `StardustTV`): Video diproduksi dengan teks bahasa Indonesia yang sudah tertanam langsung di piksel video (*burnt-in hardsub*). Dropdown pemilihan bahasa otomatis disembunyikan dan diganti indikator transparan: `Subtitle Indonesia (tertanam di video)`.
+        - *Multi-Subtitle WebVTT* (`MyDrama`, dll.): Menyediakan track WebVTT resmi terpisah (`id`, `en`, `ja`, dll.). Dropdown bahasa di bilah atas pemutar aktif untuk mengganti subtitle track secara instan.
+      - **Mekanisme Organik Berantai (Chain-Linked Chapter ID - MeloShort)**:
+        - Platform seperti MeloShort menggunakan ID chapter berbasis Hash 24-karakter (misal `67c695418140c734015bc8c9`), bukan angka urut integer biasa (`1`, `2`, `3`).
+        - **Aturan Anti-Brute Force**: Sistem **dilarang keras** melakukan looping / crawling massal untuk menebak seluruh chapter ID demi menjaga kuota dan mematuhi aturan lisensi API.
+        - **Alur Pembelajaran Organik (*Organic Discovery on Play*)**:
+          1. Episode 1 diselesaikan lewat ID chapter pertama dari metadata atau 1x panggilan detail yang di-cache.
+          2. Setiap kali penonton memutar episode N, respon resmi API Vorta menyertakan field `next_video_id` yang berisi hash episode N+1.
+          3. Backend Cinembrot (`server/drama_chapters.go`) secara otomatis mencatat ID episode N+1 ke dalam memori cache.
+          4. Jika pengguna mencoba melompati episode yang belum terbuka (misal langsung klik EPS 10 saat baru di EPS 1), server mengembalikan status HTTP 409 (*Need Sequential Watching*) dan meminta penonton menonton secara berurutan. Hal ini menjamin konsumsi kuota token 100% organik seiring tontonan riil penonton.
+      - **Sinkronisasi Presisi Jumlah Episode**:
+        - Engine `ExtractEpisodeCount` mengekstrak angka riil dari `DurationFormatted` (misal `"37 Episodes"`).
+        - Menghilangkan angka fallback dummy 12. Jika jumlah episode pada judul drama pendek belum diketahui, tombol episode dummy tidak dimunculkan.
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
